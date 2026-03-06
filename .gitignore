@@ -31,3 +31,6 @@ npm-debug.log*
 # Cache
 .cache/
 .turbo/
+
+# Research
+_research/
