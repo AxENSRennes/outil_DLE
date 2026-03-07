@@ -1,0 +1,253 @@
+{
+  "schemaVersion": "v1",
+  "templateCode": "PARFUM-100ML-FAB-COND",
+  "templateName": "Parfum 100ml - Fabrication et conditionnement",
+  "description": "Template pilote pour fabrication et conditionnement parfum.",
+  "product": {
+    "productCode": "ADOPT-PARF-100ML",
+    "productName": "Parfum 100ml",
+    "family": "Parfum",
+    "formatLabel": "100ml"
+  },
+  "batchDefaults": {
+    "targetBatchSize": 500,
+    "batchSizeUnit": "L"
+  },
+  "stepOrder": [
+    "material_confirmation",
+    "weighing",
+    "manufacturing",
+    "pre_qa_review",
+    "packaging",
+    "finished_product_control"
+  ],
+  "steps": {
+    "material_confirmation": {
+      "key": "material_confirmation",
+      "title": "Confirmation des matières",
+      "kind": "material_confirmation",
+      "instructions": "Confirmer les lots matières et emballages avant démarrage.",
+      "required": true,
+      "signaturePolicy": {
+        "required": false,
+        "meaning": "performed_by"
+      },
+      "attachmentsPolicy": {
+        "supportsAttachments": true,
+        "attachmentKinds": [
+          "checklist",
+          "label_scan"
+        ]
+      },
+      "fields": [
+        {
+          "key": "alcohol_lot",
+          "type": "material_lot_ref",
+          "label": "Lot alcool",
+          "required": true
+        },
+        {
+          "key": "fragrance_lot",
+          "type": "material_lot_ref",
+          "label": "Lot concentré parfum",
+          "required": true
+        },
+        {
+          "key": "start_label_reference",
+          "type": "label_ref",
+          "label": "Référence étiquette début",
+          "required": false,
+          "optionalInV1": true
+        }
+      ]
+    },
+    "weighing": {
+      "key": "weighing",
+      "title": "Pesée",
+      "kind": "weighing",
+      "instructions": "Saisir les quantités théoriques et réelles.",
+      "required": true,
+      "signaturePolicy": {
+        "required": true,
+        "meaning": "performed_by"
+      },
+      "fields": [
+        {
+          "key": "target_weight",
+          "type": "decimal",
+          "label": "Poids cible",
+          "unit": "kg",
+          "required": true
+        },
+        {
+          "key": "actual_weight",
+          "type": "decimal",
+          "label": "Poids réel",
+          "unit": "kg",
+          "required": true
+        },
+        {
+          "key": "equipment_used",
+          "type": "equipment_ref",
+          "label": "Équipement utilisé",
+          "required": false,
+          "optionalInV1": true
+        },
+        {
+          "key": "yield_percent",
+          "type": "calculated",
+          "label": "Rendement",
+          "unit": "%",
+          "expressionRef": "yield_percent"
+        }
+      ]
+    },
+    "manufacturing": {
+      "key": "manufacturing",
+      "title": "Fabrication",
+      "kind": "manufacturing",
+      "instructions": "Exécuter la fabrication et saisir les paramètres critiques.",
+      "required": true,
+      "signaturePolicy": {
+        "required": true,
+        "meaning": "performed_by"
+      },
+      "fields": [
+        {
+          "key": "start_time",
+          "type": "datetime",
+          "label": "Heure de début",
+          "required": true
+        },
+        {
+          "key": "end_time",
+          "type": "datetime",
+          "label": "Heure de fin",
+          "required": true
+        },
+        {
+          "key": "observation",
+          "type": "text",
+          "label": "Observation opérateur"
+        }
+      ]
+    },
+    "pre_qa_review": {
+      "key": "pre_qa_review",
+      "title": "Revue avant passage qualité",
+      "kind": "pre_qa_review",
+      "instructions": "Vérifier la complétude du dossier avant transmission à la qualité.",
+      "required": true,
+      "signaturePolicy": {
+        "required": true,
+        "meaning": "reviewed_by"
+      },
+      "attachmentsPolicy": {
+        "supportsAttachments": true,
+        "attachmentKinds": [
+          "checklist",
+          "worksheet"
+        ]
+      },
+      "fields": [
+        {
+          "key": "dossier_complete",
+          "type": "select",
+          "label": "Dossier complet",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "Oui"
+            },
+            {
+              "value": "no",
+              "label": "Non"
+            }
+          ]
+        },
+        {
+          "key": "review_comment",
+          "type": "text",
+          "label": "Commentaire de revue"
+        }
+      ]
+    },
+    "packaging": {
+      "key": "packaging",
+      "title": "Conditionnement",
+      "kind": "packaging",
+      "instructions": "Saisir les quantités conditionnées et rebuts.",
+      "required": true,
+      "signaturePolicy": {
+        "required": true,
+        "meaning": "performed_by"
+      },
+      "fields": [
+        {
+          "key": "bottles_filled",
+          "type": "number",
+          "label": "Flacons remplis",
+          "required": true
+        },
+        {
+          "key": "rejected_units",
+          "type": "number",
+          "label": "Unités rejetées",
+          "required": true
+        }
+      ]
+    },
+    "finished_product_control": {
+      "key": "finished_product_control",
+      "title": "Contrôle produit fini",
+      "kind": "finished_product_control",
+      "instructions": "Saisir le résultat du contrôle final.",
+      "required": true,
+      "signaturePolicy": {
+        "required": true,
+        "meaning": "reviewed_by"
+      },
+      "fields": [
+        {
+          "key": "conformity",
+          "type": "select",
+          "label": "Conformité",
+          "required": true,
+          "options": [
+            {
+              "value": "conform",
+              "label": "Conforme"
+            },
+            {
+              "value": "non_conform",
+              "label": "Non conforme"
+            }
+          ]
+        },
+        {
+          "key": "qa_comment",
+          "type": "text",
+          "label": "Commentaire qualité"
+        }
+      ]
+    }
+  },
+  "calculations": [
+    {
+      "key": "yield_percent",
+      "label": "Calcul rendement",
+      "backendRef": "perfume.yield_percent",
+      "inputs": [
+        "target_weight",
+        "actual_weight"
+      ],
+      "outputFieldKey": "yield_percent"
+    }
+  ],
+  "releaseRules": {
+    "requiresAllRequiredStepsSigned": true,
+    "requiresPreQaReview": true,
+    "blocksOnOpenExceptions": true
+  }
+}
