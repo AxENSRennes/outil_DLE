@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dle-saas"
+version = "0.1.0"
+description = "Initial quality baseline and scaffolding for DLE-SaaS."
+requires-python = ">=3.11"
+
+[tool.setuptools]
+packages = []
+
+[project.optional-dependencies]
+dev = [
+    "bandit>=1.7",
+    "django-stubs>=5.0",
+    "factory-boy>=3.3",
+    "mypy>=1.10",
+    "pip-audit>=2.8",
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "pytest-django>=4.8",
+    "ruff>=0.11",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [
+    "_research",
+]
+
+[tool.ruff.lint]
+select = [
+    "B",
+    "E",
+    "F",
+    "I",
+    "RUF",
+    "SIM",
+    "UP",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/*.py" = ["S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.11"
+files = ["backend"]
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+no_implicit_optional = true
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+pretty = true
+show_error_codes = true
+exclude = ["^_research/"]
+
+[[tool.mypy.overrides]]
+module = ["backend.tests.*"]
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+python_files = ["test_*.py"]
+testpaths = ["backend/tests"]
+addopts = [
+    "--strict-markers",
+    "--disable-warnings",
+    "--maxfail=1",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["backend"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

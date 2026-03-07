@@ -1,11 +1,16 @@
 # Dependencies
 node_modules/
 vendor/
+*.egg-info/
 
 # Environment
 .env
 .env.*
 !.env.example
+
+# Python
+__pycache__/
+*.pyc
 
 # IDE
 .vscode/
@@ -31,6 +36,13 @@ npm-debug.log*
 # Cache
 .cache/
 .turbo/
+.npm-cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage/
+htmlcov/
 
 # Research
 _research/
