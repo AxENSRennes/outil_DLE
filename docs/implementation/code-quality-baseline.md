@@ -58,6 +58,10 @@ The quality baseline should reflect that stack and stay small enough to be used 
   - Python dependency vulnerability scan
 - `gitleaks`
   - repository secret scanning
+- `dependency-cruiser`
+  - frontend architectural boundary enforcement
+- `tools/check_backend_architecture.py`
+  - backend placement and import-boundary enforcement
 
 ## Recommended Local Commands
 
@@ -73,6 +77,8 @@ Use the root [Makefile](/home/axel/DLE-SaaS/Makefile) as the command entrypoint.
   - runs `pytest` and `vitest`
 - `make security`
   - runs `bandit`, `pip-audit`, and `gitleaks`
+- `make architecture-check`
+  - runs backend and frontend architecture boundary checks
 - `make doctor`
   - runs `react-doctor`
 - `make check`
@@ -82,9 +88,11 @@ Bootstrap files already added in this repository:
 
 - [pyproject.toml](/home/axel/DLE-SaaS/pyproject.toml)
 - [frontend/package.json](/home/axel/DLE-SaaS/frontend/package.json)
+- [frontend/dependency-cruiser.cjs](/home/axel/DLE-SaaS/frontend/dependency-cruiser.cjs)
 - [frontend/eslint.config.js](/home/axel/DLE-SaaS/frontend/eslint.config.js)
 - [frontend/tsconfig.json](/home/axel/DLE-SaaS/frontend/tsconfig.json)
 - [frontend/vitest.config.ts](/home/axel/DLE-SaaS/frontend/vitest.config.ts)
+- [tools/check_backend_architecture.py](/home/axel/DLE-SaaS/tools/check_backend_architecture.py)
 - [quality.yml](/home/axel/DLE-SaaS/.github/workflows/quality.yml)
 
 ## Dependency Baseline
@@ -110,6 +118,7 @@ pip-audit
 Suggested initial frontend dev dependencies:
 
 ```txt
+dependency-cruiser
 eslint
 typescript
 vitest
@@ -127,6 +136,7 @@ eslint-plugin-react-refresh
 - Do not add `pre-commit`.
 - Do not use `bandit` as a substitute for clean architecture or tests.
 - Do not replace `eslint` or `tsc` with `react-doctor`; it is additive, not foundational.
+- Use architecture checks to enforce folder boundaries and import rules, not to replace domain review.
 
 ## Suggested Next Step
 

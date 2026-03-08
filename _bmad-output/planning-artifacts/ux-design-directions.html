@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DLE-SaaS - Design Direction Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #F8F9FA;
+    --bg-surface: #FFFFFF;
+    --bg-subtle: #F1F3F5;
+    --text-primary: #212529;
+    --text-secondary: #868E96;
+    --border: #DEE2E6;
+    --green: #2B8A3E;
+    --green-bg: #EBFBEE;
+    --blue: #1971C2;
+    --blue-bg: #E7F5FF;
+    --amber: #E67700;
+    --amber-bg: #FFF9DB;
+    --red: #C92A2A;
+    --red-bg: #FFF5F5;
+    --indigo: #5C7CFA;
+    --indigo-bg: #EDF2FF;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #1a1a2e; color: var(--text-primary); }
+
+  /* --- Navigation --- */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: #1a1a2e; border-bottom: 1px solid #2a2a4a;
+    padding: 12px 32px; display: flex; align-items: center; gap: 16px;
+  }
+  .nav h1 { color: #fff; font-size: 16px; font-weight: 600; white-space: nowrap; }
+  .nav-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .nav-tab {
+    padding: 8px 16px; border-radius: 6px; border: 1px solid #2a2a4a;
+    background: transparent; color: #aaa; cursor: pointer; font-size: 13px;
+    font-family: inherit; transition: all 0.2s;
+  }
+  .nav-tab:hover { background: #2a2a4a; color: #fff; }
+  .nav-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* --- Mockup Container --- */
+  .mockup-container { margin-top: 60px; padding: 32px; }
+  .mockup-section { display: none; }
+  .mockup-section.active { display: block; }
+  .mockup-header { color: #fff; margin-bottom: 8px; }
+  .mockup-header h2 { font-size: 20px; font-weight: 600; }
+  .mockup-header p { color: #aaa; font-size: 14px; margin-top: 4px; margin-bottom: 24px; }
+
+  /* --- Mockup Frame --- */
+  .mockup-frame {
+    background: var(--bg-primary); border-radius: 12px; overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3); min-height: 700px;
+  }
+
+  /* === DIRECTION A: Sidebar Stepper === */
+  .dir-a { display: flex; flex-direction: column; }
+  .dir-a .identity-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; background: var(--bg-surface); border-bottom: 1px solid var(--border);
+    height: 56px;
+  }
+  .dir-a .identity-left { display: flex; align-items: center; gap: 12px; }
+  .dir-a .identity-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--indigo);
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    font-size: 13px; font-weight: 600;
+  }
+  .dir-a .identity-info { display: flex; flex-direction: column; }
+  .dir-a .identity-name { font-size: 14px; font-weight: 600; }
+  .dir-a .identity-role { font-size: 12px; color: var(--text-secondary); }
+  .dir-a .identity-actions { display: flex; gap: 8px; align-items: center; }
+  .dir-a .save-indicator { font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 4px; }
+  .btn-ghost {
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+    background: transparent; font-size: 12px; color: var(--text-secondary);
+    cursor: pointer; font-family: inherit;
+  }
+  .btn-ghost:hover { background: var(--bg-subtle); }
+
+  .dir-a .main-layout { display: flex; flex: 1; min-height: 644px; }
+
+  /* Sidebar stepper */
+  .dir-a .sidebar {
+    width: 260px; background: var(--bg-surface); border-right: 1px solid var(--border);
+    padding: 24px 0; flex-shrink: 0;
+  }
+  .dir-a .sidebar-header {
+    padding: 0 20px 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+  }
+  .dir-a .sidebar-header h3 { font-size: 14px; font-weight: 600; }
+  .dir-a .sidebar-header .lot-number { font-size: 20px; font-weight: 700; color: var(--blue); margin-top: 4px; }
+  .dir-a .sidebar-header .lot-meta { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+  .dir-a .step-item {
+    display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+    cursor: pointer; transition: background 0.15s; font-size: 13px;
+  }
+  .dir-a .step-item:hover { background: var(--bg-subtle); }
+  .dir-a .step-item.active { background: var(--blue-bg); border-right: 3px solid var(--blue); }
+  .dir-a .step-icon {
+    width: 28px; height: 28px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0;
+  }
+  .step-icon.completed { background: var(--green-bg); color: var(--green); }
+  .step-icon.active { background: var(--blue); color: #fff; }
+  .step-icon.pending { background: var(--bg-subtle); color: var(--text-secondary); border: 1px solid var(--border); }
+  .step-icon.signed { background: var(--green); color: #fff; }
+  .step-icon.attention { background: var(--amber-bg); color: var(--amber); }
+  .dir-a .step-label { flex: 1; }
+  .dir-a .step-label .step-name { font-weight: 500; }
+  .dir-a .step-label .step-status { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+  .dir-a .progress-bar-container { padding: 16px 20px; margin-top: auto; border-top: 1px solid var(--border); }
+  .dir-a .progress-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .dir-a .progress-bar { height: 6px; background: var(--bg-subtle); border-radius: 3px; overflow: hidden; }
+  .dir-a .progress-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.3s; }
+
+  /* Content area */
+  .dir-a .content-area { flex: 1; padding: 32px 48px; max-width: 780px; }
+  .dir-a .step-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .dir-a .step-instructions {
+    font-size: 13px; color: var(--text-secondary); margin-bottom: 24px;
+    padding: 12px 16px; background: var(--blue-bg); border-radius: 8px;
+    border-left: 3px solid var(--blue);
+  }
+
+  /* Form fields */
+  .form-group { margin-bottom: 20px; }
+  .form-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .form-label .required { color: var(--red); margin-left: 2px; }
+  .form-input {
+    width: 100%; height: 44px; padding: 0 14px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 16px; font-family: inherit;
+    background: var(--bg-surface); transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(25,113,194,0.15); }
+  .form-input.valid { border-color: var(--green); }
+  .form-input.error { border-color: var(--red); }
+  .form-row { display: flex; gap: 16px; }
+  .form-row .form-group { flex: 1; }
+  .field-validation {
+    display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px;
+  }
+  .field-validation.valid { color: var(--green); }
+  .field-validation.error { color: var(--red); }
+  .form-select {
+    width: 100%; height: 44px; padding: 0 14px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 16px; font-family: inherit;
+    background: var(--bg-surface); appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23868E96' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+  }
+
+  /* Action bar */
+  .action-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);
+  }
+  .btn-primary {
+    height: 44px; padding: 0 24px; border: none; border-radius: 8px;
+    background: var(--blue); color: #fff; font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: background 0.2s;
+  }
+  .btn-primary:hover { background: #1864AB; }
+  .btn-primary.sign {
+    background: var(--green); display: flex; align-items: center; gap: 8px;
+  }
+  .btn-primary.sign:hover { background: #237032; }
+  .btn-secondary {
+    height: 44px; padding: 0 24px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg-surface); color: var(--text-primary); font-size: 14px;
+    cursor: pointer; font-family: inherit;
+  }
+
+  /* === DIRECTION B: Top Stepper Compact === */
+  .dir-b { display: flex; flex-direction: column; }
+  .dir-b .identity-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 24px; background: #1a1a2e; color: #fff; height: 48px;
+  }
+  .dir-b .identity-left { display: flex; align-items: center; gap: 12px; }
+  .dir-b .identity-avatar {
+    width: 28px; height: 28px; border-radius: 50%; background: var(--indigo);
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    font-size: 11px; font-weight: 600;
+  }
+  .dir-b .identity-name { font-size: 13px; font-weight: 500; }
+  .dir-b .identity-role { font-size: 11px; color: #aaa; margin-left: 8px; }
+  .dir-b .save-indicator { font-size: 11px; color: #6BCB77; }
+  .dir-b .btn-dark {
+    padding: 5px 10px; border: 1px solid #444; border-radius: 4px;
+    background: transparent; color: #aaa; font-size: 11px; cursor: pointer;
+    font-family: inherit;
+  }
+
+  .dir-b .lot-banner {
+    padding: 12px 24px; background: var(--bg-surface); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .dir-b .lot-info { display: flex; align-items: baseline; gap: 16px; }
+  .dir-b .lot-info h3 { font-size: 18px; font-weight: 700; }
+  .dir-b .lot-info .lot-meta { font-size: 12px; color: var(--text-secondary); }
+  .dir-b .lot-progress-mini { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+  .dir-b .progress-mini-bar { width: 120px; height: 4px; background: var(--bg-subtle); border-radius: 2px; }
+  .dir-b .progress-mini-fill { height: 100%; width: 37.5%; background: var(--green); border-radius: 2px; }
+
+  /* Top stepper */
+  .dir-b .top-stepper {
+    display: flex; padding: 0 24px; background: var(--bg-surface);
+    border-bottom: 1px solid var(--border); overflow-x: auto;
+  }
+  .dir-b .top-step {
+    display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+    font-size: 12px; white-space: nowrap; border-bottom: 2px solid transparent;
+    cursor: pointer; transition: all 0.15s; color: var(--text-secondary);
+  }
+  .dir-b .top-step:hover { background: var(--bg-subtle); }
+  .dir-b .top-step.active { border-bottom-color: var(--blue); color: var(--blue); font-weight: 600; }
+  .dir-b .top-step.completed { color: var(--green); }
+  .dir-b .top-step .step-dot {
+    width: 20px; height: 20px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 10px; font-weight: 600;
+  }
+  .dir-b .content-area { flex: 1; padding: 32px; max-width: 720px; margin: 0 auto; }
+
+  /* === DIRECTION C: Review Dashboard === */
+  .dir-c { display: flex; flex-direction: column; }
+  .dir-c .identity-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; background: var(--bg-surface); border-bottom: 1px solid var(--border);
+    height: 56px;
+  }
+  .dir-c .identity-left { display: flex; align-items: center; gap: 12px; }
+  .dir-c .identity-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: #845EF7;
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    font-size: 13px; font-weight: 600;
+  }
+  .dir-c .review-header {
+    padding: 24px 32px; background: var(--bg-surface); border-bottom: 1px solid var(--border);
+  }
+  .dir-c .review-header h2 { font-size: 20px; font-weight: 600; }
+  .dir-c .review-header .review-meta { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+  .dir-c .review-stats {
+    display: flex; gap: 16px; padding: 20px 32px; background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .dir-c .stat-card {
+    flex: 1; padding: 16px; border-radius: 8px; border: 1px solid var(--border);
+    text-align: center;
+  }
+  .dir-c .stat-value { font-size: 28px; font-weight: 700; }
+  .dir-c .stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+  .stat-card.green { border-color: var(--green); background: var(--green-bg); }
+  .stat-card.green .stat-value { color: var(--green); }
+  .stat-card.amber { border-color: var(--amber); background: var(--amber-bg); }
+  .stat-card.amber .stat-value { color: var(--amber); }
+  .stat-card.red { border-color: var(--red); background: var(--red-bg); }
+  .stat-card.red .stat-value { color: var(--red); }
+
+  .dir-c .review-content { padding: 24px 32px; flex: 1; }
+  .dir-c .review-tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+  .dir-c .review-tab {
+    padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; font-size: 13px; cursor: pointer; font-family: inherit;
+    color: var(--text-secondary);
+  }
+  .dir-c .review-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .dir-c .review-tab .tab-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 20px; height: 20px; border-radius: 10px; font-size: 11px;
+    font-weight: 600; margin-left: 6px; padding: 0 6px;
+  }
+  .review-tab.active .tab-count { background: rgba(255,255,255,0.2); color: #fff; }
+  .review-tab .tab-count.amber-count { background: var(--amber-bg); color: var(--amber); }
+  .review-tab .tab-count.red-count { background: var(--red-bg); color: var(--red); }
+
+  .dir-c .review-item {
+    display: flex; align-items: center; gap: 16px; padding: 16px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: box-shadow 0.15s;
+  }
+  .dir-c .review-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .dir-c .review-status-icon {
+    width: 36px; height: 36px; border-radius: 8px; display: flex;
+    align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
+  }
+  .review-status-icon.ok { background: var(--green-bg); color: var(--green); }
+  .review-status-icon.warn { background: var(--amber-bg); color: var(--amber); }
+  .review-status-icon.err { background: var(--red-bg); color: var(--red); }
+  .dir-c .review-item-info { flex: 1; }
+  .dir-c .review-item-title { font-size: 14px; font-weight: 500; }
+  .dir-c .review-item-detail { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+  }
+  .badge-green { background: var(--green-bg); color: var(--green); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+  .badge-red { background: var(--red-bg); color: var(--red); }
+  .badge-blue { background: var(--blue-bg); color: var(--blue); }
+
+  /* === DIRECTION D: Signature Ceremony === */
+  .dir-d { display: flex; align-items: center; justify-content: center; min-height: 700px; background: var(--bg-primary); position: relative; }
+  .dir-d .backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.4); }
+  .dir-d .sign-modal {
+    position: relative; z-index: 1; width: 480px; background: var(--bg-surface);
+    border-radius: 12px; box-shadow: 0 16px 48px rgba(0,0,0,0.2); overflow: hidden;
+  }
+  .dir-d .sign-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .dir-d .sign-icon {
+    width: 40px; height: 40px; border-radius: 10px; background: var(--green-bg);
+    display: flex; align-items: center; justify-content: center; font-size: 20px; color: var(--green);
+  }
+  .dir-d .sign-header-text h3 { font-size: 16px; font-weight: 600; }
+  .dir-d .sign-header-text p { font-size: 13px; color: var(--text-secondary); }
+  .dir-d .sign-body { padding: 24px; }
+  .dir-d .sign-summary {
+    padding: 16px; background: var(--bg-subtle); border-radius: 8px;
+    margin-bottom: 20px; font-size: 13px;
+  }
+  .dir-d .sign-summary-title { font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+  .dir-d .sign-summary-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .dir-d .sign-summary-label { color: var(--text-secondary); }
+  .dir-d .sign-footer {
+    padding: 16px 24px; border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end; gap: 8px;
+  }
+
+  /* === DIRECTION E: Correction Flow === */
+  .dir-e { display: flex; flex-direction: column; }
+  .dir-e .identity-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; background: var(--bg-surface); border-bottom: 1px solid var(--border);
+    height: 56px;
+  }
+  .dir-e .correction-banner {
+    padding: 12px 24px; background: var(--amber-bg); border-bottom: 1px solid var(--amber);
+    display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--amber);
+  }
+  .dir-e .correction-banner strong { font-weight: 600; }
+  .dir-e .main-layout { display: flex; flex: 1; }
+  .dir-e .sidebar { width: 260px; background: var(--bg-surface); border-right: 1px solid var(--border); padding: 24px 0; }
+  .dir-e .content-area { flex: 1; padding: 32px 48px; max-width: 780px; }
+  .dir-e .correction-card {
+    border: 2px solid var(--amber); border-radius: 8px; padding: 20px;
+    background: var(--bg-surface); margin-bottom: 20px;
+  }
+  .dir-e .correction-card-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+    font-size: 14px; font-weight: 600; color: var(--amber);
+  }
+  .dir-e .old-value {
+    padding: 12px; background: var(--red-bg); border-radius: 6px;
+    font-size: 14px; margin-bottom: 8px; text-decoration: line-through; color: var(--text-secondary);
+  }
+  .dir-e .new-value {
+    padding: 12px; background: var(--green-bg); border-radius: 6px; font-size: 14px;
+  }
+
+  /* === DIRECTION F: Quality Review === */
+  .dir-f { display: flex; flex-direction: column; }
+  .dir-f .identity-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; background: var(--bg-surface); border-bottom: 1px solid var(--border);
+    height: 56px;
+  }
+  .dir-f .quality-header {
+    padding: 24px 32px 16px; background: var(--bg-surface); border-bottom: 1px solid var(--border);
+  }
+  .dir-f .quality-layout { display: flex; flex: 1; }
+  .dir-f .quality-sidebar {
+    width: 320px; background: var(--bg-surface); border-right: 1px solid var(--border);
+    padding: 16px; overflow-y: auto;
+  }
+  .dir-f .quality-content { flex: 1; padding: 24px 32px; }
+  .dir-f .signature-block {
+    padding: 16px; border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 12px; background: var(--bg-surface);
+  }
+  .dir-f .signature-block-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .dir-f .signature-block-title { font-size: 13px; font-weight: 600; }
+  .dir-f .signature-detail { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .dir-f .timeline { border-left: 2px solid var(--border); margin-left: 8px; padding-left: 20px; }
+  .dir-f .timeline-item { margin-bottom: 16px; position: relative; }
+  .dir-f .timeline-item::before {
+    content: ''; position: absolute; left: -25px; top: 4px;
+    width: 10px; height: 10px; border-radius: 50%; background: var(--border);
+  }
+  .dir-f .timeline-item.green::before { background: var(--green); }
+  .dir-f .timeline-item.amber::before { background: var(--amber); }
+  .dir-f .timeline-item.blue::before { background: var(--blue); }
+  .dir-f .timeline-time { font-size: 11px; color: var(--text-secondary); }
+  .dir-f .timeline-text { font-size: 13px; margin-top: 2px; }
+  .dir-f .timeline-actor { font-weight: 500; }
+
+  .comparison-note {
+    background: #2a2a4a; color: #ccc; padding: 16px 24px; border-radius: 8px;
+    font-size: 13px; line-height: 1.6; margin-top: 16px;
+  }
+  .comparison-note strong { color: #fff; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h1>DLE-SaaS Design Directions</h1>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showSection('a')">A: Sidebar Stepper</button>
+    <button class="nav-tab" onclick="showSection('b')">B: Top Stepper</button>
+    <button class="nav-tab" onclick="showSection('c')">C: Review Dashboard</button>
+    <button class="nav-tab" onclick="showSection('d')">D: Signature Ceremony</button>
+    <button class="nav-tab" onclick="showSection('e')">E: Correction Flow</button>
+    <button class="nav-tab" onclick="showSection('f')">F: Quality Review</button>
+  </div>
+</nav>
+
+<!-- === DIRECTION A: Sidebar Stepper (Operator Execution) === -->
+<div id="section-a" class="mockup-container mockup-section active">
+  <div class="mockup-header">
+    <h2>Direction A: Sidebar Stepper - Operator Execution</h2>
+    <p>Fixed sidebar showing all steps with progress. Content area focused on current step only. Identity banner always visible.</p>
+  </div>
+  <div class="mockup-frame dir-a">
+    <div class="identity-bar">
+      <div class="identity-left">
+        <div class="identity-avatar">NK</div>
+        <div class="identity-info">
+          <div class="identity-name">Nadia Kowalski</div>
+          <div class="identity-role">Operateur - Ligne 3</div>
+        </div>
+      </div>
+      <div class="identity-actions">
+        <div class="save-indicator">&#10003; Sauvegarde il y a 3 sec</div>
+        <button class="btn-ghost">Verrouiller</button>
+        <button class="btn-ghost">Changer d'utilisateur</button>
+      </div>
+    </div>
+    <div class="main-layout">
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <h3>Dossier de lot</h3>
+          <div class="lot-number">LOT-2026-0342</div>
+          <div class="lot-meta">Fabrication - Jus Pomme 1L</div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon signed">&#10003;</div>
+          <div class="step-label">
+            <div class="step-name">1. Identification</div>
+            <div class="step-status">Signe par N. Kowalski</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon completed">&#10003;</div>
+          <div class="step-label">
+            <div class="step-name">2. Matieres premieres</div>
+            <div class="step-status">Complete</div>
+          </div>
+        </div>
+        <div class="step-item active">
+          <div class="step-icon active">3</div>
+          <div class="step-label">
+            <div class="step-name">3. Pesees et mesures</div>
+            <div class="step-status">En cours</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon pending">4</div>
+          <div class="step-label">
+            <div class="step-name">4. Fabrication</div>
+            <div class="step-status">A faire</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon pending">5</div>
+          <div class="step-label">
+            <div class="step-name">5. Controles en cours</div>
+            <div class="step-status">A faire</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon pending">6</div>
+          <div class="step-label">
+            <div class="step-name">6. Conditionnement</div>
+            <div class="step-status">A faire</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon pending">7</div>
+          <div class="step-label">
+            <div class="step-name">7. Controle final</div>
+            <div class="step-status">A faire</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon pending">8</div>
+          <div class="step-label">
+            <div class="step-name">8. Cloture</div>
+            <div class="step-status">A faire</div>
+          </div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-label">Progression : 3/8 etapes (37%)</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:37%"></div></div>
+        </div>
+      </div>
+      <div class="content-area">
+        <div class="step-title">3. Pesees et mesures</div>
+        <div class="step-instructions">
+          Peser chaque matiere premiere selon la formule. Verifier que la balance est etalonnee avant de commencer. Tolerances : +/- 0.5% de la valeur cible.
+        </div>
+        <div class="form-group">
+          <label class="form-label">Eau demineralisee (kg)<span class="required">*</span></label>
+          <input class="form-input valid" type="text" value="450.2">
+          <div class="field-validation valid">&#10003; Valide - Tolerance respectee (cible: 450.0 +/- 2.25)</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Concentre de pomme (kg)<span class="required">*</span></label>
+          <input class="form-input valid" type="text" value="38.7">
+          <div class="field-validation valid">&#10003; Valide - Tolerance respectee (cible: 39.0 +/- 0.20)</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Acide citrique (g)<span class="required">*</span></label>
+            <input class="form-input" type="text" placeholder="Valeur cible : 125.0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sucre (kg)<span class="required">*</span></label>
+            <input class="form-input" type="text" placeholder="Valeur cible : 52.0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Numero de balance utilisee</label>
+          <input class="form-input" type="text" placeholder="Ex: BAL-003">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Observations</label>
+          <input class="form-input" type="text" placeholder="Optionnel">
+        </div>
+        <div class="action-bar">
+          <button class="btn-secondary">Etape precedente</button>
+          <button class="btn-primary">Completer l'etape &#8594;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="comparison-note">
+    <strong>Direction A - Points cles :</strong> Sidebar fixe a gauche avec stepper vertical et progression globale. Zone de contenu focalisee sur l'etape courante. Identity banner permanent en haut. Le stepper reste visible en permanence pour donner le contexte de position dans le dossier. Approche recommandee pour l'execution operateur.
+  </div>
+</div>
+
+<!-- === DIRECTION B: Top Stepper Compact === -->
+<div id="section-b" class="mockup-container mockup-section">
+  <div class="mockup-header">
+    <h2>Direction B: Top Stepper Compact - Operator Execution</h2>
+    <p>Dark identity bar, horizontal stepper tabs, maximized content area. More screen space for the form.</p>
+  </div>
+  <div class="mockup-frame dir-b">
+    <div class="identity-bar">
+      <div class="identity-left">
+        <div class="identity-avatar">NK</div>
+        <span class="identity-name">Nadia Kowalski</span>
+        <span class="identity-role">Operateur - Ligne 3</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="save-indicator">&#10003; Saved</span>
+        <button class="btn-dark">Lock</button>
+        <button class="btn-dark">Switch</button>
+      </div>
+    </div>
+    <div class="lot-banner">
+      <div class="lot-info">
+        <h3>LOT-2026-0342</h3>
+        <span class="lot-meta">Fabrication - Jus Pomme 1L</span>
+      </div>
+      <div class="lot-progress-mini">
+        3/8
+        <div class="progress-mini-bar"><div class="progress-mini-fill"></div></div>
+        37%
+      </div>
+    </div>
+    <div class="top-stepper">
+      <div class="top-step completed">
+        <div class="step-dot" style="background:var(--green);color:#fff;">&#10003;</div>
+        1. Identification
+      </div>
+      <div class="top-step completed">
+        <div class="step-dot" style="background:var(--green-bg);color:var(--green);">&#10003;</div>
+        2. Matieres premieres
+      </div>
+      <div class="top-step active">
+        <div class="step-dot" style="background:var(--blue);color:#fff;">3</div>
+        3. Pesees et mesures
+      </div>
+      <div class="top-step">
+        <div class="step-dot" style="background:var(--bg-subtle);color:var(--text-secondary);">4</div>
+        4. Fabrication
+      </div>
+      <div class="top-step">
+        <div class="step-dot" style="background:var(--bg-subtle);color:var(--text-secondary);">5</div>
+        5. Controles
+      </div>
+      <div class="top-step">
+        <div class="step-dot" style="background:var(--bg-subtle);color:var(--text-secondary);">6</div>
+        6. Conditionnement
+      </div>
+      <div class="top-step">
+        <div class="step-dot" style="background:var(--bg-subtle);color:var(--text-secondary);">7</div>
+        7. Ctrl final
+      </div>
+      <div class="top-step">
+        <div class="step-dot" style="background:var(--bg-subtle);color:var(--text-secondary);">8</div>
+        8. Cloture
+      </div>
+    </div>
+    <div class="content-area">
+      <div class="step-title" style="margin-bottom:4px;">3. Pesees et mesures</div>
+      <div class="step-instructions" style="background:var(--blue-bg);padding:12px 16px;border-radius:8px;border-left:3px solid var(--blue);font-size:13px;color:var(--text-secondary);margin-bottom:24px;">
+        Peser chaque matiere premiere selon la formule. Verifier que la balance est etalonnee.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Eau demineralisee (kg)<span class="required" style="color:var(--red);margin-left:2px;">*</span></label>
+        <input class="form-input valid" type="text" value="450.2">
+        <div class="field-validation valid">&#10003; Valide (cible: 450.0 +/- 2.25)</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Concentre de pomme (kg)<span class="required" style="color:var(--red);margin-left:2px;">*</span></label>
+        <input class="form-input" type="text" placeholder="Valeur cible : 39.0">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Acide citrique (g)<span class="required" style="color:var(--red);margin-left:2px;">*</span></label>
+          <input class="form-input" type="text" placeholder="Cible : 125.0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sucre (kg)<span class="required" style="color:var(--red);margin-left:2px;">*</span></label>
+          <input class="form-input" type="text" placeholder="Cible : 52.0">
+        </div>
+      </div>
+      <div class="action-bar">
+        <button class="btn-secondary">&#8592; Precedent</button>
+        <button class="btn-primary">Completer l'etape &#8594;</button>
+      </div>
+    </div>
+  </div>
+  <div class="comparison-note">
+    <strong>Direction B - Points cles :</strong> Stepper horizontal en haut sous le banner du lot. Plus d'espace vertical pour le contenu. Identity bar sombre qui se distingue visuellement. Convient mieux si le nombre d'etapes est faible (5-6), mais peut devenir serre avec 8+ etapes sur petit ecran.
+  </div>
+</div>
+
+<!-- === DIRECTION C: Review Dashboard (Pre-QA) === -->
+<div id="section-c" class="mockup-container mockup-section">
+  <div class="mockup-header">
+    <h2>Direction C: Review Dashboard - Pre-QA Supervisor View</h2>
+    <p>Exception-based review surface. Traffic-light summary cards. Filterable step list showing only items needing attention.</p>
+  </div>
+  <div class="mockup-frame dir-c">
+    <div class="identity-bar">
+      <div class="identity-left">
+        <div class="identity-avatar" style="background:#845EF7;">SD</div>
+        <div style="display:flex;flex-direction:column;">
+          <div style="font-size:14px;font-weight:600;">Sophie Dubois</div>
+          <div style="font-size:12px;color:var(--text-secondary);">Superviseur Production - Ligne 3</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-ghost">Verrouiller</button>
+      </div>
+    </div>
+    <div class="review-header">
+      <h2>Revue Pre-QA : LOT-2026-0342</h2>
+      <div class="review-meta">Fabrication - Jus Pomme 1L | Derniere mise a jour : il y a 12 min</div>
+    </div>
+    <div class="review-stats">
+      <div class="stat-card green">
+        <div class="stat-value">5</div>
+        <div class="stat-label">Etapes OK</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-value">2</div>
+        <div class="stat-label">Attention requise</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-value">1</div>
+        <div class="stat-label">Bloquant</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">6/8</div>
+        <div class="stat-label">Signatures</div>
+      </div>
+    </div>
+    <div class="review-content">
+      <div class="review-tabs">
+        <button class="review-tab active">Attention requise <span class="tab-count amber-count">2</span></button>
+        <button class="review-tab">Bloquant <span class="tab-count red-count">1</span></button>
+        <button class="review-tab">Tous (8)</button>
+        <button class="review-tab">OK (5)</button>
+      </div>
+      <div class="review-item">
+        <div class="review-status-icon warn">!</div>
+        <div class="review-item-info">
+          <div class="review-item-title">3. Pesees et mesures</div>
+          <div class="review-item-detail">Modifie apres signature - Champ "Acide citrique" corrige par K. Belkacem a 14:32</div>
+        </div>
+        <span class="badge badge-amber">Modifie post-signature</span>
+      </div>
+      <div class="review-item">
+        <div class="review-status-icon warn">!</div>
+        <div class="review-item-info">
+          <div class="review-item-title">5. Controles en cours</div>
+          <div class="review-item-detail">1 champ obligatoire manquant : "Temperature sortie pasteurisateur"</div>
+        </div>
+        <span class="badge badge-amber">Champ manquant</span>
+      </div>
+      <div class="review-item">
+        <div class="review-status-icon err">&#10005;</div>
+        <div class="review-item-info">
+          <div class="review-item-title">7. Controle final</div>
+          <div class="review-item-detail">Signature manquante - Point de controle requis non signe</div>
+        </div>
+        <span class="badge badge-red">Signature manquante</span>
+      </div>
+    </div>
+  </div>
+  <div class="comparison-note">
+    <strong>Direction C - Points cles :</strong> Surface de revue par exception. Les cartes en haut donnent un resume instantane (traffic-light). Les onglets filtrent par severite. Le superviseur ne voit QUE ce qui necessite attention — les 5 etapes OK sont masquees par defaut. C'est la surface "Sophie" du PRD.
+  </div>
+</div>
+
+<!-- === DIRECTION D: Signature Ceremony === -->
+<div id="section-d" class="mockup-container mockup-section">
+  <div class="mockup-header">
+    <h2>Direction D: Signature Ceremony Modal</h2>
+    <p>Focused signing flow with record summary, meaning selection, and inline re-authentication. Feels deliberate and serious without being slow.</p>
+  </div>
+  <div class="mockup-frame dir-d">
+    <div class="backdrop"></div>
+    <div class="sign-modal">
+      <div class="sign-header">
+        <div class="sign-icon">&#9998;</div>
+        <div class="sign-header-text">
+          <h3>Signature electronique</h3>
+          <p>Etape 3 : Pesees et mesures</p>
+        </div>
+      </div>
+      <div class="sign-body">
+        <div class="sign-summary">
+          <div class="sign-summary-title">Resume de ce que vous signez</div>
+          <div class="sign-summary-row">
+            <span class="sign-summary-label">Lot</span>
+            <span>LOT-2026-0342</span>
+          </div>
+          <div class="sign-summary-row">
+            <span class="sign-summary-label">Etape</span>
+            <span>3. Pesees et mesures</span>
+          </div>
+          <div class="sign-summary-row">
+            <span class="sign-summary-label">Champs completes</span>
+            <span>6/6 (100%)</span>
+          </div>
+          <div class="sign-summary-row">
+            <span class="sign-summary-label">Validation</span>
+            <span style="color:var(--green);font-weight:500;">&#10003; Toutes les tolerances respectees</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Signification de la signature<span class="required" style="color:var(--red);margin-left:2px;">*</span></label>
+          <select class="form-select">
+            <option>Je confirme l'exactitude des donnees saisies</option>
+            <option>J'ai verifie les pesees</option>
+            <option>J'approuve cette etape</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Code PIN pour confirmer votre identite<span class="required" style="color:var(--red);margin-left:2px;">*</span></label>
+          <input class="form-input" type="password" placeholder="Entrez votre PIN" style="letter-spacing:8px;text-align:center;font-size:24px;">
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">
+          Signataire : <strong>Nadia Kowalski</strong> | Horodatage serveur : 2026-03-07 14:23:45 UTC+1
+        </div>
+      </div>
+      <div class="sign-footer">
+        <button class="btn-secondary">Annuler</button>
+        <button class="btn-primary sign">&#10003; Signer cette etape</button>
+      </div>
+    </div>
+  </div>
+  <div class="comparison-note">
+    <strong>Direction D - Points cles :</strong> Modale focalisee qui isole l'acte de signature du reste de l'UI. Resume de ce qui est signe, selection de la signification (obligatoire), re-authentification par PIN, timestamp serveur visible. Le tout en 3 interactions : choisir la signification, entrer le PIN, cliquer Signer. Objectif &lt; 5 secondes.
+  </div>
+</div>
+
+<!-- === DIRECTION E: Correction Flow === -->
+<div id="section-e" class="mockup-container mockup-section">
+  <div class="mockup-header">
+    <h2>Direction E: Correction Flow - Post-Signature Edit</h2>
+    <p>Controlled correction path showing old value, new value, and mandatory reason for change. The correction feels safe, not stressful.</p>
+  </div>
+  <div class="mockup-frame dir-e">
+    <div class="identity-bar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;">KB</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;">Karim Belkacem</div>
+          <div style="font-size:12px;color:var(--text-secondary);">Operateur - Ligne 3</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div style="font-size:12px;color:var(--green);">&#10003; Sauvegarde</div>
+        <button class="btn-ghost">Verrouiller</button>
+      </div>
+    </div>
+    <div class="correction-banner">
+      <strong>Mode correction</strong> - Vous modifiez une etape deja signee. Un motif de correction est obligatoire. L'historique des modifications sera conserve.
+    </div>
+    <div class="main-layout">
+      <div class="sidebar">
+        <div style="padding:0 20px 16px;border-bottom:1px solid var(--border);margin-bottom:16px;">
+          <h3 style="font-size:14px;font-weight:600;">LOT-2026-0342</h3>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">Fabrication - Jus Pomme 1L</div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon signed">&#10003;</div>
+          <div class="step-label"><div class="step-name">1. Identification</div></div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon completed">&#10003;</div>
+          <div class="step-label"><div class="step-name">2. Matieres premieres</div></div>
+        </div>
+        <div class="step-item active" style="background:var(--amber-bg);border-right:3px solid var(--amber);">
+          <div class="step-icon attention">!</div>
+          <div class="step-label">
+            <div class="step-name">3. Pesees et mesures</div>
+            <div class="step-status" style="color:var(--amber);">En correction</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon completed">&#10003;</div>
+          <div class="step-label"><div class="step-name">4. Fabrication</div></div>
+        </div>
+      </div>
+      <div class="content-area">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span class="step-title">3. Pesees et mesures</span>
+          <span class="badge badge-amber">Modifie post-signature</span>
+        </div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:24px;">
+          Initialement signe par N. Kowalski le 07/03/2026 a 10:15
+        </p>
+        <div class="correction-card">
+          <div class="correction-card-header">Correction : Acide citrique (g)</div>
+          <div class="old-value">
+            <span style="font-size:12px;display:block;margin-bottom:4px;text-decoration:none;color:var(--text-secondary);">Ancienne valeur :</span>
+            125.3
+          </div>
+          <div class="new-value">
+            <span style="font-size:12px;display:block;margin-bottom:4px;color:var(--text-secondary);">Nouvelle valeur :</span>
+            <strong>124.8</strong>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Motif de la correction<span class="required" style="color:var(--red);margin-left:2px;">*</span></label>
+          <select class="form-select" style="margin-bottom:8px;">
+            <option>Erreur de saisie</option>
+            <option>Erreur de lecture</option>
+            <option>Nouvelle mesure effectuee</option>
+            <option>Autre (preciser)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Commentaire additionnel</label>
+          <input class="form-input" type="text" value="Relecture de la balance apres recalibration - valeur initiale etait incorrecte">
+        </div>
+        <div style="padding:12px 16px;background:var(--amber-bg);border-radius:8px;font-size:13px;color:var(--amber);margin-top:16px;border-left:3px solid var(--amber);">
+          Cette correction declenchera une re-revue de l'etape. Le superviseur sera notifie.
+        </div>
+        <div class="action-bar">
+          <button class="btn-secondary">Annuler la correction</button>
+          <button class="btn-primary" style="background:var(--amber);">Enregistrer la correction</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="comparison-note">
+    <strong>Direction E - Points cles :</strong> Banniere ambre claire indiquant le mode correction. Ancien/nouveau valeur visibles cote a cote. Motif obligatoire avec categories predefinies. Avertissement explicite que la correction declenche une re-revue. Le flow est guide et securisant, pas punitif. C'est le parcours "Karim" du PRD.
+  </div>
+</div>
+
+<!-- === DIRECTION F: Quality Review === -->
+<div id="section-f" class="mockup-container mockup-section">
+  <div class="mockup-header">
+    <h2>Direction F: Quality Review - Dossier Inspection</h2>
+    <p>Quality reviewer surface with signature inspection, change timeline, and release decision. Trust-oriented, not execution-oriented.</p>
+  </div>
+  <div class="mockup-frame dir-f">
+    <div class="identity-bar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:#E64980;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;">CM</div>
+        <div>
+          <div style="font-size:14px;font-weight:600;">Claire Martin</div>
+          <div style="font-size:12px;color:var(--text-secondary);">Reviseur Qualite</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-ghost">Verrouiller</button>
+      </div>
+    </div>
+    <div class="quality-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <h2 style="font-size:20px;font-weight:600;">Revue Qualite : LOT-2026-0342</h2>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">Fabrication - Jus Pomme 1L | Transmis par S. Dubois le 07/03/2026 a 15:45</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-secondary" style="border-color:var(--red);color:var(--red);">Rejeter</button>
+          <button class="btn-secondary" style="border-color:var(--amber);color:var(--amber);">Retourner</button>
+          <button class="btn-primary sign">&#10003; Approuver et liberer</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:16px;">
+        <span class="badge badge-green">&#10003; 8/8 etapes completes</span>
+        <span class="badge badge-green">&#10003; 6/6 signatures</span>
+        <span class="badge badge-amber">! 1 correction post-signature</span>
+        <span class="badge badge-blue">Revue pre-QA validee</span>
+      </div>
+    </div>
+    <div class="quality-layout">
+      <div class="quality-sidebar">
+        <h4 style="font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">Signatures du dossier</h4>
+        <div class="signature-block">
+          <div class="signature-block-header">
+            <span class="signature-block-title">1. Identification</span>
+            <span class="badge badge-green">Signe</span>
+          </div>
+          <div class="signature-detail">N. Kowalski | 07/03 09:12</div>
+          <div class="signature-detail">Signification : Confirmation des donnees</div>
+        </div>
+        <div class="signature-block" style="border-color:var(--amber);">
+          <div class="signature-block-header">
+            <span class="signature-block-title">3. Pesees et mesures</span>
+            <span class="badge badge-amber">Modifie</span>
+          </div>
+          <div class="signature-detail">N. Kowalski | 07/03 10:15</div>
+          <div class="signature-detail" style="color:var(--amber);">Corrige par K. Belkacem a 14:32</div>
+          <div class="signature-detail">Motif : Erreur de saisie</div>
+        </div>
+        <div class="signature-block">
+          <div class="signature-block-header">
+            <span class="signature-block-title">5. Controles en cours</span>
+            <span class="badge badge-green">Signe</span>
+          </div>
+          <div class="signature-detail">K. Belkacem | 07/03 14:45</div>
+          <div class="signature-detail">Signification : Verification des controles</div>
+        </div>
+        <div class="signature-block">
+          <div class="signature-block-header">
+            <span class="signature-block-title">Revue pre-QA</span>
+            <span class="badge badge-blue">Valide</span>
+          </div>
+          <div class="signature-detail">S. Dubois | 07/03 15:45</div>
+          <div class="signature-detail">Signification : Dossier complet pour QA</div>
+        </div>
+      </div>
+      <div class="quality-content">
+        <h4 style="font-size:13px;font-weight:600;margin-bottom:16px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;">Historique du dossier</h4>
+        <div class="timeline">
+          <div class="timeline-item green">
+            <div class="timeline-time">07/03/2026 - 09:00</div>
+            <div class="timeline-text"><span class="timeline-actor">N. Kowalski</span> a cree le lot LOT-2026-0342</div>
+          </div>
+          <div class="timeline-item green">
+            <div class="timeline-time">07/03/2026 - 09:12</div>
+            <div class="timeline-text"><span class="timeline-actor">N. Kowalski</span> a signe l'etape 1 - Identification</div>
+          </div>
+          <div class="timeline-item green">
+            <div class="timeline-time">07/03/2026 - 10:15</div>
+            <div class="timeline-text"><span class="timeline-actor">N. Kowalski</span> a complete et signe l'etape 3 - Pesees et mesures</div>
+          </div>
+          <div class="timeline-item amber">
+            <div class="timeline-time">07/03/2026 - 14:32</div>
+            <div class="timeline-text"><span class="timeline-actor">K. Belkacem</span> a corrige "Acide citrique" dans l'etape 3 (125.3 -> 124.8) — Motif : Erreur de saisie</div>
+          </div>
+          <div class="timeline-item green">
+            <div class="timeline-time">07/03/2026 - 14:45</div>
+            <div class="timeline-text"><span class="timeline-actor">K. Belkacem</span> a signe l'etape 5 - Controles en cours</div>
+          </div>
+          <div class="timeline-item blue">
+            <div class="timeline-time">07/03/2026 - 15:45</div>
+            <div class="timeline-text"><span class="timeline-actor">S. Dubois</span> a valide la revue pre-QA et transmis a la qualite</div>
+          </div>
+        </div>
+        <div style="margin-top:24px;padding:16px;background:var(--bg-subtle);border-radius:8px;">
+          <h4 style="font-size:14px;font-weight:600;margin-bottom:8px;">Decision de liberation</h4>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">Commentaire de revue</label>
+            <input class="form-input" type="text" placeholder="Observations pour la liberation...">
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);">
+            La signature d'approbation sera enregistree avec votre identite, l'horodatage serveur, et la signification "Liberation du lot".
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="comparison-note">
+    <strong>Direction F - Points cles :</strong> Surface d'inspection orientee confiance. Sidebar gauche avec toutes les signatures et leur statut. Timeline chronologique au centre. Badges de resume en haut. Actions de decision (Rejeter / Retourner / Approuver) toujours visibles. C'est la surface "Claire" du PRD — inspection d'integrite, pas execution.
+  </div>
+</div>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.mockup-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

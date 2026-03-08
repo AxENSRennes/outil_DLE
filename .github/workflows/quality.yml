@@ -36,6 +36,9 @@ jobs:
       - name: Pytest
         run: python -m pytest backend
 
+      - name: Backend architecture check
+        run: python tools/check_backend_architecture.py
+
       - name: Bandit
         run: python -m bandit -r backend -x backend/tests
 
@@ -65,6 +68,9 @@ jobs:
 
       - name: Vitest
         run: npm --prefix frontend run test
+
+      - name: Frontend architecture check
+        run: npm --prefix frontend run architecture-check
 
       - name: React Doctor
         run: npm --prefix frontend run doctor

@@ -4,7 +4,7 @@ PIP ?= /home/axel/wsl_venv/bin/pip
 BACKEND_DIR ?= backend
 FRONTEND_DIR ?= frontend
 
-.PHONY: help lint lint-python lint-frontend format format-python typecheck typecheck-python typecheck-frontend test test-backend test-frontend security doctor check
+.PHONY: help lint lint-python lint-frontend format format-python typecheck typecheck-python typecheck-frontend test test-backend test-frontend security architecture-check architecture-check-backend architecture-check-frontend doctor check
 
 help:
 	@printf '%s\n' \
@@ -13,6 +13,7 @@ help:
 		'make typecheck     Run mypy and TypeScript checks' \
 		'make test          Run backend and frontend tests' \
 		'make security      Run dependency and security scans' \
+		'make architecture-check  Run backend and frontend architecture boundary checks' \
 		'make doctor        Run react-doctor on the frontend app' \
 		'make check         Run the full local quality suite'
 
@@ -55,7 +56,15 @@ security:
 		printf '%s\n' 'Skipping local gitleaks: install the gitleaks binary or rely on CI.'; \
 	fi
 
+architecture-check: architecture-check-backend architecture-check-frontend
+
+architecture-check-backend:
+	$(PYTHON) tools/check_backend_architecture.py
+
+architecture-check-frontend:
+	npm --prefix $(FRONTEND_DIR) run architecture-check
+
 doctor:
 	npm --prefix $(FRONTEND_DIR) run doctor
 
-check: lint typecheck test security doctor
+check: lint typecheck test security architecture-check doctor
