@@ -75,6 +75,51 @@
         }
       }
     },
+    "contextDimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "siteCodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "lineCodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "machineCodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "formatFamilies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "glitterModes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "with_glitter",
+              "without_glitter",
+              "any"
+            ]
+          }
+        }
+      }
+    },
     "stepOrder": {
       "type": "array",
       "minItems": 1,
@@ -181,6 +226,15 @@
           "type": "boolean",
           "default": true
         },
+        "applicability": {
+          "$ref": "#/$defs/applicability"
+        },
+        "repeatPolicy": {
+          "$ref": "#/$defs/repeatPolicy"
+        },
+        "blockingPolicy": {
+          "$ref": "#/$defs/blockingPolicy"
+        },
         "signaturePolicy": {
           "type": "object",
           "additionalProperties": false,
@@ -208,6 +262,97 @@
           "items": {
             "$ref": "#/$defs/field"
           }
+        }
+      }
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "siteCodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "lineCodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "machineCodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "formatFamilies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "glitterMode": {
+          "type": "string",
+          "enum": [
+            "with_glitter",
+            "without_glitter",
+            "any"
+          ]
+        },
+        "whenNotApplicable": {
+          "type": "string",
+          "enum": [
+            "hidden",
+            "mark_na"
+          ]
+        }
+      }
+    },
+    "repeatPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "single",
+            "per_shift",
+            "per_team",
+            "per_box",
+            "per_event"
+          ]
+        },
+        "minRecords": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxRecords": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "blockingPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "blocksExecutionProgress": {
+          "type": "boolean"
+        },
+        "blocksStepCompletion": {
+          "type": "boolean"
+        },
+        "blocksSignature": {
+          "type": "boolean"
+        },
+        "blocksPreQaHandoff": {
+          "type": "boolean"
         }
       }
     },

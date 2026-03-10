@@ -57,7 +57,7 @@ DLE-SaaS is a B2B electronic batch record platform designed for cosmetics manufa
 
 The product is built around a practical operational reality: operators work on shared line workstations, documentation quality failures are frequent, and the main business pain is not process orchestration in the broad MES sense, but incomplete, poorly reviewed, or late-reviewed batch documentation. DLE-SaaS addresses this by turning the batch record into a guided execution workflow with progressive save, structured step completion, explicit signatures, and reviewable state transitions.
 
-The target outcome is a lightweight but credible software product that improves first-pass-right documentation, reduces avoidable QA review friction, and provides a defensible digital audit trail. The first implementation scope is intentionally narrow: one real client flow, one representative dossier template, and a workflow optimized for execution, pre-QA review, quality review, and release readiness.
+The target outcome is a lightweight but credible software product that improves first-pass-right documentation, reduces avoidable QA review friction, and provides a defensible digital audit trail. The first implementation scope is intentionally narrow: one real client flow, one representative dossier packet with conditional sub-documents, and a workflow optimized for execution, pre-QA review, quality review, and release readiness.
 
 ### What Makes This Special
 
@@ -108,7 +108,7 @@ Technical success also means the product preserves trust: no hidden mutation of 
 
 ### MVP - Minimum Viable Product
 
-The MVP should include one real client template, one representative batch creation and execution workflow, step-based guided data entry for fabrication and/or conditionnement, progressive save, mandatory field enforcement, one or two meaningful signature checkpoints, a pre-QA review stage, a dedicated quality review surface, and a readable dossier export. It must also demonstrate audit-relevant change visibility and at least one Excel-derived calculation handled by the backend.
+The MVP should include one real client template, one representative batch creation and execution workflow, step-based guided data entry for fabrication and/or conditionnement, progressive save, mandatory field enforcement, one or two meaningful signature checkpoints, a pre-QA review stage, a dedicated quality review surface, and a readable dossier export. It must also support conditional dossier composition for the selected batch context, including the right control forms based on line, format, and paillette context, plus at least one governed Excel-derived calculation handled by the backend. The execution model must not introduce pharma-style release gates between ordinary production steps; instead it should enforce documentary completeness only for the applicable controls at step completion, signature, and review handoff.
 
 ### Growth Features (Post-MVP)
 
@@ -128,7 +128,7 @@ She logs into DLE-SaaS, opens the active batch, and sees a step-by-step executio
 
 The key value moment is that Nadia does not need to guess whether the record is complete enough to move forward. The system makes missing information visible before the dossier leaves production. She finishes her work with confidence that her part of the batch record is legible, attributable, and review-ready.
 
-This journey reveals requirements for guided step rendering, progressive save, shared-workstation usability, required field validation, checkpoint signatures, and clear status visibility per step.
+This journey reveals requirements for guided step rendering, progressive save, shared-workstation usability, required field validation, checkpoint signatures, clear status visibility per step, and selective display of only the sub-documents relevant to the active batch context.
 
 ### Journey 2: Operator or Team Member Handles an Incomplete or Corrected Step
 
@@ -179,6 +179,7 @@ These journeys reveal the need for five major capability groups:
 - Review capabilities: separate pre-QA and quality review surfaces, review-by-exception signals, dossier readiness indicators, and release-oriented inspection flows.
 - Recovery capabilities: safe correction handling, incomplete-step visibility, interruption recovery, and controlled continuation after documentation issues.
 - Governance capabilities: versioned MMR templates, controlled activation, batch snapshotting, and vendor-operated template administration.
+- Dossier composition capabilities: conditional inclusion of required forms, repeated control pages, checklist-driven completeness, and cross-document consistency checks.
 
 ## Domain-Specific Requirements
 
@@ -210,6 +211,8 @@ These journeys reveal the need for five major capability groups:
 - The architecture must remain portable and deployable without dependency on heavy enterprise infrastructure.
 - The solution must support a degraded operating mode for system outage or infrastructure failure so production documentation can continue in a controlled way.
 - The system must be designed with cybersecurity and data integrity controls appropriate for regulated production records.
+- The solution must not depend on executing client Excel macros in production; governed calculations must be reimplemented and validated server-side even when the source workbook is locked or password-protected.
+- The solution must not require reviewer approval or formal release between ordinary execution steps in MVP unless the client later defines a specific critical-control gate; blocking should default to step completion, signature, and quality handoff, not production progression.
 
 ### UX & Human Factors Constraints
 
@@ -220,6 +223,8 @@ These journeys reveal the need for five major capability groups:
 - The system should surface errors and omissions early, during execution, rather than shifting the detection burden to end-of-batch review.
 - Users must have contextual access to work instructions, procedures, or supporting references during execution when needed.
 - Training, onboarding, and change management must be role-specific, because operators, supervisors, QA reviewers, and configurators do not adopt the system in the same way.
+- The execution flow must avoid dumping the full paper packet on operators; it should derive and show only the required forms and repeated controls for the selected batch context.
+- When a control is not applicable for the active context, the UI should hide it or mark it N/A rather than let it block the operator.
 
 ### Integration Requirements
 
@@ -370,7 +375,8 @@ The strategic goal of the MVP is not to prove a full manufacturing platform. It 
 - Dedicated pre-QA review surface
 - Dedicated quality review surface
 - Readable dossier output/export for review and audit discussion
-- At least one governed backend-managed calculation derived from current Excel logic
+- Conditional dossier composition driven by batch context such as format, line, and paillette status
+- At least one governed backend-managed calculation derived from the client weighing workbook logic without executing VBA in production
 - Role-based access for operator, production reviewer, quality reviewer, and internal configurator
 
 ### Post-MVP Features
@@ -464,6 +470,13 @@ The strategic goal of the MVP is not to prove a full manufacturing platform. It 
 - FR42: The MVP can associate dossier records with label references, equipment references, and supporting attachments as structured reference fields or attachments without requiring live scanner or equipment integration.
 - FR43: The system can operate without mandatory ERP or WMS integration for the MVP workflow.
 - FR44: The system can expose versioned batch, step, signature, review, and export data through documented interfaces or exports so future ERP, WMS, or archival integrations do not require redesign of the core dossier workflow model.
+- FR45: The system can determine which dossier sub-documents are required for a batch based on contextual attributes such as machine or line, format family, and paillette presence.
+- FR46: The system can model repeated in-process and box-level controls as repeated records within a batch dossier rather than as single static form instances.
+- FR47: The system can evaluate cross-document dossier rules including required-document presence and consistency checks between fabrication data and governed weighing calculations.
+- FR48: Production and quality reviewers can see dossier completeness against the expected document checklist for the current batch context before disposition.
+- FR49: The system does not require reviewer approval or formal release between ordinary production steps in MVP unless a later client-specific critical-control gate is explicitly configured.
+- FR50: The system can block step completion, signature, and review handoff when applicable required controls are incomplete without blocking unrelated production execution steps.
+- FR51: The system can mark a control or document as not applicable based on batch context so non-applicable requirements do not block operators or reviewers.
 
 ## Non-Functional Requirements
 

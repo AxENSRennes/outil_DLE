@@ -219,6 +219,7 @@ class Batch(TimestampedModel):
         null=True,
         blank=True,
     )
+    batch_context_json = models.JSONField(default=dict, blank=True)
     snapshot_json = models.JSONField()
 
     def __str__(self):
@@ -226,6 +227,7 @@ class Batch(TimestampedModel):
 
 
 class BatchStepStatus(models.TextChoices):
+    NOT_APPLICABLE = "not_applicable", "Not applicable"
     NOT_STARTED = "not_started", "Not started"
     IN_PROGRESS = "in_progress", "In progress"
     COMPLETED = "completed", "Completed"
@@ -257,8 +259,13 @@ class BatchStep(TimestampedModel):
         related_name="steps",
     )
     step_key = models.CharField(max_length=100)
+    occurrence_key = models.CharField(max_length=100, default="default")
+    occurrence_index = models.PositiveIntegerField(default=1)
     title = models.CharField(max_length=255)
     sequence_order = models.PositiveIntegerField()
+    source_document_code = models.CharField(max_length=100, blank=True)
+    is_applicable = models.BooleanField(default=True)
+    applicability_basis_json = models.JSONField(default=dict, blank=True)
     status = models.CharField(
         max_length=32,
         choices=BatchStepStatus.choices,
@@ -274,6 +281,10 @@ class BatchStep(TimestampedModel):
         choices=StepSignatureState.choices,
         default=StepSignatureState.NOT_REQUIRED,
     )
+    blocks_execution_progress = models.BooleanField(default=False)
+    blocks_step_completion = models.BooleanField(default=True)
+    blocks_signature = models.BooleanField(default=False)
+    blocks_pre_qa_handoff = models.BooleanField(default=True)
     data_json = models.JSONField(default=dict)
     meta_json = models.JSONField(default=dict, blank=True)
     started_at = models.DateTimeField(null=True, blank=True)
@@ -292,13 +303,54 @@ class BatchStep(TimestampedModel):
         ordering = ["sequence_order"]
         constraints = [
             models.UniqueConstraint(
-                fields=["batch", "step_key"],
-                name="uniq_batch_step_key",
+                fields=["batch", "step_key", "occurrence_key"],
+                name="uniq_batch_step_occurrence",
             )
         ]
 
     def __str__(self):
-        return f"{self.batch.batch_number} / {self.step_key}"
+        return f"{self.batch.batch_number} / {self.step_key} / {self.occurrence_key}"
+
+
+class BatchDocumentStatus(models.TextChoices):
+    EXPECTED = "expected", "Expected"
+    PRESENT = "present", "Present"
+    MISSING = "missing", "Missing"
+    NOT_APPLICABLE = "not_applicable", "Not applicable"
+
+
+class BatchDocumentRequirement(TimestampedModel):
+    batch = models.ForeignKey(
+        Batch,
+        on_delete=models.CASCADE,
+        related_name="document_requirements",
+    )
+    document_code = models.CharField(max_length=100)
+    title = models.CharField(max_length=255)
+    source_step_key = models.CharField(max_length=100, blank=True)
+    is_required = models.BooleanField(default=True)
+    is_applicable = models.BooleanField(default=True)
+    repeat_mode = models.CharField(max_length=32, default="single")
+    expected_count = models.PositiveIntegerField(default=1)
+    actual_count = models.PositiveIntegerField(default=0)
+    status = models.CharField(
+        max_length=32,
+        choices=BatchDocumentStatus.choices,
+        default=BatchDocumentStatus.EXPECTED,
+    )
+    applicability_basis_json = models.JSONField(default=dict, blank=True)
+    meta_json = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["batch", "document_code"],
+                name="uniq_batch_document_requirement",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.batch.batch_number} / {self.document_code}"
 
 
 class SignatureMeaning(models.TextChoices):
