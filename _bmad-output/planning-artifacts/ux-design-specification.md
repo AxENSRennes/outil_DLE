@@ -264,6 +264,7 @@ shadcn/ui is a collection of accessible, customizable React components that are 
 
 - Initialize shadcn/ui via CLI and select required components incrementally
 - Define DLE-SaaS design tokens: neutral industrial color palette (gray baseline, color only for attention states), sober typography, generous spacing for production workstation usage
+- Install primitives into `frontend/src/shared/ui/` so the design system follows the canonical `app/shared/features` frontend structure from the architecture artifact
 - Build domain-specific composite components on top of shadcn/ui primitives:
   - `StepExecutor` — Horizontal stepper with step-based form rendering
   - `SignatureCeremony` — Focused modal with meaning selection and inline re-authentication
@@ -900,9 +901,13 @@ flowchart TD
 
 **Build approach:**
 - All custom components built as React components using shadcn/ui primitives (Radix UI) + Tailwind CSS utility classes
-- Follow shadcn/ui file conventions: `components/ui/` for primitives, `components/domain/` for batch-record-specific composites
+- Follow the canonical frontend structure from the architecture artifact:
+  - `frontend/src/shared/ui/` for shadcn/ui primitives and token-aware wrappers
+  - `frontend/src/features/execution/components/` for operator composites
+  - `frontend/src/features/pre-qa-review/components/` and `frontend/src/features/quality-review/components/` for review composites
+  - `frontend/src/features/signatures/components/` for reusable signature-specific flows such as `PinAuthDialog` and `SignatureCeremony`
 - Design tokens from `tailwind.config.ts` ensure visual consistency
-- Each component is a standalone file, no cross-component dependencies except shared primitives
+- Each component is a standalone file, with no cross-feature dependencies except through `frontend/src/shared/` contracts and app-level wiring
 
 **Composition hierarchy:**
 ```

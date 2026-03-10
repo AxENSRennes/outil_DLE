@@ -90,16 +90,16 @@ npm create vite@latest frontend -- --template react-ts
 Python backend on the Django 5.2 LTS line, and a TypeScript frontend scaffolded from the official Vite React template. This keeps the backend on a long-support framework line while giving the frontend strict typing from day one.
 
 **Styling Solution:**
-No styling framework is imposed by the selected foundation. This is beneficial for the project because visual system decisions should follow architecture and UX decisions rather than being inherited accidentally from a starter.
+Standardize the frontend on Tailwind CSS 4 with shadcn/ui components built on Radix UI primitives. This converts the UX design-system decision into an implementation constraint and gives the project keyboard-safe primitives, controlled component ownership, and a sober industrial baseline without introducing a larger app framework.
 
 **Build Tooling:**
-Django provides the standard management-command project structure for backend initialization. Vite provides the frontend development server, bundling pipeline, and production build tooling. This creates a lightweight and explicit split between backend runtime and frontend asset pipeline.
+Django provides the standard management-command project structure for backend initialization. Vite provides the frontend development server, bundling pipeline, and production build tooling. On the frontend, the baseline also includes PostCSS via Tailwind, Autoprefixer, and `@vitejs/plugin-legacy` targeting `es2015` so the supported desktop-browser matrix from UX remains technically enforced.
 
 **Testing Framework:**
-The selected foundation is intentionally minimal. Django includes its standard test framework baseline, while the Vite React TypeScript starter does not force a frontend test stack. This keeps testing decisions available for deliberate architectural selection in follow-up steps.
+Use Django's standard test framework and pytest-compatible tooling on the backend, and Vitest on the frontend with `axe-core` for component accessibility checks. Run Lighthouse CI accessibility checks in the quality pipeline for supported operator and reviewer surfaces.
 
 **Code Organization:**
-The starter establishes a clean two-application structure: `backend/` for regulated domain logic and API implementation, and `frontend/` for the execution and review user interfaces. This separation supports API-first contracts, independent deployment concerns, and clearer responsibility boundaries.
+The starter establishes a clean two-application structure: `backend/` for regulated domain logic and API implementation, and `frontend/` for the execution and review user interfaces. Within the frontend, the canonical organization is `app/`, `shared/`, and `features/`: shared primitives such as shadcn/ui live under `frontend/src/shared/ui/`, while domain composites remain inside their owning feature modules.
 
 **Development Experience:**
 The foundation gives a fast local workflow with Django autoreload on the backend and Vite hot-module reloading on the frontend. It minimizes generated complexity and makes the first implementation story straightforward to reason about.
@@ -119,6 +119,11 @@ The foundation gives a fast local workflow with Django autoreload on the backend
 - REST API with explicit versioning under `/api/v1`
 - Problem-details error format and OpenAPI-first contract publication
 - React Router 7 + TanStack Query v5 + React Hook Form 7 + Zod 4 on the frontend
+- Tailwind CSS 4 + shadcn/ui + Radix UI as the mandatory frontend component baseline
+- Shared-workstation session model with PIN-based identification, lock, switch-user, and signature re-authentication
+- Canonical workflow states, derived review severities, and explicit transition actions owned by backend services
+- MVP action contracts for auto-save, signatures, corrections, pre-QA review, quality disposition, and dossier integrity summaries
+- Backend dossier-composition service for conditional forms, repeated controls, checklist completeness, and cross-document rule evaluation
 - Single-region Docker Compose deployment baseline with strict rollback discipline
 
 **Important Decisions (Shape Architecture):**
@@ -229,6 +234,142 @@ Organize the frontend by domain feature areas rather than by technical layer alo
 
 **Performance Strategy:**
 Use route-level code splitting, query prefetching only where it improves review workflows, and explicit loading/error states. Avoid SSR complexity because the application is an authenticated operational SPA, not a public content product.
+
+**Design System & Styling Baseline:**
+Use Tailwind CSS 4 for styling tokens and layout utilities, shadcn/ui for owned UI primitives, and Radix UI for dialog, sheet, dropdown, and focus-management behavior. The canonical placement is:
+- `frontend/src/shared/ui/` for shadcn/ui primitives and token-aware wrappers
+- `frontend/src/features/execution/components/` for operator composites such as `StepExecutor`, `StepSidebar`, `IdentityBanner`, and `SaveIndicator`
+- `frontend/src/features/pre-qa-review/components/` and `frontend/src/features/quality-review/components/` for review composites such as `ReviewExceptionList`, `DossierIntegritySummary`, and `ChangeHistoryBlock`
+
+**Browser & Accessibility Baseline:**
+Target desktop browsers only for MVP, with explicit support for Chrome 70+, Firefox 68+, and Edge 79+ on 1280x800 and 1920x1080 workstations. Keep keyboard-first behavior, focus management, `aria-live` save feedback, and redundant color/icon/text state coding as non-optional frontend architecture requirements rather than UX suggestions.
+
+### Shared Workstation Operating Model
+
+**Session Model:**
+Use Django's authenticated session cookie as the authoritative identity session for browser access. On a shared workstation, `Identify` replaces the current authenticated user session with the operator's session while preserving the current batch route and server-safe draft state in the UI.
+
+**Identification Pattern:**
+Use a short PIN flow for workstation identification and step-up signature re-authentication:
+- `identify` authenticates the active user for the workstation session
+- `switch_user` terminates the prior authenticated session and prompts a new PIN without losing the active batch context
+- `lock_workstation` clears the active authenticated identity after inactivity or explicit lock while keeping the screen on the batch context
+- `signature_reauth` re-verifies the already identified user immediately before any signature-bearing action
+
+**Operational Rules:**
+- Persist draft field values on blur so user switches lose at most one field interaction
+- Keep current route and selected batch context client-side; never keep the prior user's authenticated authority alive after a switch
+- Record audit events for `identify`, `switch_user`, `lock_workstation`, failed PIN attempts, and signature re-authentication
+- Rate limit PIN and signature re-authentication endpoints independently from general page traffic
+
+### Workflow State Model & Transitions
+
+**Canonical Batch Lifecycle States:**
+- `in_progress`
+- `awaiting_pre_qa`
+- `in_pre_qa_review`
+- `awaiting_quality_review`
+- `in_quality_review`
+- `returned_for_correction`
+- `released`
+- `rejected`
+
+**Canonical Step States:**
+- `not_started`
+- `in_progress`
+- `complete`
+- `signed`
+
+**Review-Relevant Flags and Derived States:**
+- `missing_required_data`
+- `missing_required_signature`
+- `changed_since_review`
+- `changed_since_signature`
+- `review_required`
+- `has_open_exception`
+
+These flags may coexist with lifecycle states. They are stored or derived in backend read models and must never be inferred only from raw audit history in the frontend.
+
+**Derived Review Severity Summary:**
+- `green`: no missing data, no missing signatures, no pending re-review, no blocking exceptions
+- `amber`: dossier is navigable but requires reviewer attention because of changes, notes, or non-blocking issues
+- `red`: dossier is blocked for handoff or release because required data, required signatures, or blocking exceptions remain unresolved
+
+**Transition Rules:**
+All regulated workflow changes occur through explicit backend actions. The canonical action set for MVP is:
+- `save_step_draft`
+- `complete_step`
+- `sign_step`
+- `request_correction`
+- `submit_for_pre_qa`
+- `confirm_pre_qa_review`
+- `mark_change_reviewed`
+- `return_for_correction`
+- `start_quality_review`
+- `release_batch`
+- `reject_batch`
+
+Direct arbitrary PATCH semantics on batch status, review status, or signature state are forbidden.
+
+### MVP Public Contracts
+
+**Contract Style:**
+Keep the public API REST-first under `/api/v1`, with problem-details errors and stable machine-readable codes. The first OpenAPI publication must cover action-style endpoints in addition to CRUD resources because the workflow is action-driven.
+
+**Required MVP Actions and Read Models:**
+- `POST /api/v1/auth/workstation-identify`
+  Payload: `pin`
+  Returns: authenticated user summary for the `IdentityBanner` and active role/site context
+- `POST /api/v1/auth/workstation-lock`
+  Payload: none
+  Returns: locked workstation state with no active user identity
+- `POST /api/v1/batch-steps/{id}/draft`
+  Payload: partial step field values
+  Returns: canonical step read model including validation state and `saved_at`
+- `POST /api/v1/batch-steps/{id}/complete`
+  Payload: optional completion note
+  Returns: canonical step state plus next-step hint if available
+- `POST /api/v1/batch-steps/{id}/sign`
+  Payload: `signature_meaning`, `pin`
+  Returns: signature manifest with signer, role, meaning, timestamp, and resulting step state
+- `POST /api/v1/batch-steps/{id}/corrections`
+  Payload: corrected values plus `reason_for_change`
+  Returns: updated change-history block and review-required flags
+- `GET /api/v1/batches/{id}/execution`
+  Returns: batch execution read model including sidebar steps, active-step detail, current identity context, and save status metadata
+- `GET /api/v1/batches/{id}/review-summary`
+  Returns: dossier completeness checklist, traffic-light severity, missing-signature counts, change counters, and open exceptions
+- `POST /api/v1/batches/{id}/pre-qa-review/confirm`
+  Payload: optional review note
+  Returns: updated batch lifecycle state and persistent review note summary
+- `POST /api/v1/batches/{id}/review-items/{item_id}/mark-reviewed`
+  Payload: optional reviewer note
+  Returns: updated item review status and refreshed summary counters
+- `POST /api/v1/batches/{id}/quality-disposition`
+  Payload: `decision` in `release|return_for_correction|reject`, optional note, and `pin` when the decision is a release signature
+  Returns: updated dossier integrity summary and batch lifecycle state
+
+**Canonical Read Models:**
+The frontend should rely on centrally defined response types for:
+- `StepStatus`
+- `ChangeHistoryEntry`
+- `ReviewSeveritySummary`
+- `ChecklistCompleteness`
+- `DossierIntegritySummary`
+
+### Dossier Composition & Export Strategy
+
+**Composition Service:**
+Implement a backend-owned dossier composition service that resolves the expected dossier structure from batch context such as line, format family, and paillette presence. This service is responsible for:
+- choosing required sub-documents
+- generating repeated in-process and box-level control records
+- computing the expected document checklist for review
+- evaluating cross-document consistency rules
+
+The frontend consumes the composed dossier structure and completeness outputs; it does not own business rule evaluation for required forms or cross-document checks.
+
+**Export Strategy:**
+Keep MVP dossier export synchronous in the request/response path for the representative batch flow. Backend export services generate the current dossier snapshot and associated integrity summary without introducing a queue dependency in v1. Async execution remains deferred until export volume or archival integrations require it.
 
 ### Infrastructure & Deployment
 
@@ -692,7 +833,7 @@ The project structure supports the chosen architecture. Backend app boundaries, 
 ### Requirements Coverage Validation ✅
 
 **Epic/Feature Coverage:**
-No epic files were loaded, but the requirement groups and feature areas are fully mapped into architectural modules and frontend feature areas. The structure supports template governance, batch execution, signatures, review workflows, releases, exceptions, exports, and role/site governance.
+No epic files were loaded. The requirement groups and feature areas are mapped into architectural modules and frontend feature areas, but the planning dossier is not yet BMAD-complete for implementation readiness because epics/stories are still missing.
 
 **Functional Requirements Coverage:**
 All major FR categories have architectural support:
@@ -706,10 +847,10 @@ All major FR categories have architectural support:
 **Non-Functional Requirements Coverage:**
 Performance, security, resilience, and operational concerns are addressed architecturally. The most important NFRs are supported by session-based auth, step-up re-authentication for signatures, additive migration strategy, explicit observability, conservative deployment structure, and architecture boundary checks. The 3x8 operating model is reflected in rollout and rollback discipline.
 
-### Implementation Readiness Validation ✅
+### Implementation Readiness Validation ⚠️
 
 **Decision Completeness:**
-Critical implementation-shaping decisions are documented clearly enough for implementation to start. Versions are identified where they matter, and deferred decisions are explicitly marked to prevent accidental premature expansion.
+The architecture artifact now documents the main implementation-shaping decisions clearly enough for platform and first-slice work to start. Versions are identified where they matter, workflow actions are explicit, and deferred decisions are marked to prevent accidental premature expansion.
 
 **Structure Completeness:**
 The project structure is implementation-ready. It is concrete enough to guide file placement, app boundaries, API locations, frontend feature ownership, and test placement without leaving core layout decisions open to interpretation.
@@ -717,9 +858,14 @@ The project structure is implementation-ready. It is concrete enough to guide fi
 **Pattern Completeness:**
 The implementation patterns are strong enough to prevent common AI-agent conflicts. Naming, formatting, placement, state transition handling, and error-handling expectations are all documented. The repository now also includes executable enforcement for backend and frontend architectural boundaries.
 
+**Dossier Completeness Limitation:**
+Full implementation readiness is still conditional on the wider planning set. There is not yet an epics/stories artifact in the planning folder, and there is not yet a dedicated implementation-readiness report capturing cross-artifact sign-off.
+
 ### Gap Analysis Results
 
-**Critical Gaps:** None identified.
+**Critical Gaps:**
+- Missing epics/stories planning artifact for the implementation backlog
+- Missing implementation-readiness report covering PRD, UX, architecture, and execution planning together
 
 **Important Gaps:**
 - Async job execution is intentionally deferred in detail and should be finalized once export/notification workloads become concrete.
@@ -765,18 +911,20 @@ The most relevant consistency risk identified during the workflow was uncontroll
 
 ### Architecture Readiness Assessment
 
-**Overall Status:** READY FOR IMPLEMENTATION
+**Overall Status:** ARCHITECTURE ALIGNED; FULL PLANNING DOSSIER NOT YET READY FOR IMPLEMENTATION
 
-**Confidence Level:** High based on validation results
+**Confidence Level:** Medium-High for the architecture artifact itself; not yet sufficient for full BMAD readiness across the whole planning set
 
 **Key Strengths:**
 - Strong alignment between product scope and architecture scope
 - Clear backend ownership of regulated business rules
 - Explicit support for traceability, signatures, review-state semantics, and 3x8 operations
+- Explicit alignment with the UX design-system, shared-workstation, and review-surface decisions
 - Concrete project structure and enforceable consistency rules
 - Conservative MVP boundaries that reduce operational and architectural risk
 
 **Areas for Future Enhancement:**
+- Epics/stories decomposition and readiness sign-off
 - Async workload strategy
 - API client/codegen convention
 - Expanded test architecture once first real business flows are implemented
