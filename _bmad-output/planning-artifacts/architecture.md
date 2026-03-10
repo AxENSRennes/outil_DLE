@@ -31,9 +31,9 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 ### Requirements Overview
 
 **Functional Requirements:**
-The project defines 44 functional requirements across six architectural capability groups. The first group covers template governance, including MMR creation, versioning, activation, and batch instantiation from a governed template version. The second group covers batch execution, including step-based data entry, progressive save, completion gating, contributor attribution, and execution signatures in a shared-workstation context.
+The project defines 51 functional requirements across six architectural capability groups. The first group covers template governance, including MMR creation, versioning, activation, and batch instantiation from a governed template version. The second group covers batch execution, including step-based data entry, progressive save, completion gating, contributor attribution, and execution signatures in a shared-workstation context.
 
-The third group focuses on trust semantics: audit trail preservation, controlled corrections, reason-for-change capture, explicit re-review triggering, and visibility of changed states after review or signature. The fourth group defines distinct review workflows for production pre-QA review and quality review, including dossier completeness assessment, review disposition, and release-readiness representation. The fifth group establishes role-based governance boundaries across operators, production reviewers, quality reviewers, and internal configurators, with future compatibility for site and organization scoping. The sixth group covers dossier output, governed calculations, contextual references, structured attachments or references, and integration readiness without requiring ERP or WMS coupling in MVP.
+The third group focuses on trust semantics: audit trail preservation, controlled corrections, reason-for-change capture, explicit re-review triggering, and visibility of changed states after review or signature. The fourth group defines distinct review workflows for production pre-QA review and quality review, including dossier completeness assessment, issue visibility, review disposition, and release-readiness representation. The fifth group establishes role-based governance boundaries across operators, production reviewers, quality reviewers, and internal configurators, with future compatibility for site and organization scoping. The sixth group covers dossier output, governed calculations, contextual references, structured attachments, conditional dossier composition, repeated controls, checklist completeness, cross-document consistency validation, and integration readiness without requiring ERP or WMS coupling in MVP.
 
 **Non-Functional Requirements:**
 The non-functional requirements place strong pressure on architectural correctness rather than scale-out complexity. Performance targets require responsive step navigation, save behavior, and review screens under pilot load. Security requirements require attributable actions, strict RBAC enforcement, signature integrity, protected regulated data, and control over template activation and administrative changes. Reliability requirements include recovery consistency, daily backup expectations, documented degraded-mode operations, and restoration of in-progress execution and review state after restart or failure. Accessibility and usability requirements emphasize keyboard operability, narrow execution flows, clear validation feedback, and usability on shared industrial workstations. Integration requirements require versioned contracts around core dossier objects and exports while keeping the MVP operationally independent from live enterprise integrations.
@@ -242,7 +242,7 @@ Use Tailwind CSS 4 for styling tokens and layout utilities, shadcn/ui for owned 
 - `frontend/src/features/pre-qa-review/components/` and `frontend/src/features/quality-review/components/` for review composites such as `ReviewExceptionList`, `DossierIntegritySummary`, and `ChangeHistoryBlock`
 
 **Browser & Accessibility Baseline:**
-Target desktop browsers only for MVP, with explicit support for Chrome 70+, Firefox 68+, and Edge 79+ on 1280x800 and 1920x1080 workstations. Keep keyboard-first behavior, focus management, `aria-live` save feedback, and redundant color/icon/text state coding as non-optional frontend architecture requirements rather than UX suggestions.
+Target desktop browsers only for MVP, with explicit support for Chrome 70+, Firefox 68+, and Edge 79+ on 1280x800 and 1920x1080 workstations. Keep keyboard-first behavior, focus management, `aria-live` save feedback, and redundant color/icon/text state coding as non-optional frontend architecture requirements rather than UX suggestions. The frontend implementation must also support the workstation-speed expectations defined in the UX artifact for operator identification, inline signature re-authentication, and rapid resume on shared workstations.
 
 ### Shared Workstation Operating Model
 
@@ -255,6 +255,8 @@ Use a short PIN flow for workstation identification and step-up signature re-aut
 - `switch_user` terminates the prior authenticated session and prompts a new PIN without losing the active batch context
 - `lock_workstation` clears the active authenticated identity after inactivity or explicit lock while keeping the screen on the batch context
 - `signature_reauth` re-verifies the already identified user immediately before any signature-bearing action
+
+The UX artifact remains the source of truth for the exact timing expectations of these flows; the architecture must support them without introducing extra redirects, full-login round-trips, or batch-context loss during user switching and signing.
 
 **Operational Rules:**
 - Persist draft field values on blur so user switches lose at most one field interaction

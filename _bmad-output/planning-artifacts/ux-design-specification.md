@@ -501,7 +501,6 @@ All six directions share a cohesive visual language: ISA-101 neutral baseline, I
 **Minimum browser targets:**
 - Chrome/Chromium 70+ (covers workstations with 6+ years of update lag)
 - Firefox 68+ (ESR versions common in enterprise environments)
-- Safari 12+ (if any Mac workstations exist)
 - Edge 79+ (Chromium-based Edge)
 
 **Implementation strategy:**
@@ -511,7 +510,7 @@ All six directions share a cohesive visual language: ISA-101 neutral baseline, I
 - HSL color values (universally supported)
 - Avoid modern JS APIs (`structuredClone`, `Array.at()`, `Object.hasOwn()`) without polyfill
 - Inter font with `system-ui, sans-serif` fallback for workstations that cannot load web fonts
-- Test matrix: Chrome 70, Firefox 68, Safari 12 as minimum validation targets
+- Test matrix: Chrome 70, Firefox 68, Edge 79 as minimum validation targets
 
 **What this does NOT cover (and does not need to):**
 - Internet Explorer 11 — confirmed not in scope (Windows 10+ with modern browsers)
@@ -1240,7 +1239,6 @@ Level AA is the appropriate target for a production environment tool. It covers 
 - Chrome 70+ (primary target — most likely browser on production workstations)
 - Firefox 68+ (ESR fallback)
 - Edge 79+ (Chromium-based)
-- Safari 12+ (if applicable)
 
 **Screen reader testing (stretch goal for v1):**
 - NVDA on Windows (free, most common on enterprise PCs)
