@@ -352,6 +352,111 @@ The following are explicitly not required before the first credible demonstratio
 
 These add complexity faster than they add proof of product value.
 
+## Decision 15: Freeze the Shared-Workstation Session Model
+
+### Decision
+
+The MVP must use authenticated Django sessions plus a fast PIN-based workstation identification flow.
+
+### Why
+
+Shared line workstations are a hard operating constraint. The product needs fast identity switching and signature re-authentication without inventing a second security model.
+
+### Build Implication
+
+Implementation must support:
+- `identify` by PIN to establish the active authenticated user
+- `switch_user` without losing the current batch context
+- explicit workstation lock on inactivity or user action
+- signature re-authentication for the already active user
+- audit events for identify, switch, lock, failed PIN, and signature re-auth
+
+Do not leave workstation behavior to ad hoc frontend conventions.
+
+## Decision 16: Freeze Canonical Workflow States and Review Severity
+
+### Decision
+
+The MVP must expose canonical lifecycle states, step states, and derived review severity from the backend.
+
+### Why
+
+Operator, pre-QA, and quality surfaces all depend on the same state semantics. If the frontend invents its own badges or review summaries, trust breaks immediately.
+
+### Build Implication
+
+Implementation must expose:
+- batch lifecycle states such as in-progress, pre-QA, quality review, returned for correction, released, rejected
+- step states such as not started, in progress, complete, signed
+- explicit flags for changed-since-review, changed-since-signature, review-required, and missing requirements
+- a derived severity summary of green, amber, or red for dashboard-style review surfaces
+
+Do not require the UI to reconstruct review status from raw audit history.
+
+## Decision 17: Freeze MVP Workflow Contracts Around Actions, Not Generic CRUD
+
+### Decision
+
+The first public API must center workflow actions such as save step, sign, request correction, confirm pre-QA review, and quality disposition.
+
+### Why
+
+This product is workflow-driven, not a generic record editor. Action contracts keep state transitions explicit and auditable.
+
+### Build Implication
+
+The first OpenAPI contract must cover:
+- workstation identify and lock
+- step draft save
+- step completion
+- step signing
+- step correction
+- pre-QA confirmation
+- review-item acknowledgement
+- quality release / return / rejection
+- dossier execution and review summary read models
+
+Do not hide state transitions behind broad status PATCH endpoints.
+
+## Decision 18: Make Dossier Composition and Completeness Backend-Owned
+
+### Decision
+
+Conditional dossier structure, repeated controls, checklist completeness, and cross-document consistency must be computed by backend services.
+
+### Why
+
+These rules determine what is required for execution and release. They are core regulated business logic, not presentation logic.
+
+### Build Implication
+
+The implementation should provide services that:
+- resolve required sub-documents from batch context
+- instantiate repeated controls as records
+- compute the expected dossier checklist
+- evaluate cross-document consistency before review disposition
+
+Do not put document-composition rules only in React components or template JSON consumers.
+
+## Decision 19: Keep MVP Export Synchronous
+
+### Decision
+
+The representative dossier export in MVP should be generated synchronously by backend services.
+
+### Why
+
+Export is a core credibility moment in the pilot, but queue infrastructure is not yet justified.
+
+### Build Implication
+
+The first slice should:
+- generate the representative dossier export in-request
+- return a current dossier snapshot suitable for review discussion
+- defer background workers until volume or archival integration makes them necessary
+
+Do not introduce Redis or job infrastructure only to support the first exportable dossier.
+
 ## First Build Sequence
 
 ### Phase 1: Domain Spine
@@ -379,12 +484,14 @@ Implement next:
 - signature re-auth flow
 - reason-for-change
 - review-required after change
+- shared-workstation identify / switch / lock behavior
 - dossier export
 
 ### Phase 4: Quality Workflow Spine
 
 Implement next:
 - review screen
+- pre-QA dashboard and dossier completeness summary
 - release decision
 - exception model activation
 
@@ -398,6 +505,7 @@ The architecture is considered successful if it enables:
 - a fast operator flow on shared workstations
 - a pre-QA review flow usable by production before handoff to quality
 - a review flow usable by quality without reading raw audit logs
+- backend-owned dossier completeness and export behavior that match what UX presents
 
 ## Final Position
 
@@ -405,9 +513,12 @@ The architecture should now be considered frozen on the following points:
 - Django backend
 - React frontend
 - PostgreSQL
+- Tailwind CSS + shadcn/ui + Radix UI frontend baseline
 - versioned template model
 - batch snapshotting
 - business-level signatures
+- shared-workstation session model
+- backend-owned workflow state and dossier composition
 - explicit re-review states
 - progressive save by step
 - portable deployment

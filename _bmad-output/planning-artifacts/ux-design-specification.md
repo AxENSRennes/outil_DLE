@@ -264,6 +264,7 @@ shadcn/ui is a collection of accessible, customizable React components that are 
 
 - Initialize shadcn/ui via CLI and select required components incrementally
 - Define DLE-SaaS design tokens: neutral industrial color palette (gray baseline, color only for attention states), sober typography, generous spacing for production workstation usage
+- Install primitives into `frontend/src/shared/ui/` so the design system follows the canonical `app/shared/features` frontend structure from the architecture artifact
 - Build domain-specific composite components on top of shadcn/ui primitives:
   - `StepExecutor` — Horizontal stepper with step-based form rendering
   - `SignatureCeremony` — Focused modal with meaning selection and inline re-authentication
@@ -500,7 +501,6 @@ All six directions share a cohesive visual language: ISA-101 neutral baseline, I
 **Minimum browser targets:**
 - Chrome/Chromium 70+ (covers workstations with 6+ years of update lag)
 - Firefox 68+ (ESR versions common in enterprise environments)
-- Safari 12+ (if any Mac workstations exist)
 - Edge 79+ (Chromium-based Edge)
 
 **Implementation strategy:**
@@ -510,7 +510,7 @@ All six directions share a cohesive visual language: ISA-101 neutral baseline, I
 - HSL color values (universally supported)
 - Avoid modern JS APIs (`structuredClone`, `Array.at()`, `Object.hasOwn()`) without polyfill
 - Inter font with `system-ui, sans-serif` fallback for workstations that cannot load web fonts
-- Test matrix: Chrome 70, Firefox 68, Safari 12 as minimum validation targets
+- Test matrix: Chrome 70, Firefox 68, Edge 79 as minimum validation targets
 
 **What this does NOT cover (and does not need to):**
 - Internet Explorer 11 — confirmed not in scope (Windows 10+ with modern browsers)
@@ -900,9 +900,13 @@ flowchart TD
 
 **Build approach:**
 - All custom components built as React components using shadcn/ui primitives (Radix UI) + Tailwind CSS utility classes
-- Follow shadcn/ui file conventions: `components/ui/` for primitives, `components/domain/` for batch-record-specific composites
+- Follow the canonical frontend structure from the architecture artifact:
+  - `frontend/src/shared/ui/` for shadcn/ui primitives and token-aware wrappers
+  - `frontend/src/features/execution/components/` for operator composites
+  - `frontend/src/features/pre-qa-review/components/` and `frontend/src/features/quality-review/components/` for review composites
+  - `frontend/src/features/signatures/components/` for reusable signature-specific flows such as `PinAuthDialog` and `SignatureCeremony`
 - Design tokens from `tailwind.config.ts` ensure visual consistency
-- Each component is a standalone file, no cross-component dependencies except shared primitives
+- Each component is a standalone file, with no cross-feature dependencies except through `frontend/src/shared/` contracts and app-level wiring
 
 **Composition hierarchy:**
 ```
@@ -1235,7 +1239,6 @@ Level AA is the appropriate target for a production environment tool. It covers 
 - Chrome 70+ (primary target — most likely browser on production workstations)
 - Firefox 68+ (ESR fallback)
 - Edge 79+ (Chromium-based)
-- Safari 12+ (if applicable)
 
 **Screen reader testing (stretch goal for v1):**
 - NVDA on Windows (free, most common on enterprise PCs)
