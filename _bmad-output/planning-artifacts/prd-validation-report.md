@@ -13,9 +13,9 @@ inputDocuments:
   - /home/axel/DLE-SaaS/docs/decisions/transcript-product-decisions.md
   - /home/axel/DLE-SaaS/docs/decisions/architecture-decisions.md
   - /home/axel/DLE-SaaS/docs/implementation/README.md
-  - /home/axel/DLE-SaaS/docs/implementation/mmr-version-schema-minimal.json
-  - /home/axel/DLE-SaaS/docs/implementation/mmr-version-example.json
-  - /home/axel/DLE-SaaS/docs/implementation/django_models_v1.py
+  - /home/axel/DLE-SaaS/_bmad-output/implementation-artifacts/mmr-version-schema-minimal.json
+  - /home/axel/DLE-SaaS/_bmad-output/implementation-artifacts/mmr-version-example.json
+  - /home/axel/DLE-SaaS/_bmad-output/implementation-artifacts/django_models_v1.py
 validationStepsCompleted:
   - step-v-01-discovery
   - step-v-02-format-detection
@@ -52,9 +52,9 @@ overallStatus: 'Critical'
 - Decision doc: `/home/axel/DLE-SaaS/docs/decisions/transcript-product-decisions.md`
 - Decision doc: `/home/axel/DLE-SaaS/docs/decisions/architecture-decisions.md`
 - Implementation doc: `/home/axel/DLE-SaaS/docs/implementation/README.md`
-- Implementation artifact: `/home/axel/DLE-SaaS/docs/implementation/mmr-version-schema-minimal.json`
-- Implementation artifact: `/home/axel/DLE-SaaS/docs/implementation/mmr-version-example.json`
-- Implementation artifact: `/home/axel/DLE-SaaS/docs/implementation/django_models_v1.py`
+- Implementation artifact: `/home/axel/DLE-SaaS/_bmad-output/implementation-artifacts/mmr-version-schema-minimal.json`
+- Implementation artifact: `/home/axel/DLE-SaaS/_bmad-output/implementation-artifacts/mmr-version-example.json`
+- Implementation artifact: `/home/axel/DLE-SaaS/_bmad-output/implementation-artifacts/django_models_v1.py`
 
 ## Format Detection
 

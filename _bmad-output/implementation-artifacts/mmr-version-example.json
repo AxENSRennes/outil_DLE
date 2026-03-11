@@ -123,15 +123,23 @@
         },
         {
           "key": "gross_measurements",
-          "type": "text",
+          "type": "number_series",
           "label": "Serie de poids bruts du fichier de pesee",
-          "required": true
+          "required": true,
+          "validation": {
+            "minItems": 1,
+            "maxItems": 30
+          }
         },
         {
           "key": "tare_measurements",
-          "type": "text",
+          "type": "number_series",
           "label": "Serie de tares du fichier de pesee",
-          "required": true
+          "required": true,
+          "validation": {
+            "minItems": 1,
+            "maxItems": 30
+          }
         },
         {
           "key": "target_weight",
@@ -469,6 +477,7 @@
       "label": "Conformite poids",
       "backendRef": "client_chateau_renard.weighing.weight_conformity",
       "inputs": ["density_from_bulk_record", "format_code", "target_weight", "average_measured_weight"],
+      "dependsOn": ["average_lot_weight"],
       "outputFieldKey": "weight_conformity"
     }
   ],
