@@ -4,9 +4,9 @@ stepsCompleted:
   - step-02-design-epics
   - step-03-create-stories
 inputDocuments:
-  - /home/axel/DLE-SaaS/_bmad-output/planning-artifacts/prd.md
-  - /home/axel/DLE-SaaS/_bmad-output/planning-artifacts/architecture.md
-  - /home/axel/DLE-SaaS/_bmad-output/planning-artifacts/ux-design-specification.md
+  - _bmad-output/planning-artifacts/prd.md
+  - _bmad-output/planning-artifacts/architecture.md
+  - _bmad-output/planning-artifacts/ux-design-specification.md
 ---
 
 # DLE-SaaS - Epic Breakdown
@@ -204,8 +204,6 @@ Supervisors and quality reviewers can review dossiers by exception, inspect sign
 ### Epic 6: Contextual Dossier Composition and Export
 The system can assemble the correct dossier for each batch context, apply governed calculations and checklist rules, support structured references, and produce export and integration-ready outputs without requiring ERP or WMS coupling.
 **FRs covered:** FR39, FR40, FR42, FR43, FR44, FR45, FR46, FR47
-
-<!-- Repeat for each epic in epics_list (N = 1, 2, 3...) -->
 
 ## Epic 1: Platform Spine and Identity Foundation
 
