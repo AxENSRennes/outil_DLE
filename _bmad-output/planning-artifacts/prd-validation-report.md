@@ -1,21 +1,21 @@
 ---
-validationTarget: '/home/axel/DLE-SaaS/_bmad-output/planning-artifacts/prd.md'
+validationTarget: '_bmad-output/planning-artifacts/prd.md'
 validationDate: '2026-03-07'
 inputDocuments:
-  - /home/axel/DLE-SaaS/_bmad-output/planning-artifacts/prd.md
-  - /home/axel/DLE-SaaS/_bmad-output/research/competitive-patterns-2026-03-06.md
-  - /home/axel/DLE-SaaS/_bmad-output/research/transcript-to-product-decisions-2026-03-07.md
-  - /home/axel/DLE-SaaS/_bmad-output/research/actionable-architecture-decisions-2026-03-06.md
-  - /home/axel/DLE-SaaS/docs/archive/research/competitive-patterns.md
-  - /home/axel/DLE-SaaS/_bmad-output/brainstorming/brainstorming-session-2026-03-05-19h30.md
-  - /home/axel/DLE-SaaS/docs/archive/brainstorming/brainstorming-session-2026-03-05.md
-  - /home/axel/DLE-SaaS/docs/README.md
-  - /home/axel/DLE-SaaS/docs/decisions/transcript-product-decisions.md
-  - /home/axel/DLE-SaaS/docs/decisions/architecture-decisions.md
-  - /home/axel/DLE-SaaS/docs/implementation/README.md
-  - /home/axel/DLE-SaaS/_bmad-output/implementation-artifacts/mmr-version-schema-minimal.json
-  - /home/axel/DLE-SaaS/_bmad-output/implementation-artifacts/mmr-version-example.json
-  - /home/axel/DLE-SaaS/_bmad-output/implementation-artifacts/django_models_v1.py
+  - _bmad-output/planning-artifacts/prd.md
+  - _bmad-output/research/competitive-patterns-2026-03-06.md
+  - _bmad-output/research/transcript-to-product-decisions-2026-03-07.md
+  - _bmad-output/research/actionable-architecture-decisions-2026-03-06.md
+  - docs/archive/research/competitive-patterns.md
+  - _bmad-output/brainstorming/brainstorming-session-2026-03-05-19h30.md
+  - docs/archive/brainstorming/brainstorming-session-2026-03-05.md
+  - docs/README.md
+  - docs/decisions/transcript-product-decisions.md
+  - docs/decisions/architecture-decisions.md
+  - docs/implementation/README.md
+  - _bmad-output/implementation-artifacts/mmr-version-schema-minimal.json
+  - _bmad-output/implementation-artifacts/mmr-version-example.json
+  - _bmad-output/implementation-artifacts/django_models_v1.py
 validationStepsCompleted:
   - step-v-01-discovery
   - step-v-02-format-detection
@@ -36,25 +36,25 @@ overallStatus: 'Critical'
 
 # PRD Validation Report
 
-**PRD Being Validated:** /home/axel/DLE-SaaS/_bmad-output/planning-artifacts/prd.md
+**PRD Being Validated:** _bmad-output/planning-artifacts/prd.md
 **Validation Date:** 2026-03-07
 
 ## Input Documents
 
-- PRD: `/home/axel/DLE-SaaS/_bmad-output/planning-artifacts/prd.md`
-- Research: `/home/axel/DLE-SaaS/_bmad-output/research/competitive-patterns-2026-03-06.md`
-- Research: `/home/axel/DLE-SaaS/_bmad-output/research/transcript-to-product-decisions-2026-03-07.md`
-- Research: `/home/axel/DLE-SaaS/_bmad-output/research/actionable-architecture-decisions-2026-03-06.md`
-- Research archive: `/home/axel/DLE-SaaS/docs/archive/research/competitive-patterns.md`
-- Brainstorming: `/home/axel/DLE-SaaS/_bmad-output/brainstorming/brainstorming-session-2026-03-05-19h30.md`
-- Brainstorming archive: `/home/axel/DLE-SaaS/docs/archive/brainstorming/brainstorming-session-2026-03-05.md`
-- Project docs: `/home/axel/DLE-SaaS/docs/README.md`
-- Decision doc: `/home/axel/DLE-SaaS/docs/decisions/transcript-product-decisions.md`
-- Decision doc: `/home/axel/DLE-SaaS/docs/decisions/architecture-decisions.md`
-- Implementation doc: `/home/axel/DLE-SaaS/docs/implementation/README.md`
-- Implementation artifact: `/home/axel/DLE-SaaS/_bmad-output/implementation-artifacts/mmr-version-schema-minimal.json`
-- Implementation artifact: `/home/axel/DLE-SaaS/_bmad-output/implementation-artifacts/mmr-version-example.json`
-- Implementation artifact: `/home/axel/DLE-SaaS/_bmad-output/implementation-artifacts/django_models_v1.py`
+- PRD: `_bmad-output/planning-artifacts/prd.md`
+- Research: `_bmad-output/research/competitive-patterns-2026-03-06.md`
+- Research: `_bmad-output/research/transcript-to-product-decisions-2026-03-07.md`
+- Research: `_bmad-output/research/actionable-architecture-decisions-2026-03-06.md`
+- Research archive: `docs/archive/research/competitive-patterns.md`
+- Brainstorming: `_bmad-output/brainstorming/brainstorming-session-2026-03-05-19h30.md`
+- Brainstorming archive: `docs/archive/brainstorming/brainstorming-session-2026-03-05.md`
+- Project docs: `docs/README.md`
+- Decision doc: `docs/decisions/transcript-product-decisions.md`
+- Decision doc: `docs/decisions/architecture-decisions.md`
+- Implementation doc: `docs/implementation/README.md`
+- Implementation artifact: `_bmad-output/implementation-artifacts/mmr-version-schema-minimal.json`
+- Implementation artifact: `_bmad-output/implementation-artifacts/mmr-version-example.json`
+- Implementation artifact: `_bmad-output/implementation-artifacts/django_models_v1.py`
 
 ## Format Detection
 

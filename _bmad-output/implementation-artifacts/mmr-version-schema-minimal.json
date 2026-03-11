@@ -364,6 +364,40 @@
         "type",
         "label"
       ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "number_series"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "else": {
+            "properties": {
+              "validation": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "minItems"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "maxItems"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ],
       "properties": {
         "key": {
           "type": "string",
