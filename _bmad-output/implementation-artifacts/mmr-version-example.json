@@ -80,6 +80,10 @@
       "kind": "weighing",
       "instructions": "Renseigner la pesee et calculer les controles issus du fichier client.",
       "required": true,
+      "attachmentsPolicy": {
+        "supportsAttachments": true,
+        "attachmentKinds": ["worksheet"]
+      },
       "repeatPolicy": {
         "mode": "single",
         "minRecords": 1,
@@ -116,6 +120,26 @@
             { "value": "100mL_sweet", "label": "100mL Sweet" },
             { "value": "200mL", "label": "200mL" }
           ]
+        },
+        {
+          "key": "gross_measurements",
+          "type": "number_series",
+          "label": "Serie de poids bruts du fichier de pesee",
+          "required": true,
+          "validation": {
+            "minItems": 1,
+            "maxItems": 30
+          }
+        },
+        {
+          "key": "tare_measurements",
+          "type": "number_series",
+          "label": "Serie de tares du fichier de pesee",
+          "required": true,
+          "validation": {
+            "minItems": 1,
+            "maxItems": 30
+          }
         },
         {
           "key": "target_weight",
@@ -444,15 +468,16 @@
     {
       "key": "average_lot_weight",
       "label": "Moyenne lot",
-      "backendRef": "client_chateau_renard.weighing.average_lot_weight",
-      "inputs": ["target_weight"],
+      "backendRef": "client_chateau_renard.weighing.average_lot_weight_from_measurement_series",
+      "inputs": ["gross_measurements", "tare_measurements", "format_code"],
       "outputFieldKey": "average_measured_weight"
     },
     {
       "key": "weight_conformity",
       "label": "Conformite poids",
       "backendRef": "client_chateau_renard.weighing.weight_conformity",
-      "inputs": ["density_from_bulk_record", "format_code", "target_weight"],
+      "inputs": ["density_from_bulk_record", "format_code", "target_weight", "average_measured_weight"],
+      "dependsOn": ["average_lot_weight"],
       "outputFieldKey": "weight_conformity"
     }
   ],

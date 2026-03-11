@@ -364,6 +364,40 @@
         "type",
         "label"
       ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "number_series"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "else": {
+            "properties": {
+              "validation": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "minItems"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "maxItems"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ],
       "properties": {
         "key": {
           "type": "string",
@@ -376,6 +410,7 @@
             "text",
             "number",
             "decimal",
+            "number_series",
             "boolean",
             "datetime",
             "select",
@@ -429,6 +464,14 @@
             "max": {
               "type": "number"
             },
+            "minItems": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "maxItems": {
+              "type": "integer",
+              "minimum": 1
+            },
             "pattern": {
               "type": "string"
             }
@@ -476,6 +519,13 @@
           "maxLength": 255
         },
         "inputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "dependsOn": {
           "type": "array",
           "items": {
             "type": "string",

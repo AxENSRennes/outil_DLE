@@ -1,20 +1,20 @@
-# Implementation References
+# Implementation Baselines
 
-This directory contains the current implementation reference artifacts for the DLE SaaS.
+This directory contains implementation-facing baseline docs for DLE SaaS.
 
 ## Files
 
-- `mmr-version-schema-minimal.json`
-  - minimal JSON schema for a versioned dossier template
-- `mmr-version-example.json`
-  - example template based on the current perfume manufacturing and packaging assumptions
-- `django_models_v1.py`
-  - Django model reference for the first product slice
+- `code-quality-baseline.md`
+  - local and CI quality tooling baseline
+- `README.md`
+  - pointer to the current BMAD-managed implementation artifacts
 
 ## Intended Use
 
-These files are not generated code. They are reference artifacts meant to guide:
-- Django app scaffolding
-- DRF API design
-- React step renderer design
-- review and signature workflow implementation
+Use this directory for supporting implementation guidance that should remain stable outside BMAD workflow outputs.
+
+The current implementation artifacts live in:
+
+- `_bmad-output/implementation-artifacts/mmr-version-schema-minimal.json`
+- `_bmad-output/implementation-artifacts/mmr-version-example.json`
+- `_bmad-output/implementation-artifacts/django_models_v1.py`

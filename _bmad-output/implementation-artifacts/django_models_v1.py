@@ -227,7 +227,6 @@ class Batch(TimestampedModel):
 
 
 class BatchStepStatus(models.TextChoices):
-    NOT_APPLICABLE = "not_applicable", "Not applicable"
     NOT_STARTED = "not_started", "Not started"
     IN_PROGRESS = "in_progress", "In progress"
     COMPLETED = "completed", "Completed"
@@ -316,7 +315,14 @@ class BatchDocumentStatus(models.TextChoices):
     EXPECTED = "expected", "Expected"
     PRESENT = "present", "Present"
     MISSING = "missing", "Missing"
-    NOT_APPLICABLE = "not_applicable", "Not applicable"
+
+
+class BatchDocumentRepeatMode(models.TextChoices):
+    SINGLE = "single", "Single"
+    PER_SHIFT = "per_shift", "Per shift"
+    PER_TEAM = "per_team", "Per team"
+    PER_BOX = "per_box", "Per box"
+    PER_EVENT = "per_event", "Per event"
 
 
 class BatchDocumentRequirement(TimestampedModel):
@@ -330,7 +336,11 @@ class BatchDocumentRequirement(TimestampedModel):
     source_step_key = models.CharField(max_length=100, blank=True)
     is_required = models.BooleanField(default=True)
     is_applicable = models.BooleanField(default=True)
-    repeat_mode = models.CharField(max_length=32, default="single")
+    repeat_mode = models.CharField(
+        max_length=32,
+        choices=BatchDocumentRepeatMode.choices,
+        default=BatchDocumentRepeatMode.SINGLE,
+    )
     expected_count = models.PositiveIntegerField(default=1)
     actual_count = models.PositiveIntegerField(default=0)
     status = models.CharField(
