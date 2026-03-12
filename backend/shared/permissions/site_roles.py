@@ -64,6 +64,7 @@ class SiteScopedRolePermission(BasePermission):
                 if not site.is_active:
                     raise NotFound(detail="Site not found.", code="site_not_found")
                 return site
+            return None  # Explicit resolver is authoritative; skip attribute fallbacks.
 
         site_object_attr = getattr(view, "site_object_attr", "site")
         site = getattr(obj, site_object_attr, None)

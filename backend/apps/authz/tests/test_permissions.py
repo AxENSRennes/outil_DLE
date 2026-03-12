@@ -168,3 +168,28 @@ def test_site_role_permission_resolves_site_from_object_code() -> None:
 
     assert permission.has_permission(request, view) is True
     assert permission.has_object_permission(request, view, obj) is True
+
+
+@pytest.mark.django_db
+def test_explicit_resolver_returning_none_does_not_fall_through_to_attribute() -> None:
+    """get_site_for_object returning None must NOT fall through to obj.site."""
+    user = get_user_model().objects.create_user(
+        username="no-fallthrough",
+        password="test-pass-123",
+    )
+    site = Site.objects.create(code="site-a", name="Site A")
+    SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR)
+    permission = SiteScopedRolePermission()
+    view = SimpleNamespace(
+        required_site_roles=(SiteRole.OPERATOR,),
+        kwargs={},
+        allow_object_level_site_resolve=True,
+        get_site_for_object=lambda obj: None,  # explicitly returns None
+    )
+    request = APIRequestFactory().get("/api/v1/auth/object-access/")
+    request.user = user
+    obj = SimpleNamespace(site=site)  # has .site but resolver says None
+
+    assert permission.has_permission(request, view) is True
+    with pytest.raises(PermissionDenied):
+        permission.has_object_permission(request, view, obj)
