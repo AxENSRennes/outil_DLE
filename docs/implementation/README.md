@@ -4,6 +4,8 @@ This directory contains implementation-facing baseline docs for DLE SaaS.
 
 ## Files
 
+- `authorization-policy.md`
+  - canonical site-aware RBAC baseline and enforcement locations
 - `code-quality-baseline.md`
   - local and CI quality tooling baseline
 - `README.md`

@@ -42,7 +42,7 @@ story_location: /home/axel/DLE-SaaS/_bmad-output/implementation-artifacts
 development_status:
   epic-1: in-progress
   1-1-initialize-the-split-stack-foundation: done
-  1-2-establish-site-aware-roles-and-access-policy: backlog
+  1-2-establish-site-aware-roles-and-access-policy: review
   1-3-implement-shared-workstation-identification-and-signature-authority-guardrails: backlog
   epic-1-retrospective: optional
   epic-2: backlog
