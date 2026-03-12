@@ -1,3 +1,12 @@
+import { RouterProvider } from "react-router-dom";
+
+import { AppProviders } from "@/app/providers/app-providers";
+import { appRouter } from "@/app/router";
+
 export function App() {
-  return <main>DLE-SaaS frontend bootstrap</main>;
+  return (
+    <AppProviders>
+      <RouterProvider router={appRouter} />
+    </AppProviders>
+  );
 }

@@ -11,11 +11,15 @@
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["eslint.config.js", "src", "vitest.config.ts"]
+  "include": ["eslint.config.js", "src", "vite.config.ts", "vitest.config.ts"]
 }

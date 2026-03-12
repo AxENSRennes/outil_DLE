@@ -65,6 +65,6 @@ architecture-check-frontend:
 	npm --prefix $(FRONTEND_DIR) run architecture-check
 
 doctor:
-	npm --prefix $(FRONTEND_DIR) run doctor
+	npm_config_cache=$(CURDIR)/.cache/npm npm --prefix $(FRONTEND_DIR) run doctor
 
 check: lint typecheck test security architecture-check doctor

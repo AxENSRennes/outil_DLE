@@ -1,20 +1,33 @@
 # Frontend
 
-This directory is reserved for the future React + TypeScript + Vite frontend.
+This directory now contains the real Vite + React + TypeScript frontend shell for DLE-SaaS.
 
-## Current State
+## Structure
 
-- linting, typechecking, testing, and `react-doctor` are already configured
-- `src/App.tsx` and `src/smoke.test.ts` are placeholders used to validate the toolchain
-- no real product UI has been scaffolded yet
+- `index.html`
+  - Vite HTML entrypoint
+- `src/main.tsx`
+  - browser bootstrap
+- `src/app/`
+  - router, providers, layout, and shared app wiring
+- `src/shared/`
+  - owned utilities and shadcn-style UI primitives
+- `src/features/`
+  - feature-owned screens and components
 
-## Intended Use
+## Baseline Libraries
 
-When implementation starts for real, this directory should contain:
+- React Router 7
+- TanStack Query v5
+- React Hook Form 7
+- Zod 4
+- Tailwind CSS 4 via `@tailwindcss/vite`
+- shadcn/ui-style ownership under `src/shared/ui/`
 
-- the Vite application entrypoints
-- feature and UI code
-- frontend tests
-- frontend-only configuration and assets
+## Commands
 
-Until then, treat this directory as a bootstrap placeholder, not as final UI structure.
+```bash
+npm --prefix frontend run dev
+npm --prefix frontend run build
+npm --prefix frontend run test
+```
