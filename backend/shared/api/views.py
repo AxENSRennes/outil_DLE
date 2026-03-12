@@ -4,7 +4,9 @@ from typing import ClassVar
 
 from django.db import connection
 from django.http import HttpRequest
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -25,3 +27,11 @@ class HealthCheckView(APIView):
             {"database": "ok", "service": "backend", "status": "ok"},
             status=status.HTTP_200_OK,
         )
+
+
+class AuthenticatedSchemaView(SpectacularAPIView):
+    permission_classes: ClassVar[list[type]] = [IsAuthenticated]  # type: ignore[misc]
+
+
+class AuthenticatedSchemaDocsView(SpectacularSwaggerView):
+    permission_classes: ClassVar[list[type]] = [IsAuthenticated]  # type: ignore[misc]

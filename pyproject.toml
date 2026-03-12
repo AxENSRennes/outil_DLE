@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=78.1.1", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -29,6 +29,7 @@ dev = [
     "pytest-cov>=5.0",
     "pytest-django>=4.8",
     "ruff>=0.11",
+    "setuptools>=78.1.1",
 ]
 
 [tool.ruff]
@@ -51,6 +52,7 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "backend/tests/*.py" = ["S101"]
+"backend/apps/*/migrations/*.py" = ["E501", "RUF012"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -82,7 +84,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 python_files = ["test_*.py"]
-testpaths = ["backend/tests"]
+testpaths = ["backend"]
 pythonpath = ["backend"]
 DJANGO_SETTINGS_MODULE = "config.settings.dev"
 addopts = [

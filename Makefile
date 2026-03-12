@@ -3,6 +3,7 @@ PIP ?= /home/axel/wsl_venv/bin/pip
 
 BACKEND_DIR ?= backend
 FRONTEND_DIR ?= frontend
+BANDIT_EXCLUDES := $(BACKEND_DIR)/tests/*,$(BACKEND_DIR)/apps/*/tests/*
 
 .PHONY: help lint lint-python lint-frontend format format-python typecheck typecheck-python typecheck-frontend test test-backend test-frontend security architecture-check architecture-check-backend architecture-check-frontend doctor check
 
@@ -48,7 +49,7 @@ test-frontend:
 	npm --prefix $(FRONTEND_DIR) run test
 
 security:
-	$(PYTHON) -m bandit -r $(BACKEND_DIR) -x $(BACKEND_DIR)/tests
+	$(PYTHON) -m bandit -r $(BACKEND_DIR) -x "$(BANDIT_EXCLUDES)"
 	XDG_CACHE_HOME=$(CURDIR)/.cache $(PYTHON) -m pip_audit . --skip-editable
 	@if command -v gitleaks >/dev/null 2>&1; then \
 		gitleaks detect --source . --no-git --redact; \

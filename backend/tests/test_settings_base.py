@@ -45,3 +45,14 @@ def test_non_dev_settings_require_critical_secrets_and_database_credentials(
 
     with pytest.raises(RuntimeError, match=expected_message):
         load_base_settings_module()
+
+
+def test_rest_framework_defaults_to_session_authentication_only() -> None:
+    from config.settings import base
+
+    assert base.REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] == [
+        "rest_framework.authentication.SessionAuthentication"
+    ]
+    assert base.REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"] == [
+        "rest_framework.permissions.IsAuthenticated"
+    ]

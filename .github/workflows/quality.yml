@@ -9,6 +9,27 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: dle_saas
+      POSTGRES_USER: dle_saas
+      POSTGRES_PASSWORD: dle_saas
+    services:
+      postgres:
+        image: postgres:17.9-alpine
+        env:
+          POSTGRES_DB: dle_saas
+          POSTGRES_USER: dle_saas
+          POSTGRES_PASSWORD: dle_saas
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dle_saas -d dle_saas"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -40,7 +61,7 @@ jobs:
         run: python tools/check_backend_architecture.py
 
       - name: Bandit
-        run: python -m bandit -r backend -x backend/tests
+        run: python -m bandit -r backend -x "backend/tests/*,backend/apps/*/tests/*"
 
       - name: pip-audit
         run: python -m pip_audit
