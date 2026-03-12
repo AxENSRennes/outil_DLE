@@ -3,7 +3,7 @@ PIP ?= /home/axel/wsl_venv/bin/pip
 
 BACKEND_DIR ?= backend
 FRONTEND_DIR ?= frontend
-BANDIT_EXCLUDES := $(BACKEND_DIR)/tests,$(shell find $(BACKEND_DIR)/apps -type d -name tests | paste -sd, -)
+BANDIT_EXCLUDES := $(BACKEND_DIR)/tests/*,$(BACKEND_DIR)/apps/*/tests/*
 
 .PHONY: help lint lint-python lint-frontend format format-python typecheck typecheck-python typecheck-frontend test test-backend test-frontend security architecture-check architecture-check-backend architecture-check-frontend doctor check
 

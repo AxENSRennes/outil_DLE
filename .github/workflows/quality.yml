@@ -40,7 +40,7 @@ jobs:
         run: python tools/check_backend_architecture.py
 
       - name: Bandit
-        run: python -m bandit -r backend -x backend/tests
+        run: python -m bandit -r backend -x "backend/tests/*,backend/apps/*/tests/*"
 
       - name: pip-audit
         run: python -m pip_audit
