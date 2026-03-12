@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any, ClassVar
 
 import pytest
@@ -85,3 +86,47 @@ def test_site_role_permission_denies_user_for_other_site() -> None:
 
     assert response.status_code == 403
     assert response.data["code"] == "site_role_required"
+
+
+@pytest.mark.django_db
+def test_site_role_permission_can_defer_site_resolution_to_object_level() -> None:
+    user = get_user_model().objects.create_user(
+        username="object-level-user",
+        password="test-pass-123",
+    )
+    site = Site.objects.create(code="site-a", name="Site A")
+    SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR)
+    permission = SiteScopedRolePermission()
+    view = SimpleNamespace(
+        required_site_roles=(SiteRole.OPERATOR,),
+        kwargs={},
+        allow_object_level_site_resolve=True,
+    )
+    request = APIRequestFactory().get("/api/v1/auth/object-access/")
+    request.user = user
+    obj = SimpleNamespace(site=site)
+
+    assert permission.has_permission(request, view) is True
+    assert permission.has_object_permission(request, view, obj) is True
+
+
+@pytest.mark.django_db
+def test_site_role_permission_resolves_site_from_object_code() -> None:
+    user = get_user_model().objects.create_user(
+        username="object-code-user",
+        password="test-pass-123",
+    )
+    site = Site.objects.create(code="site-a", name="Site A")
+    SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR)
+    permission = SiteScopedRolePermission()
+    view = SimpleNamespace(
+        required_site_roles=(SiteRole.OPERATOR,),
+        kwargs={},
+        allow_object_level_site_resolve=True,
+    )
+    request = APIRequestFactory().get("/api/v1/auth/object-access/")
+    request.user = user
+    obj = SimpleNamespace(site_code=site.code)
+
+    assert permission.has_permission(request, view) is True
+    assert permission.has_object_permission(request, view, obj) is True

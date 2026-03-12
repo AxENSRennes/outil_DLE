@@ -24,3 +24,9 @@ class SiteAccessAssignmentSerializer(serializers.Serializer):
 class AuthContextSerializer(serializers.Serializer):
     user = AuthenticatedUserSummarySerializer()
     site_assignments = SiteAccessAssignmentSerializer(many=True)
+
+
+class SiteRoleAccessProbeSerializer(serializers.Serializer):
+    site = SiteSummarySerializer()
+    required_role = serializers.CharField()
+    status = serializers.CharField()

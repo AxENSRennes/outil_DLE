@@ -1,6 +1,6 @@
 # Story 1.2: Establish Site-Aware Roles and Access Policy
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -300,6 +300,7 @@ GPT-5 Codex
 - Documented the baseline authorization convention in `docs/implementation/authorization-policy.md`.
 - Added model, API, and permission tests covering swappable user configuration, duplicate-role prevention, canonical-role validation, authenticated context payloads, unauthenticated denial, wrong-role denial, and wrong-site denial.
 - Verified the full repo quality suite with `make check` using `/home/axel/wsl_venv/bin/python` for Python tooling and the Compose PostgreSQL container exposed on `127.0.0.1:65432`.
+- Locked DRF to session authentication only, added a shipped site-role probe endpoint, expanded the permission primitive for object-level site resolution, and documented the custom-user cutover path for pre-Story-1.2 environments.
 
 ### File List
 
@@ -336,13 +337,70 @@ GPT-5 Codex
 - `backend/apps/sites/tests/__init__.py`
 - `backend/apps/sites/tests/test_models.py`
 - `backend/config/settings/base.py`
+- `backend/tests/test_settings_base.py`
 - `backend/shared/api/urls.py`
 - `backend/shared/permissions/__init__.py`
 - `backend/shared/permissions/site_roles.py`
 - `docs/implementation/README.md`
 - `docs/implementation/authorization-policy.md`
+- `docs/implementation/custom-user-model-cutover.md`
 - `pyproject.toml`
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Axel
+**Date:** 2026-03-12
+**Outcome:** Approved after fixes
+
+#### Summary
+
+- Story context, architecture, and Epic 1 Story 1.2 requirements were reviewed.
+- No uncommitted or staged git changes were present during review, so validation used the story file list and committed source.
+- Verified with:
+  - `POSTGRES_HOST=127.0.0.1 POSTGRES_PORT=65432 /home/axel/wsl_venv/bin/python -m pytest backend/apps/authz/tests backend/apps/sites/tests`
+  - `make lint-python`
+  - `make typecheck-python`
+  - `make architecture-check-backend`
+
+#### Findings
+
+1. **[High] The API still accepts non-session authentication even though the story requires a session-only baseline.**
+   - `REST_FRAMEWORK` sets the schema and exception handler only, so Django REST framework falls back to its default authentication classes instead of an explicit session-only configuration. That leaves `BasicAuthentication` enabled for current and future endpoints, which bypasses the shared-workstation/session contract this story is supposed to freeze.
+   - Evidence:
+     - [backend/config/settings/base.py](/home/axel/DLE-SaaS/backend/config/settings/base.py#L119)
+     - [backend/apps/authz/api/views.py](/home/axel/DLE-SaaS/backend/apps/authz/api/views.py#L15)
+
+2. **[High] AC 2 is only proven in a test-only view; no production route actually enforces site-role authorization yet.**
+   - The shipped auth endpoint uses `IsAuthenticated` only. `SiteScopedRolePermission` is never wired into any runtime URL/view pair, so the application still has no real endpoint where wrong-role or wrong-site access is denied by backend policy. The current tests prove the helper in isolation, not the delivered app behavior claimed in the story.
+   - Evidence:
+     - [backend/apps/authz/api/views.py](/home/axel/DLE-SaaS/backend/apps/authz/api/views.py#L15)
+     - [backend/shared/api/urls.py](/home/axel/DLE-SaaS/backend/shared/api/urls.py#L11)
+     - [backend/apps/authz/tests/test_permissions.py](/home/axel/DLE-SaaS/backend/apps/authz/tests/test_permissions.py#L17)
+
+3. **[Medium] The reusable permission primitive is not reusable enough for the object-scoped endpoints later epics will build.**
+   - `SiteScopedRolePermission` can authorize only when a `site_code` URL kwarg is present. It has no `has_object_permission()` path and no hook for deriving site context from a batch, template, review, or any other domain object. Later teams will have to add custom glue per endpoint or skip object-level checks, which is exactly the feature-local divergence this story is meant to prevent.
+   - Evidence:
+     - [backend/shared/permissions/site_roles.py](/home/axel/DLE-SaaS/backend/shared/permissions/site_roles.py#L14)
+
+4. **[Medium] Switching to `AUTH_USER_MODEL = "authz.User"` after Story 1.1 leaves the upgrade path for already-migrated environments undefined.**
+   - This story adds the custom user model in `authz` and changes the project setting, but there is no migration or documented procedure for environments that already ran the foundation with the previous user table. Django's own guidance is that changing the user model after database tables already exist is manual and complex. As implemented, existing admin or local accounts from an earlier migrated environment would not be migrated into `authz_user`.
+   - Evidence:
+     - [backend/config/settings/base.py](/home/axel/DLE-SaaS/backend/config/settings/base.py#L117)
+     - [backend/apps/authz/migrations/0001_initial.py](/home/axel/DLE-SaaS/backend/apps/authz/migrations/0001_initial.py#L21)
+
+#### Developer Follow-up
+
+- 2026-03-12: Set DRF `DEFAULT_AUTHENTICATION_CLASSES` to `SessionAuthentication` only and added a regression test rejecting Basic auth on `GET /api/v1/auth/context/`.
+- 2026-03-12: Added shipped runtime enforcement at `GET /api/v1/auth/sites/{site_code}/operator-access/` with API tests covering allowed access, wrong-role denial, and wrong-site denial.
+- 2026-03-12: Expanded `SiteScopedRolePermission` with request-level and object-level site resolution hooks so later stories can reuse the same primitive against object-scoped resources.
+- 2026-03-12: Added a documented cutover runbook for environments initialized before the switch to `authz.User`.
+- 2026-03-12: Re-ran targeted backend verification after fixes and accepted the story for completion.
+- 2026-03-12: Re-ran `make check` successfully after the review fixes; `react-doctor` still reports one pre-existing frontend warning for an unused `ButtonProps` type in `frontend/src/shared/ui/button.tsx`.
 
 ### Change Log
 
 - 2026-03-12: Implemented Story 1.2 site-aware RBAC foundations, added the authenticated access-context endpoint, documented the authorization convention, expanded backend tests, and passed `make check`.
+- 2026-03-12: Senior developer review completed. Outcome: Changes Requested. Story returned to `in-progress` pending authentication baseline and runtime authorization fixes.
+- 2026-03-12: Addressed senior review findings by enforcing session-only DRF auth, shipping a runtime role-protected auth probe endpoint, extending site-role permission reuse for object-scoped resources, documenting the custom-user cutover path, and re-running targeted backend checks.
+- 2026-03-12: Story marked `done` after review findings were fixed and targeted verification passed.
+- 2026-03-12: Full `make check` quality suite passed after the review fixes; only the pre-existing `react-doctor` warning for unused `ButtonProps` remains.

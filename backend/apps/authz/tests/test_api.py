@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 from typing import Any
 
 import pytest
@@ -79,3 +80,77 @@ def test_auth_context_returns_authenticated_user_site_assignments(client: Any) -
             },
         ],
     }
+
+
+@pytest.mark.django_db
+def test_auth_context_rejects_basic_auth_when_session_is_missing(client: Any) -> None:
+    get_user_model().objects.create_user(
+        username="basic-auth-user",
+        password="test-pass-123",
+    )
+    credentials = base64.b64encode(b"basic-auth-user:test-pass-123").decode()
+
+    response = client.get(
+        "/api/v1/auth/context/",
+        HTTP_AUTHORIZATION=f"Basic {credentials}",
+    )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "not_authenticated"
+
+
+@pytest.mark.django_db
+def test_operator_access_probe_allows_user_with_operator_role_for_site(client: Any) -> None:
+    user = get_user_model().objects.create_user(
+        username="site-operator",
+        password="test-pass-123",
+    )
+    site = Site.objects.create(code="paris-line-1", name="Paris Line 1")
+    SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR)
+
+    client.force_login(user)
+    response = client.get(f"/api/v1/auth/sites/{site.code}/operator-access/")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "site": {
+            "id": site.id,
+            "code": site.code,
+            "name": "Paris Line 1",
+        },
+        "required_role": "operator",
+        "status": "authorized",
+    }
+
+
+@pytest.mark.django_db
+def test_operator_access_probe_denies_wrong_role_for_site(client: Any) -> None:
+    user = get_user_model().objects.create_user(
+        username="qa-user",
+        password="test-pass-123",
+    )
+    site = Site.objects.create(code="lyon-qc", name="Lyon QC")
+    SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.QUALITY_REVIEWER)
+
+    client.force_login(user)
+    response = client.get(f"/api/v1/auth/sites/{site.code}/operator-access/")
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "site_role_required"
+
+
+@pytest.mark.django_db
+def test_operator_access_probe_denies_same_role_for_other_site(client: Any) -> None:
+    user = get_user_model().objects.create_user(
+        username="wrong-site-operator",
+        password="test-pass-123",
+    )
+    assigned_site = Site.objects.create(code="paris-line-1", name="Paris Line 1")
+    requested_site = Site.objects.create(code="lyon-qc", name="Lyon QC")
+    SiteRoleAssignment.objects.create(user=user, site=assigned_site, role=SiteRole.OPERATOR)
+
+    client.force_login(user)
+    response = client.get(f"/api/v1/auth/sites/{requested_site.code}/operator-access/")
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "site_role_required"

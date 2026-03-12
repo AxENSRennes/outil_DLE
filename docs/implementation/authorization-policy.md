@@ -34,6 +34,7 @@ Authorization enforcement is backend-authoritative.
 - Domain helpers live in [policies.py](/home/axel/DLE-SaaS/backend/apps/authz/domain/policies.py).
 - Reusable DRF permission primitives live in [site_roles.py](/home/axel/DLE-SaaS/backend/shared/permissions/site_roles.py).
 - The authenticated access-context read surface lives at `GET /api/v1/auth/context/`.
+- A runtime authorization probe lives at `GET /api/v1/auth/sites/{site_code}/operator-access/` to prove server-side site-role denial on a shipped endpoint.
 
 Frontend visibility is not access control. Later stories should reuse these helpers and permission classes instead of inventing feature-local role checks.
 
@@ -46,3 +47,11 @@ Frontend visibility is not access control. Later stories should reuse these help
 - canonical role names grouped by site
 
 This endpoint is informational only. It does not implement workstation identify/switch flows, PIN checks, or signature re-authentication.
+
+## Custom User Model Cutover
+
+Story 1.2 switches the project baseline to `AUTH_USER_MODEL = "authz.User"` while the platform is still in foundation mode.
+
+- New environments should start from an empty database and apply the current migrations directly.
+- Existing dev or UAT databases created before Story 1.2 need an explicit cutover before reuse.
+- Follow [custom-user-model-cutover.md](/home/axel/DLE-SaaS/docs/implementation/custom-user-model-cutover.md) before pointing an already-initialized environment at this revision.

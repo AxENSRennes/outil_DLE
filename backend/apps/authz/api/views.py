@@ -6,10 +6,12 @@ from django.http import HttpRequest
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from shared.permissions.site_roles import SiteScopedRolePermission
 
-from apps.authz.api.serializers import AuthContextSerializer
-from apps.authz.models import User
+from apps.authz.api.serializers import AuthContextSerializer, SiteRoleAccessProbeSerializer
+from apps.authz.models import SiteRole, User
 from apps.authz.selectors.access_context import list_site_access_contexts
+from apps.sites.models import Site
 
 
 class AuthContextView(APIView):
@@ -37,4 +39,24 @@ class AuthContextView(APIView):
             ],
         }
         serializer = AuthContextSerializer(payload)
+        return Response(serializer.data)
+
+
+class OperatorSiteAccessProbeView(APIView):
+    permission_classes: ClassVar[list[type]] = [IsAuthenticated, SiteScopedRolePermission]
+    required_site_roles = (SiteRole.OPERATOR,)
+    site_lookup_kwarg = "site_code"
+
+    def get(self, request: HttpRequest, site_code: str) -> Response:
+        site = cast(Site, self.site)
+        payload = {
+            "site": {
+                "id": site.id,
+                "code": site.code,
+                "name": site.name,
+            },
+            "required_role": SiteRole.OPERATOR,
+            "status": "authorized",
+        }
+        serializer = SiteRoleAccessProbeSerializer(payload)
         return Response(serializer.data)

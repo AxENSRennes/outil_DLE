@@ -8,6 +8,8 @@ This directory contains implementation-facing baseline docs for DLE SaaS.
   - canonical site-aware RBAC baseline and enforcement locations
 - `code-quality-baseline.md`
   - local and CI quality tooling baseline
+- `custom-user-model-cutover.md`
+  - required cutover path for environments initialized before Story 1.2 switched to `authz.User`
 - `README.md`
   - pointer to the current BMAD-managed implementation artifacts
 
