@@ -18,7 +18,7 @@ class HealthCheckView(APIView):
     def get(self, request: HttpRequest) -> Response:
         try:
             connection.ensure_connection()
-        except Exception as exc:  # pragma: no cover - exercised through response contract.
+        except Exception as exc:
             raise ServiceUnavailable("Database connectivity check failed.") from exc
 
         return Response(

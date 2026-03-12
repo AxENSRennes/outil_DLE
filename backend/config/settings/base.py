@@ -13,7 +13,7 @@ def env(key: str, default: str) -> str:
 
 def env_required(key: str) -> str:
     value = os.environ.get(key)
-    if value:
+    if value is not None and value.strip():
         return value
     raise RuntimeError(f"Environment variable '{key}' is required for this settings module.")
 
@@ -24,8 +24,9 @@ def env_list(key: str, default: str) -> list[str]:
 
 
 CURRENT_SETTINGS_MODULE = env("DJANGO_SETTINGS_MODULE", "config.settings.dev")
+IS_DEV_SETTINGS = CURRENT_SETTINGS_MODULE == "config.settings.dev"
 
-if CURRENT_SETTINGS_MODULE == "config.settings.dev":
+if IS_DEV_SETTINGS:
     SECRET_KEY = env("DJANGO_SECRET_KEY", "django-insecure-dle-saas-local-dev-key")
 else:
     SECRET_KEY = env_required("DJANGO_SECRET_KEY")
@@ -78,9 +79,17 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB", "dle_saas"),
-        "USER": env("POSTGRES_USER", "dle_saas"),
-        "PASSWORD": env("POSTGRES_PASSWORD", "dle_saas"),
+        "NAME": (
+            env("POSTGRES_DB", "dle_saas") if IS_DEV_SETTINGS else env_required("POSTGRES_DB")
+        ),
+        "USER": (
+            env("POSTGRES_USER", "dle_saas") if IS_DEV_SETTINGS else env_required("POSTGRES_USER")
+        ),
+        "PASSWORD": (
+            env("POSTGRES_PASSWORD", "dle_saas")
+            if IS_DEV_SETTINGS
+            else env_required("POSTGRES_PASSWORD")
+        ),
         "HOST": env("POSTGRES_HOST", "localhost"),
         "PORT": env("POSTGRES_PORT", "5432"),
         "CONN_MAX_AGE": int(env("POSTGRES_CONN_MAX_AGE", "60")),
