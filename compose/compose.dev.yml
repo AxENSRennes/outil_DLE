@@ -33,6 +33,7 @@ services:
         condition: service_healthy
     environment:
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.dev}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost:${FRONTEND_PORT:-5173},http://127.0.0.1:${FRONTEND_PORT:-5173}}
       POSTGRES_HOST: db
       POSTGRES_DB: ${POSTGRES_DB:-dle_saas}
       POSTGRES_USER: ${POSTGRES_USER:-dle_saas}
@@ -51,7 +52,7 @@ services:
       - backend
     environment:
       VITE_APP_TITLE: ${VITE_APP_TITLE:-DLE-SaaS}
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:${BACKEND_PORT:-8000}/api/v1}
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
     volumes:

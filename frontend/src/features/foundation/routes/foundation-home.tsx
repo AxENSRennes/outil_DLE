@@ -1,5 +1,6 @@
 import { ArrowRight, DatabaseZap, FileText, HeartPulse } from "lucide-react";
 
+import { appConfig } from "@/shared/config/app-config";
 import { Button } from "@/shared/ui/button";
 
 const readinessItems = [
@@ -35,7 +36,7 @@ export function FoundationHomePage() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild>
-              <a href="/api/v1/schema/docs/">
+              <a href={appConfig.apiDocsUrl} rel="noreferrer" target="_blank">
                 Open API docs
                 <ArrowRight className="h-4 w-4" />
               </a>

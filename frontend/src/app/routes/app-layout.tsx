@@ -1,5 +1,7 @@
 import { Outlet } from "react-router-dom";
 
+import { appConfig } from "@/shared/config/app-config";
+
 export function AppLayout() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(206,110,56,0.16),_transparent_28%),linear-gradient(180deg,_#f6f0e7_0%,_#efe4d3_100%)] text-stone-900">
@@ -10,7 +12,7 @@ export function AppLayout() {
               regulated workflow foundation
             </p>
             <h1 className="font-['Space_Grotesk',sans-serif] text-2xl font-semibold tracking-tight">
-              DLE-SaaS
+              {appConfig.title}
             </h1>
           </div>
           <div className="rounded-full border border-stone-900/10 bg-white/60 px-3 py-1 text-sm text-stone-600 shadow-sm backdrop-blur">

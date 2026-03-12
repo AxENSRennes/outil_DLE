@@ -8,6 +8,12 @@ from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
 
+def _problem_type_for_code(code: Any) -> str:
+    if isinstance(code, str):
+        return f"urn:dle-saas:error:{code}"
+    return "about:blank"
+
+
 def problem_details_exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
     response = exception_handler(exc, context)
 
@@ -24,12 +30,16 @@ def problem_details_exception_handler(exc: Exception, context: dict[str, Any]) -
     else:
         normalized_detail = detail
 
+    error_code: Any = exc.get_codes() if isinstance(exc, APIException) else None
+
     response.data = {
-        "type": "about:blank",
+        "type": _problem_type_for_code(error_code),
         "title": title,
         "status": response.status_code,
         "detail": normalized_detail,
     }
+    if error_code is not None:
+        response.data["code"] = error_code
     return response
 
 

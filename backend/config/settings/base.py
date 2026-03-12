@@ -11,12 +11,25 @@ def env(key: str, default: str) -> str:
     return os.environ.get(key, default)
 
 
+def env_required(key: str) -> str:
+    value = os.environ.get(key)
+    if value:
+        return value
+    raise RuntimeError(f"Environment variable '{key}' is required for this settings module.")
+
+
 def env_list(key: str, default: str) -> list[str]:
     value = os.environ.get(key, default)
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", "django-insecure-dle-saas-local-dev-key")
+CURRENT_SETTINGS_MODULE = env("DJANGO_SETTINGS_MODULE", "config.settings.dev")
+
+if CURRENT_SETTINGS_MODULE == "config.settings.dev":
+    SECRET_KEY = env("DJANGO_SECRET_KEY", "django-insecure-dle-saas-local-dev-key")
+else:
+    SECRET_KEY = env_required("DJANGO_SECRET_KEY")
+
 DEBUG = False
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS", "")

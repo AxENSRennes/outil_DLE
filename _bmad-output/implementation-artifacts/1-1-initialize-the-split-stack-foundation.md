@@ -1,6 +1,6 @@
 # Story 1.1: Initialize the Split-Stack Foundation
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -239,6 +239,9 @@ GPT-5 Codex
 - `docker compose -f compose/compose.dev.yml config` validated successfully.
 - `docker compose -f compose/compose.dev.yml up -d` was validated successfully once Docker was available, using alternate host ports to avoid local collisions (`POSTGRES_HOST_PORT=65432`, `BACKEND_PORT=18080`, `FRONTEND_PORT=15174`).
 - The initial compose runtime validation exposed two host/container port-coupling bugs in `compose.dev.yml`; both were corrected so PostgreSQL and Django now keep fixed internal container ports while allowing remapped host ports.
+- Code review fixes applied for the frontend API docs URL, Compose port-aware defaults, safer non-dev secret-key handling, and machine-readable problem-details error codes.
+- `docker compose -f compose/compose.dev.yml config` was revalidated with both default ports and remapped ports after the review fixes.
+- `make check` passed again after the review fixes; the PostgreSQL-backed readiness smoke test now exercises a real connection when a configured local database is available and skips gracefully otherwise.
 
 ### Completion Notes List
 
@@ -253,6 +256,7 @@ GPT-5 Codex
   - backend health endpoint responds at `http://127.0.0.1:18080/api/v1/health/`
   - frontend shell responds at `http://127.0.0.1:15174/`
   - PostgreSQL is healthy on host port `65432`
+- Closed review findings by wiring the frontend docs link to environment-driven backend URLs, preserving machine-readable API error codes, and hardening non-dev secret configuration defaults.
 
 ### File List
 
@@ -297,6 +301,7 @@ GPT-5 Codex
 - `frontend/src/app/router.tsx`
 - `frontend/src/app/styles.css`
 - `frontend/src/features/foundation/routes/foundation-home.tsx`
+- `frontend/src/shared/config/app-config.ts`
 - `frontend/src/main.tsx`
 - `frontend/src/shared/lib/cn.ts`
 - `frontend/src/shared/ui/button.tsx`
@@ -312,3 +317,4 @@ GPT-5 Codex
 ### Change Log
 
 - 2026-03-12: Replaced the placeholder split-stack foundation with a real Django + DRF backend, Vite React frontend, Docker Compose runtime baseline, and passing repo quality gates.
+- 2026-03-12: Applied code-review fixes for readiness-test coverage, API docs/frontend config wiring, Compose port remapping defaults, problem-details error codes, and non-dev secret-key enforcement.
