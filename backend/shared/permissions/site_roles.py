@@ -4,8 +4,15 @@ from typing import Any
 
 from apps.authz.domain.policies import user_has_any_site_role
 from apps.sites.models import Site
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotAuthenticated, NotFound, PermissionDenied
 from rest_framework.permissions import BasePermission
+
+
+def get_active_site_by_code(site_code: str) -> Site:
+    site = Site.objects.filter(code=site_code, is_active=True).first()
+    if site is None:
+        raise NotFound(detail="Site not found.", code="site_not_found")
+    return site
 
 
 class SiteScopedRolePermission(BasePermission):
@@ -14,11 +21,14 @@ class SiteScopedRolePermission(BasePermission):
     def _get_required_roles(self, view: Any) -> tuple[str, ...]:
         return tuple(str(role) for role in getattr(view, "required_site_roles", ()))
 
-    def _get_site_by_code(self, site_code: str) -> Site:
-        site = Site.objects.filter(code=site_code, is_active=True).first()
-        if site is None:
-            raise NotFound(detail="Site not found.", code="site_not_found")
-        return site
+    def _require_authenticated_user(self, user: Any) -> None:
+        if getattr(user, "is_authenticated", False):
+            return
+
+        raise NotAuthenticated(
+            detail="Authentication credentials were not provided.",
+            code="not_authenticated",
+        )
 
     def _resolve_site_from_view(self, view: Any) -> Site | None:
         existing_site = getattr(view, "site", None)
@@ -37,7 +47,7 @@ class SiteScopedRolePermission(BasePermission):
         if site_code is None:
             return None
 
-        site = self._get_site_by_code(site_code)
+        site = get_active_site_by_code(site_code)
         view.site = site
         return site
 
@@ -65,7 +75,7 @@ class SiteScopedRolePermission(BasePermission):
         site_object_code_attr = getattr(view, "site_object_code_attr", "site_code")
         site_code = getattr(obj, site_object_code_attr, None)
         if isinstance(site_code, str):
-            return self._get_site_by_code(site_code)
+            return get_active_site_by_code(site_code)
 
         return None
 
@@ -79,6 +89,8 @@ class SiteScopedRolePermission(BasePermission):
         required_roles = self._get_required_roles(view)
         if not required_roles:
             return True
+
+        self._require_authenticated_user(request.user)
 
         site = self._resolve_site_from_view(view)
         if site is not None:
@@ -96,6 +108,8 @@ class SiteScopedRolePermission(BasePermission):
         required_roles = self._get_required_roles(view)
         if not required_roles:
             return True
+
+        self._require_authenticated_user(request.user)
 
         site = self._resolve_site_from_object(view, obj) or self._resolve_site_from_view(view)
         if site is None:

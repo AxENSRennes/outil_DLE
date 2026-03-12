@@ -6,7 +6,7 @@ from django.http import HttpRequest
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from shared.permissions.site_roles import SiteScopedRolePermission
+from shared.permissions.site_roles import SiteScopedRolePermission, get_active_site_by_code
 
 from apps.authz.api.serializers import AuthContextSerializer, SiteRoleAccessProbeSerializer
 from apps.authz.models import SiteRole, User
@@ -47,8 +47,19 @@ class OperatorSiteAccessProbeView(APIView):
     required_site_roles = (SiteRole.OPERATOR,)
     site_lookup_kwarg = "site_code"
 
+    def get_site(self) -> Site:
+        existing_site = getattr(self, "site", None)
+        if isinstance(existing_site, Site):
+            return existing_site
+
+        # SiteScopedRolePermission may populate self.site during has_permission(),
+        # but the view resolves and caches it directly as well.
+        site = get_active_site_by_code(self.kwargs["site_code"])
+        self.site = site
+        return site
+
     def get(self, request: HttpRequest, site_code: str) -> Response:
-        site = cast(Site, self.site)
+        site = self.get_site()
         payload = {
             "site": {
                 "id": site.id,

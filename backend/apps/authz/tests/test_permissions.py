@@ -24,6 +24,24 @@ class OperatorOnlySiteView(APIView):
         return Response({"site_code": site_code, "status": "ok"})
 
 
+class PermissionOnlyOperatorSiteView(APIView):
+    permission_classes: ClassVar[list[type]] = [SiteScopedRolePermission]
+    required_site_roles = (SiteRole.OPERATOR,)
+    site_lookup_kwarg = "site_code"
+
+    def get(self, request: Any, site_code: str) -> Response:
+        return Response({"site_code": site_code, "status": "ok"})
+
+
+class PermissionOnlyDeferredSiteView(APIView):
+    permission_classes: ClassVar[list[type]] = [SiteScopedRolePermission]
+    required_site_roles = (SiteRole.OPERATOR,)
+    allow_object_level_site_resolve = True
+
+    def get(self, request: Any) -> Response:
+        return Response({"status": "ok"})
+
+
 @pytest.mark.django_db
 def test_site_role_permission_allows_user_with_required_role_for_site() -> None:
     user = get_user_model().objects.create_user(username="allowed-user", password="test-pass-123")
@@ -44,6 +62,26 @@ def test_site_role_permission_denies_unauthenticated_requests() -> None:
 
     request = APIRequestFactory().get(f"/api/v1/auth/site-access/{site.code}/")
     response = OperatorOnlySiteView.as_view()(request, site_code=site.code)
+
+    assert response.status_code == 403
+    assert response.data["code"] == "not_authenticated"
+
+
+@pytest.mark.django_db
+def test_site_role_permission_denies_unauthenticated_requests_without_isauthenticated() -> None:
+    site = Site.objects.create(code="site-a", name="Site A")
+
+    request = APIRequestFactory().get(f"/api/v1/auth/site-access/{site.code}/")
+    response = PermissionOnlyOperatorSiteView.as_view()(request, site_code=site.code)
+
+    assert response.status_code == 403
+    assert response.data["code"] == "not_authenticated"
+
+
+@pytest.mark.django_db
+def test_site_role_permission_denies_unauthenticated_deferred_object_resolution() -> None:
+    request = APIRequestFactory().get("/api/v1/auth/object-access/")
+    response = PermissionOnlyDeferredSiteView.as_view()(request)
 
     assert response.status_code == 403
     assert response.data["code"] == "not_authenticated"
