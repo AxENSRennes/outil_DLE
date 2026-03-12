@@ -30,8 +30,8 @@ class HealthCheckView(APIView):
 
 
 class AuthenticatedSchemaView(SpectacularAPIView):
-    permission_classes: ClassVar[list[type]] = [IsAuthenticated]
+    permission_classes: ClassVar[list[type]] = [IsAuthenticated]  # type: ignore[misc]
 
 
 class AuthenticatedSchemaDocsView(SpectacularSwaggerView):
-    permission_classes: ClassVar[list[type]] = [IsAuthenticated]
+    permission_classes: ClassVar[list[type]] = [IsAuthenticated]  # type: ignore[misc]

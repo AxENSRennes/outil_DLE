@@ -3,12 +3,11 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from apps.authz.models import User
 from django.db import connection
 from django.db.utils import OperationalError
 from pytest_django.plugin import DjangoDbBlocker
 from rest_framework.test import APIRequestFactory, force_authenticate
-
-from apps.authz.models import User
 from shared.api.urls import urlpatterns as shared_api_urlpatterns
 
 

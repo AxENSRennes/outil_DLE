@@ -5,6 +5,7 @@ from typing import Any, ClassVar
 
 import pytest
 from django.contrib.auth import get_user_model
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.test import APIRequestFactory, force_authenticate
