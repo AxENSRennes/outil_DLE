@@ -112,7 +112,9 @@ class SiteScopedRolePermission(BasePermission):
 
         self._require_authenticated_user(request.user)
 
-        site = self._resolve_site_from_object(view, obj) or self._resolve_site_from_view(view)
+        site = self._resolve_site_from_object(view, obj)
+        if site is None and not callable(getattr(view, "get_site_for_object", None)):
+            site = self._resolve_site_from_view(view)
         if site is None:
             raise PermissionDenied(
                 detail="A site context is required.",
