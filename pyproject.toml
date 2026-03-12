@@ -7,6 +7,13 @@ name = "dle-saas"
 version = "0.1.0"
 description = "Initial quality baseline and scaffolding for DLE-SaaS."
 requires-python = ">=3.11"
+dependencies = [
+    "Django>=5.2,<5.3",
+    "djangorestframework>=3.16,<3.17",
+    "drf-spectacular>=0.29,<0.30",
+    "gunicorn>=23.0,<24.0",
+    "psycopg[binary]>=3.2,<3.3",
+]
 
 [tool.setuptools]
 packages = []
@@ -52,6 +59,7 @@ indent-style = "space"
 [tool.mypy]
 python_version = "3.11"
 files = ["backend"]
+mypy_path = ["backend"]
 warn_return_any = true
 warn_unused_configs = true
 warn_unused_ignores = true
@@ -62,19 +70,29 @@ disallow_untyped_defs = true
 pretty = true
 show_error_codes = true
 exclude = ["^_research/"]
+plugins = ["mypy_django_plugin.main"]
 
 [[tool.mypy.overrides]]
 module = ["backend.tests.*"]
 disallow_untyped_defs = false
 
+[[tool.mypy.overrides]]
+module = ["rest_framework", "rest_framework.*", "drf_spectacular", "drf_spectacular.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 python_files = ["test_*.py"]
 testpaths = ["backend/tests"]
+pythonpath = ["backend"]
+DJANGO_SETTINGS_MODULE = "config.settings.dev"
 addopts = [
     "--strict-markers",
     "--disable-warnings",
     "--maxfail=1",
 ]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.dev"
 
 [tool.coverage.run]
 branch = true

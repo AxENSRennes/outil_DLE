@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:17.9-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dle_saas}
+      POSTGRES_USER: ${POSTGRES_USER:-dle_saas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dle_saas}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-dle_saas} -d ${POSTGRES_DB:-dle_saas}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/backend.Dockerfile
+    command:
+      - sh
+      - -c
+      - python backend/manage.py migrate && python backend/manage.py runserver 0.0.0.0:8000
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-config.settings.dev}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost:${FRONTEND_PORT:-5173},http://127.0.0.1:${FRONTEND_PORT:-5173}}
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB:-dle_saas}
+      POSTGRES_USER: ${POSTGRES_USER:-dle_saas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dle_saas}
+      POSTGRES_PORT: "5432"
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ..:/app
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend.Dockerfile
+    depends_on:
+      - backend
+    environment:
+      VITE_APP_TITLE: ${VITE_APP_TITLE:-DLE-SaaS}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:${BACKEND_PORT:-8000}/api/v1}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ../frontend:/app/frontend
+      - frontend_node_modules:/app/frontend/node_modules
+
+volumes:
+  postgres_data:
+  frontend_node_modules:

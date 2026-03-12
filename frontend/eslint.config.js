@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["coverage", "dist", "eslint.config.js", "dependency-cruiser.cjs"]
+    ignores: ["coverage", "dist", "components.json", "eslint.config.js", "dependency-cruiser.cjs"]
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
