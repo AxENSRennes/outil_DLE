@@ -17,8 +17,7 @@ def test_health_endpoint_reports_application_and_database_status(
             response = client.get("/api/v1/health/")
         except OperationalError as exc:
             pytest.skip(
-                "Configured PostgreSQL is unavailable for readiness smoke validation: "
-                f"{exc}"
+                f"Configured PostgreSQL is unavailable for readiness smoke validation: {exc}"
             )
 
     assert response.status_code == 200
