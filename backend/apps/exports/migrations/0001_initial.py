@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("batches", "0002_initial"),
+        ("batches", "0001_initial"),
         ("mmr", "0001_initial"),
     ]
 

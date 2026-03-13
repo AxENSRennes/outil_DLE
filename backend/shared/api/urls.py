@@ -21,4 +21,5 @@ urlpatterns = [
         name="schema-docs",
     ),
     path("", include("apps.exports.api.urls")),
+    path("", include("apps.reviews.api.urls")),
 ]

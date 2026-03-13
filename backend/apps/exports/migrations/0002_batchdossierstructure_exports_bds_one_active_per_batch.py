@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("batches", "0002_initial"),
+        ("batches", "0001_initial"),
         ("exports", "0001_initial"),
     ]
 

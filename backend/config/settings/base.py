@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "apps.mmr.apps.MmrConfig",
     "apps.batches.apps.BatchesConfig",
     "apps.exports.apps.ExportsConfig",
+    "apps.reviews.apps.ReviewsConfig",
     "rest_framework",
     "drf_spectacular",
 ]
