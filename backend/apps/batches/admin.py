@@ -16,6 +16,9 @@ class BatchAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
     readonly_fields = ("snapshot_json", "batch_context_json", "created_at", "updated_at")
 
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
     def has_change_permission(self, request: HttpRequest, obj: Any = None) -> bool:
         return False
 

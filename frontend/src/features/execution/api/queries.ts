@@ -39,7 +39,10 @@ export function useBatchExecution(batchId: number) {
 export function useStepDetail(stepId: number | null) {
   return useQuery({
     queryKey: ["step-detail", stepId],
-    queryFn: () => fetchStepDetail(stepId!),
+    queryFn: () => {
+      if (stepId == null) throw new Error("stepId is required");
+      return fetchStepDetail(stepId);
+    },
     enabled: stepId != null && stepId > 0,
   });
 }

@@ -50,8 +50,8 @@ export const fieldDefinitionSchema = z.object({
 });
 
 export const signaturePolicySchema = z.object({
-  required: z.boolean(),
-  meaning: z.string(),
+  required: z.boolean().default(false),
+  meaning: z.string().default(""),
 });
 
 export const blockingPolicySchema = z.object({
@@ -72,7 +72,7 @@ export const stepDetailSchema = z.object({
   is_applicable: z.boolean(),
   instructions: z.string(),
   fields: z.array(fieldDefinitionSchema),
-  signature_policy: signaturePolicySchema,
+  signature_policy: signaturePolicySchema.default({ required: false, meaning: "" }),
   blocking_policy: blockingPolicySchema,
   data: z.record(z.string(), z.unknown()),
   meta: z.record(z.string(), z.unknown()),

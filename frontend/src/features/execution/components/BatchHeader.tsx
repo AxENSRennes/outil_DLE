@@ -13,7 +13,7 @@ export function BatchHeader({ batch }: BatchHeaderProps) {
         <span className="text-sm text-muted-foreground">
           {batch.product_name}
         </span>
-        <Badge variant="secondary">{batch.status.replace("_", " ")}</Badge>
+        <Badge variant="secondary">{batch.status.replaceAll("_", " ")}</Badge>
       </div>
       <div className="text-sm text-muted-foreground">
         {batch.site.name} ({batch.site.code})

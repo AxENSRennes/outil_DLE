@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from apps.batches.models import BatchStepStatus
 
-if False:  # TYPE_CHECKING
+if TYPE_CHECKING:
     from apps.batches.models import Batch, BatchStep
 
 

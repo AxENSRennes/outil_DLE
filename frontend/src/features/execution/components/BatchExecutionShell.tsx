@@ -56,7 +56,7 @@ export function BatchExecutionShell({ batchId }: BatchExecutionShellProps) {
         <BatchHeader batch={batch} />
         <main className="flex-1 overflow-auto">
           <div className="mx-auto max-w-[720px] p-6">
-            <StepExecutor stepId={activeStepId} />
+            <StepExecutor stepId={activeStepId ?? batch.current_step_id} />
           </div>
         </main>
       </SidebarInset>
