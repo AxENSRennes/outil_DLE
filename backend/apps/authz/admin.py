@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
@@ -19,3 +21,6 @@ class SiteRoleAssignmentAdmin(admin.ModelAdmin):
     search_fields = ("user__username", "site__code", "site__name")
     autocomplete_fields = ("user", "site")
     ordering = ("site__code", "user__username", "role")
+
+    def has_delete_permission(self, request: Any, obj: Any = None) -> bool:
+        return False

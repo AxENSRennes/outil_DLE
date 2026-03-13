@@ -99,6 +99,7 @@ class SignatureReauthView(APIView):
         return Response(response_serializer.data)
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class OperatorSiteAccessProbeView(APIView):
     permission_classes: ClassVar[list[type]] = [IsAuthenticated, SiteScopedRolePermission]
     required_site_roles = (SiteRole.OPERATOR,)

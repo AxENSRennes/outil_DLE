@@ -373,3 +373,36 @@ def test_workstation_identify_rolls_back_session_when_audit_write_fails(
     assert context_response.status_code == 403
     assert context_response.json()["code"] == "not_authenticated"
     assert not AuditEvent.objects.filter(event_type=AuditEventType.IDENTIFY).exists()
+
+
+@pytest.mark.django_db
+def test_workstation_lock_still_logs_out_when_audit_write_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user = get_user_model().objects.create_user(
+        username="lock-rollback-user",
+        password="admin-pass-123",
+    )
+
+    def fail_record_audit_event(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("audit unavailable")
+
+    monkeypatch.setattr(
+        "apps.authz.domain.workstation.record_audit_event",
+        fail_record_audit_event,
+    )
+
+    client, token = csrf_client(user=user)
+    client.raise_request_exception = False
+    response = post_json(
+        client,
+        "/api/v1/auth/workstation-lock/",
+        {},
+        csrf_token=token,
+    )
+
+    assert response.status_code == 500
+
+    context_response = client.get("/api/v1/auth/context/")
+    assert context_response.status_code == 403
+    assert context_response.json()["code"] == "not_authenticated"

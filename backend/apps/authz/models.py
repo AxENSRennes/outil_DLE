@@ -38,12 +38,12 @@ class SiteRole(models.TextChoices):
 class SiteRoleAssignment(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="site_role_assignments",
     )
     site = models.ForeignKey(
         "sites.Site",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="role_assignments",
     )
     role = models.CharField(max_length=64, choices=SiteRole.choices)
