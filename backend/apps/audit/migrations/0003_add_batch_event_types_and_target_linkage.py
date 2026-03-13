@@ -2,13 +2,11 @@
 # Adds batch-domain event types to AuditEventType choices,
 # target_type/target_id fields, and composite indexes.
 
-from django.conf import settings
 from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ("audit", "0002_alter_auditevent_actor_alter_auditevent_site"),
     ]
 

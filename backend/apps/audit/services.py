@@ -34,6 +34,22 @@ def _sanitize_metadata(value: Any) -> Any:
     return value
 
 
+BATCH_DOMAIN_EVENT_TYPES = frozenset({
+    AuditEventType.BATCH_CREATED,
+    AuditEventType.STEP_DRAFT_SAVED,
+    AuditEventType.STEP_COMPLETED,
+    AuditEventType.STEP_SIGNED,
+    AuditEventType.BATCH_SUBMITTED_FOR_PRE_QA,
+    AuditEventType.PRE_QA_REVIEW_CONFIRMED,
+    AuditEventType.QUALITY_REVIEW_STARTED,
+    AuditEventType.BATCH_RELEASED,
+    AuditEventType.BATCH_REJECTED,
+    AuditEventType.BATCH_RETURNED_FOR_CORRECTION,
+    AuditEventType.CORRECTION_SUBMITTED,
+    AuditEventType.CHANGE_REVIEWED,
+})
+
+
 def record_audit_event(
     event_type: AuditEventType,
     *,
@@ -44,6 +60,10 @@ def record_audit_event(
     target_id: int | None = None,
 ) -> AuditEvent:
     validated_event_type = AuditEventType(event_type)
+    target_type = target_type.strip()
+
+    if validated_event_type in BATCH_DOMAIN_EVENT_TYPES and actor is None:
+        raise ValueError("actor is required for batch-domain audit events")
 
     if target_id is not None and not target_type:
         raise ValueError("target_type is required when target_id is provided")

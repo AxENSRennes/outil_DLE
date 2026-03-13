@@ -1,6 +1,6 @@
 # Story 4.1: Record Attributed Audit Events for Regulated Batch Actions
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -297,6 +297,7 @@ Claude Opus 4.6 (claude-opus-4-6)
 ### Change Log
 
 - 2026-03-13: Story 4.1 implementation complete — batch-domain audit event taxonomy, target linkage, selectors, admin, tests, documentation.
+- 2026-03-13: Code review fixes — added model-level clean() + DB CHECK constraint for target_type/target_id consistency (H1), enforced actor requirement for batch-domain events (H2), strip whitespace on target_type (M2), documented unindexed JSON lookup perf concern (M1), removed unnecessary migration dependency (M4). Added migration 0004. 103 tests pass.
 
 ### File List
 
@@ -308,4 +309,5 @@ Claude Opus 4.6 (claude-opus-4-6)
 - `backend/apps/audit/tests/test_services.py` (modified) — Extended with target linkage and batch event tests
 - `backend/apps/audit/tests/test_selectors.py` (new) — Selector tests
 - `backend/apps/audit/tests/test_admin.py` (new) — Admin immutability and field display tests
+- `backend/apps/audit/migrations/0004_add_target_check_constraint.py` (new) — CHECK constraint for target_type/target_id consistency
 - `docs/implementation/audit-event-taxonomy.md` (new) — Event taxonomy documentation

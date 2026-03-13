@@ -22,7 +22,13 @@ def get_audit_events_for_batch_context(
     batch_id: int,
 ) -> QuerySet[AuditEvent]:
     """Return events for a batch: direct batch-level events plus step-level
-    events that carry ``batch_id`` in their metadata.  Chronological order."""
+    events that carry ``batch_id`` in their metadata.  Chronological order.
+
+    Performance note: the ``metadata__batch_id`` lookup is not indexed.
+    Consider a functional GIN index on metadata if query volume grows.
+
+    Callers must store ``batch_id`` as an integer in metadata (not a string)
+    to ensure the JSONField lookup matches correctly."""
     return AuditEvent.objects.filter(
         Q(target_type="batch", target_id=batch_id)
         | Q(metadata__batch_id=batch_id)

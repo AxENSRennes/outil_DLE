@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from typing import Any
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -17,16 +18,21 @@ from apps.audit.services import record_audit_event
 User = get_user_model()
 
 
+@pytest.fixture
+def batch_actor() -> Any:
+    return User.objects.create_user(username="batch-actor", password="pass-123")
+
+
 @pytest.mark.django_db
-def test_get_audit_events_for_target_returns_matching_events() -> None:
+def test_get_audit_events_for_target_returns_matching_events(batch_actor: Any) -> None:
     record_audit_event(
-        AuditEventType.BATCH_CREATED, target_type="batch", target_id=1
+        AuditEventType.BATCH_CREATED, actor=batch_actor, target_type="batch", target_id=1
     )
     record_audit_event(
-        AuditEventType.STEP_COMPLETED, target_type="batch_step", target_id=10
+        AuditEventType.STEP_COMPLETED, actor=batch_actor, target_type="batch_step", target_id=10
     )
     record_audit_event(
-        AuditEventType.STEP_DRAFT_SAVED, target_type="batch_step", target_id=10
+        AuditEventType.STEP_DRAFT_SAVED, actor=batch_actor, target_type="batch_step", target_id=10
     )
 
     result = list(get_audit_events_for_target("batch_step", 10))
@@ -35,12 +41,12 @@ def test_get_audit_events_for_target_returns_matching_events() -> None:
 
 
 @pytest.mark.django_db
-def test_get_audit_events_for_target_chronological_order() -> None:
+def test_get_audit_events_for_target_chronological_order(batch_actor: Any) -> None:
     e1 = record_audit_event(
-        AuditEventType.STEP_DRAFT_SAVED, target_type="batch_step", target_id=5
+        AuditEventType.STEP_DRAFT_SAVED, actor=batch_actor, target_type="batch_step", target_id=5
     )
     e2 = record_audit_event(
-        AuditEventType.STEP_COMPLETED, target_type="batch_step", target_id=5
+        AuditEventType.STEP_COMPLETED, actor=batch_actor, target_type="batch_step", target_id=5
     )
 
     result = list(get_audit_events_for_target("batch_step", 5))
@@ -48,29 +54,32 @@ def test_get_audit_events_for_target_chronological_order() -> None:
 
 
 @pytest.mark.django_db
-def test_get_audit_events_for_target_empty_when_no_match() -> None:
+def test_get_audit_events_for_target_empty_when_no_match(batch_actor: Any) -> None:
     record_audit_event(
-        AuditEventType.BATCH_CREATED, target_type="batch", target_id=1
+        AuditEventType.BATCH_CREATED, actor=batch_actor, target_type="batch", target_id=1
     )
     assert get_audit_events_for_target("batch", 999).count() == 0
 
 
 @pytest.mark.django_db
-def test_get_audit_events_for_batch_context_includes_batch_and_step_events() -> None:
+def test_get_audit_events_for_batch_context_includes_batch_and_step_events(
+    batch_actor: Any,
+) -> None:
     # Direct batch-level event
     record_audit_event(
-        AuditEventType.BATCH_CREATED, target_type="batch", target_id=1
+        AuditEventType.BATCH_CREATED, actor=batch_actor, target_type="batch", target_id=1
     )
     # Step-level event that carries batch_id in metadata
     record_audit_event(
         AuditEventType.STEP_DRAFT_SAVED,
+        actor=batch_actor,
         target_type="batch_step",
         target_id=10,
         metadata={"batch_id": 1, "field_count": 3},
     )
     # Unrelated batch
     record_audit_event(
-        AuditEventType.BATCH_CREATED, target_type="batch", target_id=2
+        AuditEventType.BATCH_CREATED, actor=batch_actor, target_type="batch", target_id=2
     )
 
     result = list(get_audit_events_for_batch_context(1))

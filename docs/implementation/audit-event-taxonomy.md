@@ -41,7 +41,7 @@ Each audit event optionally links to a domain record via two fields:
 - **`target_type`** (`CharField`, max 64): canonical domain entity type string — `"batch"`, `"batch_step"`, `"signature"`.
 - **`target_id`** (`PositiveIntegerField`, nullable): primary key of the affected record.
 
-Both fields must be provided together or both omitted. The audit service validates this constraint.
+Both fields must be provided together or both omitted. The audit service validates this constraint at the Python level, and a database CHECK constraint (`audit_target_type_id_consistent`) enforces it at the storage level.
 
 Existing auth-domain events have `target_type=""` and `target_id=None`, which is correct — they operate on session/workstation context, not domain records.
 
@@ -57,6 +57,10 @@ Target linkage uses plain string + integer fields (not Django `ContentType` / `G
 - **`ip_address`**: recommended for all events where a request context is available. Use `shared.http.get_client_ip(request)`. This value is advisory/best-effort since it comes from client-supplied headers.
 
 ## Instrumentation Guide for Domain Services
+
+### Actor requirement for batch-domain events
+
+Batch-domain events are **attributed** — the `actor` parameter is mandatory. The audit service raises `ValueError` if `actor` is `None` for any batch-domain event type. Auth-domain events (e.g. `lock_workstation`) may have a null actor for system-initiated actions.
 
 ### Recording an event
 

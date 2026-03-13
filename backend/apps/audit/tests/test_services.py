@@ -1,12 +1,22 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db.models import ProtectedError
 
 from apps.audit.models import AuditEvent, AuditEventType
 from apps.audit.services import record_audit_event
 from apps.sites.models import Site
+
+
+@pytest.fixture
+def batch_actor() -> Any:
+    return get_user_model().objects.create_user(
+        username="batch-actor", password="test-pass-123"
+    )
 
 
 @pytest.mark.django_db
@@ -73,9 +83,10 @@ def test_record_audit_event_rejects_invalid_event_type() -> None:
 
 
 @pytest.mark.django_db
-def test_record_audit_event_with_target_linkage() -> None:
+def test_record_audit_event_with_target_linkage(batch_actor: Any) -> None:
     event = record_audit_event(
         AuditEventType.BATCH_CREATED,
+        actor=batch_actor,
         target_type="batch",
         target_id=42,
         metadata={"mmr_version_id": 1, "batch_number": "B-001"},
@@ -86,23 +97,26 @@ def test_record_audit_event_with_target_linkage() -> None:
 
 
 @pytest.mark.django_db
-def test_record_audit_event_target_id_without_target_type_raises() -> None:
+def test_record_audit_event_target_id_without_target_type_raises(batch_actor: Any) -> None:
     with pytest.raises(ValueError, match="target_type is required"):
-        record_audit_event(AuditEventType.BATCH_CREATED, target_id=1)
+        record_audit_event(AuditEventType.BATCH_CREATED, actor=batch_actor, target_id=1)
     assert AuditEvent.objects.count() == 0
 
 
 @pytest.mark.django_db
-def test_record_audit_event_target_type_without_target_id_raises() -> None:
+def test_record_audit_event_target_type_without_target_id_raises(batch_actor: Any) -> None:
     with pytest.raises(ValueError, match="target_id is required"):
-        record_audit_event(AuditEventType.BATCH_CREATED, target_type="batch")
+        record_audit_event(
+            AuditEventType.BATCH_CREATED, actor=batch_actor, target_type="batch"
+        )
     assert AuditEvent.objects.count() == 0
 
 
 @pytest.mark.django_db
-def test_record_audit_event_sanitizes_batch_domain_metadata() -> None:
+def test_record_audit_event_sanitizes_batch_domain_metadata(batch_actor: Any) -> None:
     event = record_audit_event(
         AuditEventType.STEP_DRAFT_SAVED,
+        actor=batch_actor,
         target_type="batch_step",
         target_id=7,
         metadata={
@@ -150,8 +164,10 @@ BATCH_DOMAIN_EVENT_TYPES = [
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("event_type_value", BATCH_DOMAIN_EVENT_TYPES)
-def test_batch_domain_event_type_can_be_recorded(event_type_value: str) -> None:
-    event = record_audit_event(AuditEventType(event_type_value))
+def test_batch_domain_event_type_can_be_recorded(
+    event_type_value: str, batch_actor: Any
+) -> None:
+    event = record_audit_event(AuditEventType(event_type_value), actor=batch_actor)
     assert event.event_type == event_type_value
     assert AuditEvent.objects.filter(event_type=event_type_value).exists()
 
@@ -196,3 +212,34 @@ def test_record_audit_event_accepts_lock_failed_event_type() -> None:
 
     assert event.event_type == AuditEventType.LOCK_FAILED
     assert event.metadata == {"reason": "rate_limited"}
+
+
+@pytest.mark.django_db
+def test_record_audit_event_batch_domain_without_actor_raises() -> None:
+    """Batch-domain events are attributed — actor is mandatory."""
+    with pytest.raises(ValueError, match="actor is required for batch-domain"):
+        record_audit_event(AuditEventType.BATCH_CREATED)
+    assert AuditEvent.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_record_audit_event_whitespace_only_target_type_rejected(batch_actor: Any) -> None:
+    """Whitespace-only target_type is stripped to empty, triggering validation."""
+    with pytest.raises(ValueError, match="target_type is required"):
+        record_audit_event(
+            AuditEventType.BATCH_CREATED,
+            actor=batch_actor,
+            target_type="   ",
+            target_id=1,
+        )
+
+
+@pytest.mark.django_db
+def test_audit_event_clean_rejects_mismatched_target_fields() -> None:
+    """Model-level clean() validates target_type/target_id consistency."""
+    event = AuditEvent(
+        event_type=AuditEventType.BATCH_CREATED,
+        target_type="batch",
+    )
+    with pytest.raises(ValidationError):
+        event.full_clean()

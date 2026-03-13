@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 
@@ -57,6 +58,17 @@ class AuditEvent(models.Model):
     target_type = models.CharField(max_length=64, blank=True, default="")
     target_id = models.PositiveIntegerField(null=True, blank=True)
 
+    def clean(self) -> None:
+        super().clean()
+        if self.target_id is not None and not self.target_type:
+            raise ValidationError(
+                {"target_type": "This field is required when target_id is provided."}
+            )
+        if self.target_type and self.target_id is None:
+            raise ValidationError(
+                {"target_id": "This field is required when target_type is provided."}
+            )
+
     class Meta:
         ordering = ("-occurred_at", "-id")
         indexes: ClassVar[list[models.Index]] = [
@@ -71,6 +83,15 @@ class AuditEvent(models.Model):
             models.Index(
                 fields=["actor", "occurred_at"],
                 name="audit_actor_occurred_idx",
+            ),
+        ]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.CheckConstraint(
+                check=(
+                    models.Q(target_type="", target_id__isnull=True)
+                    | (~models.Q(target_type="") & models.Q(target_id__isnull=False))
+                ),
+                name="audit_target_type_id_consistent",
             ),
         ]
 
