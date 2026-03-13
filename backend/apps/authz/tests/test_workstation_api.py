@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import json
+from unittest.mock import patch
 
 import pytest
 from config.settings import base as base_settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password
 from django.test import override_settings
 from rest_framework.test import APIClient
 
 from apps.audit.models import AuditEvent, AuditEventType
+from apps.authz.domain import workstation
 from apps.authz.models import SiteRole, SiteRoleAssignment
 from apps.authz.tests.helpers import csrf_client, post_json
 from apps.sites.models import Site
@@ -176,6 +179,32 @@ def test_workstation_identify_rejects_bad_pin_and_audits_without_pin_leakage() -
     assert event.metadata["ip_address"] == "127.0.0.1"
     assert "pin" not in event.metadata
     assert "9999" not in json.dumps(event.metadata)
+
+
+@pytest.mark.django_db
+def test_workstation_identify_unknown_username_runs_dummy_hash_check() -> None:
+    client, token = csrf_client()
+
+    with patch(
+        "apps.authz.domain.workstation.check_password",
+        wraps=check_password,
+    ) as mock_check_password:
+        response = post_json(
+            client,
+            "/api/v1/auth/workstation-identify/",
+            {"username": "missing.user", "pin": "9999"},
+            csrf_token=token,
+        )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "invalid_workstation_credentials"
+    mock_check_password.assert_called_once_with("9999", workstation._TIMING_DUMMY_PIN_HASH)
+
+    event = AuditEvent.objects.get(event_type=AuditEventType.IDENTIFY_FAILED)
+    assert event.actor is None
+    assert event.metadata["attempted_username"] == "missing.user"
+    assert event.metadata["reason"] == "invalid_credentials"
+    assert event.metadata["ip_address"] == "127.0.0.1"
 
 
 @pytest.mark.django_db

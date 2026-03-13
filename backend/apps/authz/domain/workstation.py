@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from django.contrib.auth import login, logout
+from django.contrib.auth.hashers import check_password, make_password
 from rest_framework.exceptions import NotFound, PermissionDenied
 from shared.permissions.site_roles import get_active_site_by_code
 
@@ -12,6 +13,8 @@ from apps.authz.domain.policies import get_user_site_roles
 from apps.authz.models import User
 from apps.authz.selectors.access_context import list_site_access_contexts
 from apps.sites.models import Site
+
+_TIMING_DUMMY_PIN_HASH = make_password("timing-dummy-pin")
 
 
 def summarize_user(user: User) -> dict[str, Any]:
@@ -70,9 +73,8 @@ def _get_client_ip(request: Any) -> str | None:
 def identify_workstation_user(request: Any, *, username: str, pin: str) -> dict[str, Any]:
     user = _get_user_by_username(username)
     if user is None:
-        # Run the hasher on a throwaway instance to prevent username
-        # enumeration via timing side-channel.
-        User().check_workstation_pin(pin)
+        # Always run a password hash check to reduce username enumeration via timing.
+        check_password(pin, _TIMING_DUMMY_PIN_HASH)
         record_audit_event(
             AuditEventType.IDENTIFY_FAILED,
             metadata={
