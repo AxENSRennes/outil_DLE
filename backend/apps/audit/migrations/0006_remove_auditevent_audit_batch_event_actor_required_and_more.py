@@ -5,25 +5,65 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('audit', '0005_add_actor_and_target_constraints'),
-        ('sites', '0001_initial'),
+        ("audit", "0005_add_actor_and_target_constraints"),
+        ("sites", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.RemoveConstraint(
-            model_name='auditevent',
-            name='audit_batch_event_actor_required',
+            model_name="auditevent",
+            name="audit_batch_event_actor_required",
         ),
         migrations.AlterField(
-            model_name='auditevent',
-            name='event_type',
-            field=models.CharField(choices=[('identify', 'Identify'), ('switch_user', 'Switch User'), ('lock_workstation', 'Lock Workstation'), ('identify_failed', 'Identify Failed'), ('signature_reauth_succeeded', 'Signature Reauth Succeeded'), ('signature_reauth_failed', 'Signature Reauth Failed'), ('lock_failed', 'Lock Failed'), ('batch_created', 'Batch Created'), ('step_draft_saved', 'Step Draft Saved'), ('step_completed', 'Step Completed'), ('step_signed', 'Step Signed'), ('batch_submitted_for_pre_qa', 'Batch Submitted for Pre-QA'), ('pre_qa_review_confirmed', 'Pre-QA Review Confirmed'), ('quality_review_started', 'Quality Review Started'), ('batch_released', 'Batch Released'), ('batch_rejected', 'Batch Rejected'), ('batch_returned_for_correction', 'Batch Returned for Correction'), ('correction_submitted', 'Correction Submitted'), ('change_reviewed', 'Change Reviewed')], max_length=64),
+            model_name="auditevent",
+            name="event_type",
+            field=models.CharField(
+                choices=[
+                    ("identify", "Identify"),
+                    ("switch_user", "Switch User"),
+                    ("lock_workstation", "Lock Workstation"),
+                    ("identify_failed", "Identify Failed"),
+                    ("signature_reauth_succeeded", "Signature Reauth Succeeded"),
+                    ("signature_reauth_failed", "Signature Reauth Failed"),
+                    ("lock_failed", "Lock Failed"),
+                    ("batch_created", "Batch Created"),
+                    ("step_draft_saved", "Step Draft Saved"),
+                    ("step_completed", "Step Completed"),
+                    ("step_signed", "Step Signed"),
+                    ("batch_submitted_for_pre_qa", "Batch Submitted for Pre-QA"),
+                    ("pre_qa_review_confirmed", "Pre-QA Review Confirmed"),
+                    ("quality_review_started", "Quality Review Started"),
+                    ("batch_released", "Batch Released"),
+                    ("batch_rejected", "Batch Rejected"),
+                    ("batch_returned_for_correction", "Batch Returned for Correction"),
+                    ("correction_submitted", "Correction Submitted"),
+                    ("change_reviewed", "Change Reviewed"),
+                ],
+                max_length=64,
+            ),
         ),
         migrations.AddConstraint(
-            model_name='auditevent',
-            constraint=models.CheckConstraint(condition=models.Q(('event_type__in', ('identify', 'switch_user', 'lock_workstation', 'identify_failed', 'signature_reauth_succeeded', 'signature_reauth_failed', 'lock_failed')), ('actor__isnull', False), _connector='OR'), name='audit_batch_event_actor_required'),
+            model_name="auditevent",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    (
+                        "event_type__in",
+                        (
+                            "identify",
+                            "switch_user",
+                            "lock_workstation",
+                            "identify_failed",
+                            "signature_reauth_succeeded",
+                            "signature_reauth_failed",
+                            "lock_failed",
+                        ),
+                    ),
+                    ("actor__isnull", False),
+                    _connector="OR",
+                ),
+                name="audit_batch_event_actor_required",
+            ),
         ),
     ]

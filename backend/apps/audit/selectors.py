@@ -30,8 +30,7 @@ def get_audit_events_for_batch_context(
     Callers must store ``batch_id`` as an integer in metadata (not a string)
     to ensure the JSONField lookup matches correctly."""
     return AuditEvent.objects.filter(
-        Q(target_type="batch", target_id=batch_id)
-        | Q(metadata__batch_id=batch_id)
+        Q(target_type="batch", target_id=batch_id) | Q(metadata__batch_id=batch_id)
     ).order_by("occurred_at", "id")
 
 

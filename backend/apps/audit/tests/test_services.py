@@ -14,9 +14,7 @@ from apps.sites.models import Site
 
 @pytest.fixture
 def batch_actor() -> Any:
-    return get_user_model().objects.create_user(
-        username="batch-actor", password="test-pass-123"
-    )
+    return get_user_model().objects.create_user(username="batch-actor", password="test-pass-123")
 
 
 @pytest.mark.django_db
@@ -106,9 +104,7 @@ def test_record_audit_event_target_id_without_target_type_raises(batch_actor: An
 @pytest.mark.django_db
 def test_record_audit_event_target_type_without_target_id_raises(batch_actor: Any) -> None:
     with pytest.raises(ValueError, match="target_id is required"):
-        record_audit_event(
-            AuditEventType.BATCH_CREATED, actor=batch_actor, target_type="batch"
-        )
+        record_audit_event(AuditEventType.BATCH_CREATED, actor=batch_actor, target_type="batch")
     assert AuditEvent.objects.count() == 0
 
 

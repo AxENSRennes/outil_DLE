@@ -130,10 +130,7 @@ class AuditEvent(models.Model):
                 name="audit_batch_event_actor_required",
             ),
             models.CheckConstraint(
-                check=(
-                    models.Q(target_id__isnull=True)
-                    | ~models.Q(target_type__regex=r"^\s*$")
-                ),
+                check=(models.Q(target_id__isnull=True) | ~models.Q(target_type__regex=r"^\s*$")),
                 name="audit_target_type_not_blank_when_linked",
             ),
         ]
