@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
@@ -8,6 +9,8 @@ from django.db import transaction
 from apps.audit.models import AuditEventType
 from apps.audit.services import record_audit_event
 from apps.mmr.models import MMRVersion, MMRVersionStatus
+
+logger = logging.getLogger(__name__)
 
 VALID_STEP_KINDS = frozenset(
     {
@@ -354,6 +357,13 @@ def get_steps(*, version: MMRVersion) -> list[dict]:
     schema = version.schema_json or {}
     step_order = schema.get("stepOrder", [])
     steps = schema.get("steps", {})
+    orphaned = [key for key in step_order if key not in steps]
+    if orphaned:
+        logger.warning(
+            "MMRVersion %s: stepOrder references keys not in steps: %s",
+            version.pk,
+            orphaned,
+        )
     return [
         _normalize_step_output(_dict_keys_to_snake(steps[key]))
         for key in step_order

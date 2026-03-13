@@ -190,6 +190,20 @@ def test_add_step_invalid_kind_returns_400(
 
 
 @pytest.mark.django_db
+def test_add_step_invalid_key_pattern_returns_400(
+    configurator: Any, mmr: MMR, draft_version: MMRVersion
+) -> None:
+    client, token = csrf_client(user=configurator)
+    resp = post_json(
+        client,
+        _steps_url(mmr, draft_version),
+        {"key": "Bad-Key", "title": "T", "kind": "weighing"},
+        csrf_token=token,
+    )
+    assert resp.status_code == 400
+
+
+@pytest.mark.django_db
 def test_add_step_duplicate_key_returns_409(
     configurator: Any, mmr: MMR, draft_version: MMRVersion, sample_step_data: dict
 ) -> None:
@@ -356,6 +370,28 @@ def test_update_step_non_draft_returns_409(
     assert resp.status_code == 409
 
 
+@pytest.mark.django_db
+def test_update_step_ignores_key_in_payload(
+    configurator: Any, mmr: MMR, draft_version: MMRVersion, sample_step_data: dict
+) -> None:
+    add_step(
+        version=draft_version,
+        step_data=sample_step_data,
+        actor=configurator,
+    )
+    client, token = csrf_client(user=configurator)
+    resp = _put_json(
+        client,
+        _step_detail_url(mmr, draft_version, "fabrication_bulk"),
+        {"key": "new_key", "title": "Updated"},
+        csrf_token=token,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["key"] == "fabrication_bulk"
+    assert data["title"] == "Updated"
+
+
 # ---------------------------------------------------------------------------
 # DELETE /steps/{key}/ — Remove step
 # ---------------------------------------------------------------------------
@@ -478,6 +514,33 @@ def test_reorder_steps_csrf_required(
     assert resp.status_code == 403
 
 
+@pytest.mark.django_db
+def test_reorder_steps_non_draft_returns_409(
+    configurator: Any, mmr: MMR, active_version: MMRVersion
+) -> None:
+    active_version.schema_json = {
+        "schemaVersion": "v1",
+        "templateCode": "X",
+        "templateName": "X",
+        "product": {},
+        "stepOrder": ["s1", "s2"],
+        "steps": {
+            "s1": {"key": "s1", "title": "S1", "kind": "weighing"},
+            "s2": {"key": "s2", "title": "S2", "kind": "packaging"},
+        },
+    }
+    active_version.save()
+
+    client, token = csrf_client(user=configurator)
+    resp = post_json(
+        client,
+        _reorder_url(mmr, active_version),
+        {"step_order": ["s2", "s1"]},
+        csrf_token=token,
+    )
+    assert resp.status_code == 409
+
+
 # ---------------------------------------------------------------------------
 # Cross-site isolation
 # ---------------------------------------------------------------------------
@@ -598,3 +661,72 @@ def test_steps_nonexistent_mmr_returns_404(configurator: Any) -> None:
     client, _token = csrf_client(user=configurator)
     resp = client.get("/api/v1/mmrs/99999/versions/1/steps/")
     assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Serializer unit tests (M2)
+# ---------------------------------------------------------------------------
+
+
+class TestStepCreateSerializerValidation:
+    def test_rejects_invalid_kind(self) -> None:
+        from apps.mmr.api.serializers import StepCreateSerializer
+
+        s = StepCreateSerializer(data={"key": "s1", "title": "T", "kind": "bogus"})
+        assert not s.is_valid()
+        assert "kind" in s.errors
+
+    def test_accepts_valid_kind(self) -> None:
+        from apps.mmr.api.serializers import StepCreateSerializer
+
+        s = StepCreateSerializer(data={"key": "s1", "title": "T", "kind": "weighing"})
+        assert s.is_valid(), s.errors
+
+
+class TestAttachmentsPolicySerializerShape:
+    def test_valid_data(self) -> None:
+        from apps.mmr.api.serializers import AttachmentsPolicySerializer
+
+        s = AttachmentsPolicySerializer(
+            data={"supports_attachments": True, "attachment_kinds": ["photo", "other"]}
+        )
+        assert s.is_valid(), s.errors
+
+    def test_invalid_attachment_kind(self) -> None:
+        from apps.mmr.api.serializers import AttachmentsPolicySerializer
+
+        s = AttachmentsPolicySerializer(
+            data={"supports_attachments": True, "attachment_kinds": ["invalid"]}
+        )
+        assert not s.is_valid()
+        assert "attachment_kinds" in s.errors
+
+
+class TestBlockingPolicySerializerShape:
+    def test_valid_booleans(self) -> None:
+        from apps.mmr.api.serializers import BlockingPolicySerializer
+
+        s = BlockingPolicySerializer(
+            data={
+                "blocks_execution_progress": True,
+                "blocks_step_completion": False,
+                "blocks_signature": True,
+                "blocks_pre_qa_handoff": False,
+            }
+        )
+        assert s.is_valid(), s.errors
+
+
+class TestRepeatPolicySerializerShape:
+    def test_valid_data(self) -> None:
+        from apps.mmr.api.serializers import RepeatPolicySerializer
+
+        s = RepeatPolicySerializer(data={"mode": "per_shift", "min_records": 0, "max_records": 5})
+        assert s.is_valid(), s.errors
+
+    def test_invalid_mode(self) -> None:
+        from apps.mmr.api.serializers import RepeatPolicySerializer
+
+        s = RepeatPolicySerializer(data={"mode": "invalid_mode"})
+        assert not s.is_valid()
+        assert "mode" in s.errors

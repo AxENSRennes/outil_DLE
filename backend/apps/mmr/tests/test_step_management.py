@@ -337,6 +337,20 @@ def test_update_step_clear_optional_property(
     assert result["instructions"] is None
 
 
+@pytest.mark.django_db
+def test_update_step_invalid_kind_raises(
+    draft_version: MMRVersion, sample_step_data: dict, user: Any
+) -> None:
+    add_step(version=draft_version, step_data=sample_step_data, actor=user)
+    with pytest.raises(ValueError, match="Invalid step kind"):
+        update_step(
+            version=draft_version,
+            step_key="fabrication_bulk",
+            step_data={"kind": "invalid_kind"},
+            actor=user,
+        )
+
+
 # ---------------------------------------------------------------------------
 # remove_step tests
 # ---------------------------------------------------------------------------

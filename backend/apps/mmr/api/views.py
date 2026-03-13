@@ -221,7 +221,7 @@ class MMRVersionDetailView(APIView):
 
 
 class _StepViewMixin:
-    """Shared logic for step views that operate on an MMRVersion."""
+    """Shared logic for step views. Must be combined with APIView."""
 
     permission_classes: ClassVar[list[type]] = [IsAuthenticated, SiteScopedRolePermission]
     required_site_roles = (SiteRole.INTERNAL_CONFIGURATOR,)
@@ -359,4 +359,5 @@ class StepReorderView(_StepViewMixin, APIView):
             )
         except ValueError as exc:
             return self._domain_error("Step reorder failed", str(exc))
-        return Response({"step_order": new_order})
+        output = StepReorderSerializer({"step_order": new_order})
+        return Response(output.data)

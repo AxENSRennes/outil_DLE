@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from apps.mmr.domain.step_management import VALID_STEP_KINDS
 from apps.mmr.models import MMR, MMRVersion
 
 # ---------------------------------------------------------------------------
@@ -108,18 +109,7 @@ class MMRVersionListSerializer(serializers.ModelSerializer):
 # Step nested policy serializers (typed — never use raw DictField)
 # ---------------------------------------------------------------------------
 
-STEP_KIND_CHOICES = [
-    ("preparation", "Preparation"),
-    ("material_confirmation", "Material Confirmation"),
-    ("weighing", "Weighing"),
-    ("manufacturing", "Manufacturing"),
-    ("pre_qa_review", "Pre QA Review"),
-    ("in_process_control", "In Process Control"),
-    ("bulk_handover", "Bulk Handover"),
-    ("packaging", "Packaging"),
-    ("finished_product_control", "Finished Product Control"),
-    ("review", "Review"),
-]
+STEP_KIND_CHOICES = [(k, k.replace("_", " ").title()) for k in sorted(VALID_STEP_KINDS)]
 
 
 class AttachmentsPolicySerializer(serializers.Serializer):
