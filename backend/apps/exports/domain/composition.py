@@ -223,8 +223,8 @@ def _condition_matches(condition: dict[str, Any], context: dict[str, Any]) -> bo
     key_present = context_key in context
     actual = context.get(context_key)
 
-    # Absent keys must not silently satisfy negation/falsy operators.
-    if not key_present and operator in {"neq", "not_in", "falsy"}:
+    # Absent keys must not silently satisfy any operator.
+    if not key_present:
         return False
 
     if operator == "eq":

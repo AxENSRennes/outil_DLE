@@ -437,6 +437,14 @@ class TestConditionMatchesAbsentKey:
         condition = {"context_key": "missing", "operator": "falsy"}
         assert _condition_matches(condition, {}) is False
 
+    def test_eq_absent_key_with_none_value_returns_false(self) -> None:
+        condition = {"context_key": "missing", "operator": "eq", "value": None}
+        assert _condition_matches(condition, {}) is False
+
+    def test_in_absent_key_with_none_in_list_returns_false(self) -> None:
+        condition = {"context_key": "missing", "operator": "in", "value": [None, "a"]}
+        assert _condition_matches(condition, {}) is False
+
 
 @pytest.mark.django_db
 class TestAuditEvent:

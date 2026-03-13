@@ -284,6 +284,30 @@ class TestResolveDossier:
         data = response.json()
         assert data["code"] == "dossier_structure_race"
 
+    def test_force_re_resolves_structure(self) -> None:
+        fx = _make_api_fixtures(with_profile=True, with_structure=True)
+        client, token = csrf_client(user=fx["user"])
+
+        from apps.exports.models import BatchDossierStructure
+
+        original = BatchDossierStructure.objects.get(batch=fx["batch"], is_active=True)
+
+        response = post_json(
+            client,
+            f"/api/v1/batches/{fx['batch'].pk}/resolve-dossier/?force=true",
+            {},
+            csrf_token=token,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["batch_id"] == fx["batch"].pk
+        assert data["is_active"] is True
+        assert data["id"] != original.pk
+
+        original.refresh_from_db()
+        assert original.is_active is False
+
     def test_wrong_role_rejected(self) -> None:
         fx = _make_api_fixtures(with_profile=True)
         wrong_user = User.objects.create_user(username="wrong-role-post", password="testpass")

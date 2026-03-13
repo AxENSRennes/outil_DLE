@@ -4,7 +4,7 @@ from typing import ClassVar
 
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -80,6 +80,15 @@ class ResolveBatchDossierView(APIView):
     @extend_schema(
         request=None,
         responses=DossierStructureSerializer,
+        parameters=[
+            OpenApiParameter(
+                name="force",
+                type=bool,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="If true, deactivate the existing structure and resolve a fresh one.",
+            ),
+        ],
         summary="Resolve (or return existing) dossier structure for a batch.",
     )
     def post(self, request: Request, batch_id: int) -> Response:
@@ -90,8 +99,10 @@ class ResolveBatchDossierView(APIView):
             except Batch.DoesNotExist:
                 raise NotFound(detail="Batch not found.", code="batch_not_found") from None
 
+        force = request.query_params.get("force", "").lower() == "true"
+
         try:
-            resolve_dossier_structure(batch, actor=request.user, site=self.site)
+            resolve_dossier_structure(batch, force=force, actor=request.user, site=self.site)
         except DossierCompositionError as exc:
             raise UnprocessableEntity(detail=str(exc), code="composition_error") from exc
 
