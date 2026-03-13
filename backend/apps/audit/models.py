@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -37,6 +37,22 @@ class AuditEventType(models.TextChoices):
     CHANGE_REVIEWED = "change_reviewed", "Change Reviewed"
 
 
+AUTH_OPTIONAL_ACTOR_EVENT_TYPES: tuple[str, ...] = (
+    AuditEventType.IDENTIFY,
+    AuditEventType.SWITCH_USER,
+    AuditEventType.LOCK_WORKSTATION,
+    AuditEventType.IDENTIFY_FAILED,
+    AuditEventType.SIGNATURE_REAUTH_SUCCEEDED,
+    AuditEventType.SIGNATURE_REAUTH_FAILED,
+)
+
+BATCH_DOMAIN_EVENT_TYPES: tuple[str, ...] = tuple(
+    event_type.value
+    for event_type in AuditEventType
+    if event_type.value not in AUTH_OPTIONAL_ACTOR_EVENT_TYPES
+)
+
+
 class AuditEvent(models.Model):
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -60,6 +76,12 @@ class AuditEvent(models.Model):
 
     def clean(self) -> None:
         super().clean()
+        self.target_type = self.target_type.strip()
+
+        if self.event_type in BATCH_DOMAIN_EVENT_TYPES and self.actor_id is None:
+            raise ValidationError(
+                {"actor": "This field is required for batch-domain audit events."}
+            )
         if self.target_id is not None and not self.target_type:
             raise ValidationError(
                 {"target_type": "This field is required when target_id is provided."}
@@ -68,6 +90,11 @@ class AuditEvent(models.Model):
             raise ValidationError(
                 {"target_id": "This field is required when target_type is provided."}
             )
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.target_type = self.target_type.strip()
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ("-occurred_at", "-id")
@@ -92,6 +119,20 @@ class AuditEvent(models.Model):
                     | (~models.Q(target_type="") & models.Q(target_id__isnull=False))
                 ),
                 name="audit_target_type_id_consistent",
+            ),
+            models.CheckConstraint(
+                check=(
+                    models.Q(event_type__in=AUTH_OPTIONAL_ACTOR_EVENT_TYPES)
+                    | models.Q(actor__isnull=False)
+                ),
+                name="audit_batch_event_actor_required",
+            ),
+            models.CheckConstraint(
+                check=(
+                    models.Q(target_id__isnull=True)
+                    | ~models.Q(target_type__regex=r"^\s*$")
+                ),
+                name="audit_target_type_not_blank_when_linked",
             ),
         ]
 

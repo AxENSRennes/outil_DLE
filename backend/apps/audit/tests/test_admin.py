@@ -53,3 +53,4 @@ def test_audit_admin_list_filter_includes_target_type(
     audit_admin: AuditEventAdmin,
 ) -> None:
     assert "target_type" in audit_admin.list_filter
+    assert "target_id" in audit_admin.list_filter
