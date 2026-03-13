@@ -37,6 +37,8 @@ class AuditEventType(models.TextChoices):
     )
     CORRECTION_SUBMITTED = "correction_submitted", "Correction Submitted"
     CHANGE_REVIEWED = "change_reviewed", "Change Reviewed"
+    BATCH_EXECUTION_VIEWED = "batch_execution_viewed", "Batch Execution Viewed"
+    BATCH_STEP_VIEWED = "batch_step_viewed", "Batch Step Viewed"
 
 
 AUTH_OPTIONAL_ACTOR_EVENT_TYPES: tuple[str, ...] = (

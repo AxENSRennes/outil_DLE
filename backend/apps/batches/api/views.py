@@ -10,6 +10,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.permissions.site_roles import SiteScopedRolePermission
 
+from apps.audit.models import AuditEventType
+from apps.audit.services import record_audit_event
 from apps.authz.models import SiteRole
 from apps.batches.api.serializers import BatchExecutionSerializer, BatchStepDetailSerializer
 from apps.batches.models import Batch, BatchStep
@@ -44,6 +46,14 @@ class BatchExecutionView(APIView):
     def get(self, request: Request, batch_id: int) -> Response:
         batch = self._get_batch(batch_id)
         self.check_object_permissions(request, batch)
+        record_audit_event(
+            AuditEventType.BATCH_EXECUTION_VIEWED,
+            actor=request.user,
+            site=batch.site,
+            target_type="Batch",
+            target_id=batch.id,
+            metadata={"batch_number": batch.batch_number},
+        )
         payload = get_batch_execution_payload(batch)
         serializer = BatchExecutionSerializer(payload)
         return Response(serializer.data)
@@ -74,6 +84,14 @@ class BatchStepDetailView(APIView):
     def get(self, request: Request, step_id: int) -> Response:
         step = self._get_step(step_id)
         self.check_object_permissions(request, step)
+        record_audit_event(
+            AuditEventType.BATCH_STEP_VIEWED,
+            actor=request.user,
+            site=step.batch.site,
+            target_type="BatchStep",
+            target_id=step.id,
+            metadata={"step_key": step.step_key, "batch_id": step.batch_id},
+        )
         payload = get_step_detail_payload(step)
         serializer = BatchStepDetailSerializer(payload)
         return Response(serializer.data)

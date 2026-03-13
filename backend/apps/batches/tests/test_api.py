@@ -6,6 +6,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
+from apps.audit.models import AuditEvent, AuditEventType
 from apps.authz.models import SiteRole, SiteRoleAssignment
 from apps.batches.models import Batch, BatchStep, BatchStepStatus, StepSignatureState
 from apps.sites.models import Site
@@ -415,3 +416,42 @@ def test_non_applicable_step_excluded_from_current_step(operator: Any, batch: Ba
     # Non-applicable step still appears in list
     assert len(data["steps"]) == 2
     assert data["steps"][0]["is_applicable"] is False
+
+
+# ── Audit: Batch Access Events ──
+
+
+@pytest.mark.django_db
+def test_batch_execution_access_creates_audit_event(
+    operator: Any, batch: Batch, batch_steps: StepTriple
+) -> None:
+    """Audit: Accessing batch execution view records a batch_execution_viewed event."""
+    client = APIClient()
+    client.force_login(operator)
+    client.get(f"/api/v1/batches/{batch.id}/execution/")
+    event = AuditEvent.objects.filter(event_type=AuditEventType.BATCH_EXECUTION_VIEWED).first()
+    assert event is not None
+    assert event.actor == operator
+    assert event.site == batch.site
+    assert event.target_type == "Batch"
+    assert event.target_id == batch.id
+    assert event.metadata["batch_number"] == "LOT-2026-001"
+
+
+@pytest.mark.django_db
+def test_step_detail_access_creates_audit_event(
+    operator: Any, batch: Batch, batch_steps: StepTriple
+) -> None:
+    """Audit: Accessing step detail view records a batch_step_viewed event."""
+    client = APIClient()
+    client.force_login(operator)
+    step = batch_steps[1]  # weighing
+    client.get(f"/api/v1/batches/steps/{step.id}/")
+    event = AuditEvent.objects.filter(event_type=AuditEventType.BATCH_STEP_VIEWED).first()
+    assert event is not None
+    assert event.actor == operator
+    assert event.site == batch.site
+    assert event.target_type == "BatchStep"
+    assert event.target_id == step.id
+    assert event.metadata["step_key"] == "weighing"
+    assert event.metadata["batch_id"] == batch.id

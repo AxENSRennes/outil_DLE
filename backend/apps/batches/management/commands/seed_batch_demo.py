@@ -141,8 +141,9 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Created batch LOT-2026-001 with {step_count} steps on site CHR.\n"
-                f"  Operator: operator1 (PIN: 1234)\n"
-                f"  Reviewer: reviewer1 (PIN: 5678)"
+                f"  Operator: operator1\n"
+                f"  Reviewer: reviewer1\n"
+                f"  (Credentials are defined in the seed command source)"
             )
         )
 
