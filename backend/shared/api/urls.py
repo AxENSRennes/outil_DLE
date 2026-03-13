@@ -20,4 +20,5 @@ urlpatterns = [
         AuthenticatedSchemaDocsView.as_view(url_name="shared-api:schema"),
         name="schema-docs",
     ),
+    path("", include("apps.exports.api.urls")),
 ]
