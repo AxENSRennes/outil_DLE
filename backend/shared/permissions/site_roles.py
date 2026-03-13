@@ -89,6 +89,7 @@ class SiteScopedRolePermission(BasePermission):
     def has_permission(self, request: Any, view: Any) -> bool:
         required_roles = self._get_required_roles(view)
         if not required_roles:
+            self._require_authenticated_user(request.user)
             return True
 
         self._require_authenticated_user(request.user)
@@ -108,6 +109,7 @@ class SiteScopedRolePermission(BasePermission):
     def has_object_permission(self, request: Any, view: Any, obj: Any) -> bool:
         required_roles = self._get_required_roles(view)
         if not required_roles:
+            self._require_authenticated_user(request.user)
             return True
 
         self._require_authenticated_user(request.user)

@@ -46,7 +46,35 @@ Frontend visibility is not access control. Later stories should reuse these help
 - the authenticated user's site assignments only
 - canonical role names grouped by site
 
-This endpoint is informational only. It does not implement workstation identify/switch flows, PIN checks, or signature re-authentication.
+This endpoint is informational only. Workstation identify/switch/lock flows and signature re-authentication now live in the dedicated workstation auth contract documented in [workstation-auth.md](/home/axel/DLE-SaaS/docs/implementation/workstation-auth.md).
+
+## Workstation Authentication Contract
+
+Story 1.3 extends the baseline with shared-workstation authentication guardrails while keeping Django sessions as the only browser auth authority.
+
+Implemented action endpoints:
+
+- `POST /api/v1/auth/workstation-identify/`
+- `POST /api/v1/auth/workstation-lock/`
+- `POST /api/v1/auth/signature-reauth/`
+
+Rules:
+
+- Workstation identification uses a dedicated hashed PIN credential stored on `authz.User`.
+- A successful identify request creates or replaces the authenticated Django session without redirecting away from the current screen.
+- `workstation-lock` removes the active authenticated authority entirely; protected endpoints return `not_authenticated` immediately afterward.
+- `signature-reauth` re-verifies the active user with PIN and site-scoped role requirements before future signature-bearing actions.
+- CSRF remains required on unsafe auth endpoints.
+- Identify and signature re-auth requests are rate-limited and emit auditable failure events rather than failing silently.
+
+Canonical auth-event types are:
+
+- `identify`
+- `switch_user`
+- `lock_workstation`
+- `identify_failed`
+- `signature_reauth_succeeded`
+- `signature_reauth_failed`
 
 ## Custom User Model Cutover
 

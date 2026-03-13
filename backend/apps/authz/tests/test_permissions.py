@@ -34,6 +34,21 @@ class PermissionOnlyOperatorSiteView(APIView):
         return Response({"site_code": site_code, "status": "ok"})
 
 
+class EmptyRolesView(APIView):
+    permission_classes: ClassVar[list[type]] = [SiteScopedRolePermission]
+    required_site_roles: tuple[str, ...] = ()
+
+    def get(self, request: Any) -> Response:
+        return Response({"status": "ok"})
+
+
+class NoRolesAttrView(APIView):
+    permission_classes: ClassVar[list[type]] = [SiteScopedRolePermission]
+
+    def get(self, request: Any) -> Response:
+        return Response({"status": "ok"})
+
+
 class PermissionOnlyDeferredSiteView(APIView):
     permission_classes: ClassVar[list[type]] = [SiteScopedRolePermission]
     required_site_roles = (SiteRole.OPERATOR,)
@@ -86,6 +101,52 @@ def test_site_role_permission_denies_unauthenticated_deferred_object_resolution(
 
     assert response.status_code == 403
     assert response.data["code"] == "not_authenticated"
+
+
+@pytest.mark.django_db
+def test_site_role_permission_denies_unauthenticated_when_roles_empty() -> None:
+    request = APIRequestFactory().get("/api/v1/auth/empty-roles/")
+    response = EmptyRolesView.as_view()(request)
+
+    assert response.status_code == 403
+    assert response.data["code"] == "not_authenticated"
+
+
+@pytest.mark.django_db
+def test_site_role_permission_denies_unauthenticated_when_roles_attr_missing() -> None:
+    request = APIRequestFactory().get("/api/v1/auth/no-roles/")
+    response = NoRolesAttrView.as_view()(request)
+
+    assert response.status_code == 403
+    assert response.data["code"] == "not_authenticated"
+
+
+@pytest.mark.django_db
+def test_site_role_permission_allows_authenticated_when_roles_empty() -> None:
+    user = get_user_model().objects.create_user(
+        username="empty-roles-user", password="test-pass-123"
+    )
+    request = APIRequestFactory().get("/api/v1/auth/empty-roles/")
+    force_authenticate(request, user=user)
+    response = EmptyRolesView.as_view()(request)
+
+    assert response.status_code == 200
+    assert response.data == {"status": "ok"}
+
+
+@pytest.mark.django_db
+def test_site_role_permission_object_denies_unauthenticated_when_roles_empty() -> None:
+    from rest_framework.exceptions import NotAuthenticated
+
+    permission = SiteScopedRolePermission()
+    view = SimpleNamespace(required_site_roles=())
+    request = APIRequestFactory().get("/api/v1/auth/empty-roles/")
+    # AnonymousUser from DRF (is_authenticated=False)
+    request.user = SimpleNamespace(is_authenticated=False)
+    obj = SimpleNamespace()
+
+    with pytest.raises(NotAuthenticated):
+        permission.has_object_permission(request, view, obj)
 
 
 @pytest.mark.django_db

@@ -3,14 +3,29 @@ from __future__ import annotations
 from typing import ClassVar
 
 from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
 class User(AbstractUser):
+    workstation_pin = models.CharField(max_length=128, blank=True, default="")
+
     class Meta:
         ordering = ("username",)
+
+    def set_workstation_pin(self, raw_pin: str) -> None:
+        if not raw_pin:
+            raise ValueError("Workstation PIN must not be empty.")
+        if len(raw_pin) < 4:
+            raise ValueError("Workstation PIN must be at least 4 characters long.")
+        self.workstation_pin = make_password(raw_pin)
+
+    def check_workstation_pin(self, raw_pin: str) -> bool:
+        if not self.workstation_pin:
+            return False
+        return check_password(raw_pin, self.workstation_pin)
 
 
 class SiteRole(models.TextChoices):
@@ -23,12 +38,12 @@ class SiteRole(models.TextChoices):
 class SiteRoleAssignment(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="site_role_assignments",
     )
     site = models.ForeignKey(
         "sites.Site",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="role_assignments",
     )
     role = models.CharField(max_length=64, choices=SiteRole.choices)

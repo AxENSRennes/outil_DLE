@@ -43,7 +43,7 @@ development_status:
   epic-1: in-progress
   1-1-initialize-the-split-stack-foundation: done
   1-2-establish-site-aware-roles-and-access-policy: done
-  1-3-implement-shared-workstation-identification-and-signature-authority-guardrails: backlog
+  1-3-implement-shared-workstation-identification-and-signature-authority-guardrails: done
   epic-1-retrospective: optional
   epic-2: backlog
   2-1-create-the-mmr-and-draft-version-lifecycle-baseline: backlog
