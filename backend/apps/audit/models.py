@@ -94,6 +94,9 @@ class AuditEvent(models.Model):
             )
 
     def save(self, *args: Any, **kwargs: Any) -> None:
+        # full_clean() is intentionally called before every save to enforce
+        # Python-level invariants (actor requirement, target consistency) in
+        # addition to the DB-level CHECK constraints.  Do not remove this call.
         self.target_type = self.target_type.strip()
         self.full_clean()
         super().save(*args, **kwargs)

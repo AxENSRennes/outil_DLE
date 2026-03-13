@@ -142,7 +142,7 @@ def test_deleting_user_with_audit_events_raises_protected_error() -> None:
         user.delete()
 
 
-BATCH_DOMAIN_EVENT_TYPES = [
+BATCH_EVENT_TEST_CASES = [
     (
         "batch_created",
         "batch",
@@ -209,7 +209,7 @@ BATCH_DOMAIN_EVENT_TYPES = [
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     ("event_type_value", "target_type", "metadata"),
-    BATCH_DOMAIN_EVENT_TYPES,
+    BATCH_EVENT_TEST_CASES,
 )
 def test_batch_domain_event_type_can_be_recorded(
     event_type_value: str,
@@ -232,7 +232,7 @@ def test_batch_domain_event_type_can_be_recorded(
 
 
 def test_all_batch_domain_event_types_are_valid_enum_members() -> None:
-    for event_type_value, _, _ in BATCH_DOMAIN_EVENT_TYPES:
+    for event_type_value, _, _ in BATCH_EVENT_TEST_CASES:
         member = AuditEventType(event_type_value)
         assert member.value == event_type_value
 

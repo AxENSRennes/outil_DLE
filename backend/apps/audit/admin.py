@@ -11,7 +11,7 @@ from apps.audit.models import AuditEvent
 @admin.register(AuditEvent)
 class AuditEventAdmin(admin.ModelAdmin):
     list_display = ("event_type", "actor", "site", "target_type", "target_id", "occurred_at")
-    list_filter = ("event_type", "site", "target_type", "target_id")
+    list_filter = ("event_type", "site", "target_type")
     search_fields = ("actor__username", "site__code")
     ordering = ("-occurred_at", "-id")
     autocomplete_fields = ("actor", "site")
