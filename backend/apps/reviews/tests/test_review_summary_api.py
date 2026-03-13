@@ -44,7 +44,9 @@ def batch(site: Site) -> Batch:
 def production_reviewer(site: Site) -> User:
     user = _UserModel.objects.create_user(username="reviewer", password="testpass1234")
     SiteRoleAssignment.objects.create(
-        user=user, site=site, role=SiteRole.PRODUCTION_REVIEWER,
+        user=user,
+        site=site,
+        role=SiteRole.PRODUCTION_REVIEWER,
     )
     return user
 
@@ -53,7 +55,9 @@ def production_reviewer(site: Site) -> User:
 def quality_reviewer(site: Site) -> User:
     user = _UserModel.objects.create_user(username="qa_reviewer", password="testpass1234")
     SiteRoleAssignment.objects.create(
-        user=user, site=site, role=SiteRole.QUALITY_REVIEWER,
+        user=user,
+        site=site,
+        role=SiteRole.QUALITY_REVIEWER,
     )
     return user
 
@@ -62,7 +66,9 @@ def quality_reviewer(site: Site) -> User:
 def operator(site: Site) -> User:
     user = _UserModel.objects.create_user(username="operator", password="testpass1234")
     SiteRoleAssignment.objects.create(
-        user=user, site=site, role=SiteRole.OPERATOR,
+        user=user,
+        site=site,
+        role=SiteRole.OPERATOR,
     )
     return user
 
@@ -71,7 +77,9 @@ def operator(site: Site) -> User:
 def wrong_site_reviewer(other_site: Site) -> User:
     user = _UserModel.objects.create_user(username="wrong_site_rev", password="testpass1234")
     SiteRoleAssignment.objects.create(
-        user=user, site=other_site, role=SiteRole.PRODUCTION_REVIEWER,
+        user=user,
+        site=other_site,
+        role=SiteRole.PRODUCTION_REVIEWER,
     )
     return user
 
@@ -94,7 +102,9 @@ class TestReviewSummaryEndpointAuth:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_wrong_site_reviewer_returns_404(
-        self, batch: Batch, wrong_site_reviewer: User,
+        self,
+        batch: Batch,
+        wrong_site_reviewer: User,
     ) -> None:
         client = APIClient()
         client.force_authenticate(user=wrong_site_reviewer)
@@ -105,7 +115,9 @@ class TestReviewSummaryEndpointAuth:
 @pytest.mark.django_db()
 class TestReviewSummaryEndpointSuccess:
     def test_production_reviewer_gets_200(
-        self, batch: Batch, production_reviewer: User,
+        self,
+        batch: Batch,
+        production_reviewer: User,
     ) -> None:
         client = APIClient()
         client.force_authenticate(user=production_reviewer)
@@ -118,7 +130,9 @@ class TestReviewSummaryEndpointSuccess:
         assert data["severity"] == "green"
 
     def test_quality_reviewer_gets_200(
-        self, batch: Batch, quality_reviewer: User,
+        self,
+        batch: Batch,
+        quality_reviewer: User,
     ) -> None:
         client = APIClient()
         client.force_authenticate(user=quality_reviewer)
@@ -132,23 +146,35 @@ class TestReviewSummaryEndpointSuccess:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_response_shape(
-        self, batch: Batch, production_reviewer: User,
+        self,
+        batch: Batch,
+        production_reviewer: User,
     ) -> None:
         signer = _UserModel.objects.create_user(username="signer", password="testpass1234")
         step1 = BatchStep.objects.create(
-            batch=batch, order=1, reference="Step 1 - Mixing",
-            status=StepStatus.SIGNED, requires_signature=True,
+            batch=batch,
+            order=1,
+            reference="Step 1 - Mixing",
+            status=StepStatus.SIGNED,
+            requires_signature=True,
         )
         StepSignature.objects.create(step=step1, signer=signer, meaning="executed_by")
         BatchStep.objects.create(
-            batch=batch, order=2, reference="Step 2 - Weighing",
-            status=StepStatus.IN_PROGRESS, required_data_complete=False,
+            batch=batch,
+            order=2,
+            reference="Step 2 - Weighing",
+            status=StepStatus.IN_PROGRESS,
+            required_data_complete=False,
         )
         DossierChecklistItem.objects.create(
-            batch=batch, document_name="weighing-record", is_present=True,
+            batch=batch,
+            document_name="weighing-record",
+            is_present=True,
         )
         DossierChecklistItem.objects.create(
-            batch=batch, document_name="mixing-record", is_present=False,
+            batch=batch,
+            document_name="mixing-record",
+            is_present=False,
         )
 
         client = APIClient()
@@ -185,13 +211,18 @@ class TestReviewSummaryEndpointSuccess:
         assert "missing_required_data" in flagged["flags"]
 
     def test_all_signed_returns_green(
-        self, batch: Batch, production_reviewer: User,
+        self,
+        batch: Batch,
+        production_reviewer: User,
     ) -> None:
         signer = _UserModel.objects.create_user(username="signer2", password="testpass1234")
         for i in range(3):
             step = BatchStep.objects.create(
-                batch=batch, order=i + 1, reference=f"Step {i + 1}",
-                status=StepStatus.SIGNED, requires_signature=True,
+                batch=batch,
+                order=i + 1,
+                reference=f"Step {i + 1}",
+                status=StepStatus.SIGNED,
+                requires_signature=True,
             )
             StepSignature.objects.create(step=step, signer=signer, meaning="executed_by")
 
@@ -202,12 +233,17 @@ class TestReviewSummaryEndpointSuccess:
         assert response.json()["severity"] == "green"
 
     def test_batch_with_corrections_returns_amber(
-        self, batch: Batch, production_reviewer: User,
+        self,
+        batch: Batch,
+        production_reviewer: User,
     ) -> None:
         signer = _UserModel.objects.create_user(username="signer3", password="testpass1234")
         step = BatchStep.objects.create(
-            batch=batch, order=1, reference="Step 1",
-            status=StepStatus.SIGNED, requires_signature=True,
+            batch=batch,
+            order=1,
+            reference="Step 1",
+            status=StepStatus.SIGNED,
+            requires_signature=True,
             changed_since_review=True,
         )
         StepSignature.objects.create(step=step, signer=signer, meaning="executed_by")
@@ -219,7 +255,9 @@ class TestReviewSummaryEndpointSuccess:
         assert response.json()["severity"] == "amber"
 
     def test_non_blocking_exception_returns_amber(
-        self, batch: Batch, production_reviewer: User,
+        self,
+        batch: Batch,
+        production_reviewer: User,
     ) -> None:
         BatchStep.objects.create(
             batch=batch,

@@ -93,9 +93,7 @@ def evaluate_step_completeness(steps: list[dict[str, Any]]) -> StepSummary:
 def evaluate_signature_completeness(steps: list[dict[str, Any]]) -> int:
     """Count steps that still need a required signature."""
     return sum(
-        1
-        for step in steps
-        if step.get("requires_signature") and not step.get("has_signature")
+        1 for step in steps if step.get("requires_signature") and not step.get("has_signature")
     )
 
 
@@ -153,9 +151,7 @@ def evaluate_checklist(items: list[dict[str, Any]]) -> ChecklistSummary:
     """Evaluate dossier checklist completeness."""
     expected = len(items)
     present = sum(1 for item in items if item.get("is_present"))
-    missing = [
-        str(item["document_name"]) for item in items if not item.get("is_present")
-    ]
+    missing = [str(item["document_name"]) for item in items if not item.get("is_present")]
     return ChecklistSummary(
         expected_documents=expected,
         present_documents=present,
