@@ -15,6 +15,7 @@ class AuditEventType(models.TextChoices):
     IDENTIFY_FAILED = "identify_failed", "Identify Failed"
     SIGNATURE_REAUTH_SUCCEEDED = "signature_reauth_succeeded", "Signature Reauth Succeeded"
     SIGNATURE_REAUTH_FAILED = "signature_reauth_failed", "Signature Reauth Failed"
+    LOCK_FAILED = "lock_failed", "Lock Failed"
 
     # Batch-domain event types
     BATCH_CREATED = "batch_created", "Batch Created"
@@ -44,6 +45,7 @@ AUTH_OPTIONAL_ACTOR_EVENT_TYPES: tuple[str, ...] = (
     AuditEventType.IDENTIFY_FAILED,
     AuditEventType.SIGNATURE_REAUTH_SUCCEEDED,
     AuditEventType.SIGNATURE_REAUTH_FAILED,
+    AuditEventType.LOCK_FAILED,
 )
 
 BATCH_DOMAIN_EVENT_TYPES: tuple[str, ...] = tuple(

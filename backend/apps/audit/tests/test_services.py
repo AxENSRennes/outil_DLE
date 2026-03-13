@@ -251,6 +251,7 @@ def test_existing_auth_event_types_still_work() -> None:
         AuditEventType.IDENTIFY_FAILED,
         AuditEventType.SIGNATURE_REAUTH_SUCCEEDED,
         AuditEventType.SIGNATURE_REAUTH_FAILED,
+        AuditEventType.LOCK_FAILED,
     ]
     for et in auth_types:
         event = record_audit_event(et)
