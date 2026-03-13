@@ -19,6 +19,9 @@ def create_mmr(
     description: str = "",
     actor: Any,
 ) -> MMR:
+    if product.site_id != site.pk:
+        raise ValueError(f"Product '{product.code}' does not belong to site '{site.code}'.")
+
     with transaction.atomic():
         try:
             mmr = MMR.objects.create(

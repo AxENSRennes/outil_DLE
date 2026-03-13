@@ -61,6 +61,14 @@ def test_create_mmr_records_audit_event(site: Site, product: Product, user: Any)
 
 
 @pytest.mark.django_db
+def test_create_mmr_cross_site_product_raises(site: Site, user: Any) -> None:
+    other_site = Site.objects.create(code="paris", name="Paris")
+    product_on_other = Product.objects.create(site=other_site, name="Other", code="OTHER")
+    with pytest.raises(ValueError, match="does not belong to site"):
+        create_mmr(site=site, product=product_on_other, name="X", code="X1", actor=user)
+
+
+@pytest.mark.django_db
 def test_create_mmr_duplicate_code_raises(site: Site, product: Product, user: Any) -> None:
     create_mmr(site=site, product=product, name="A", code="SAME", actor=user)
     with pytest.raises(ValueError, match="already exists"):
