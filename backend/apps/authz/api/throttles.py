@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, cast
 
 from django.core.exceptions import ImproperlyConfigured
@@ -10,6 +11,8 @@ from shared.permissions.site_roles import get_active_site_by_code
 
 from apps.audit.models import AuditEventType
 from apps.audit.services import record_audit_event
+
+logger = logging.getLogger(__name__)
 
 
 class AuditEventThrottle(SimpleRateThrottle):
@@ -46,7 +49,11 @@ class AuditEventThrottle(SimpleRateThrottle):
         )
 
     def throttle_failure(self) -> bool:
-        self._record_failure()
+        try:
+            self._record_failure()
+        except Exception:
+            # Audit write failure must not disable throttle rejection.
+            logger.exception("Failed to record throttle audit event")
         return cast(bool, super().throttle_failure())
 
     def _record_failure(self) -> None:

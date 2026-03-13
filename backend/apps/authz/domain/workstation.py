@@ -69,7 +69,23 @@ def _get_client_ip(request: Any) -> str | None:
 
 def identify_workstation_user(request: Any, *, username: str, pin: str) -> dict[str, Any]:
     user = _get_user_by_username(username)
-    if user is None or not user.check_workstation_pin(pin):
+    if user is None:
+        # Run the hasher on a throwaway instance to prevent username
+        # enumeration via timing side-channel.
+        User().check_workstation_pin(pin)
+        record_audit_event(
+            AuditEventType.IDENTIFY_FAILED,
+            metadata={
+                "attempted_username": username,
+                "reason": "invalid_credentials",
+                "ip_address": _get_client_ip(request),
+            },
+        )
+        raise PermissionDenied(
+            detail="Invalid workstation credentials.",
+            code="invalid_workstation_credentials",
+        )
+    if not user.check_workstation_pin(pin):
         record_audit_event(
             AuditEventType.IDENTIFY_FAILED,
             metadata={
