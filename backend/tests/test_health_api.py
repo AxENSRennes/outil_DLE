@@ -56,7 +56,9 @@ def test_schema_endpoint_requires_authentication(client: Any) -> None:
 def test_schema_endpoint_returns_openapi_document_for_authenticated_request() -> None:
     request = APIRequestFactory().get("/api/v1/schema/")
     force_authenticate(request, user=User(username="schema-user"))
-    schema_view = shared_api_urlpatterns[2].callback
+    schema_view = next(
+        p.callback for p in shared_api_urlpatterns if getattr(p, "name", None) == "schema"
+    )
 
     response = schema_view(request)
 
@@ -73,7 +75,9 @@ def test_schema_docs_endpoint_requires_authentication(client: Any) -> None:
 def test_schema_docs_endpoint_renders_for_authenticated_request() -> None:
     request = APIRequestFactory().get("/api/v1/schema/docs/")
     force_authenticate(request, user=User(username="swagger-user"))
-    schema_docs_view = shared_api_urlpatterns[3].callback
+    schema_docs_view = next(
+        p.callback for p in shared_api_urlpatterns if getattr(p, "name", None) == "schema-docs"
+    )
 
     response = schema_docs_view(request)
     response.render()

@@ -13,6 +13,7 @@ app_name = "shared-api"
 
 urlpatterns = [
     path("auth/", include("apps.authz.api.urls")),
+    path("batches/", include("apps.batches.api.urls")),
     path("health/", HealthCheckView.as_view(), name="health-check"),
     path("schema/", AuthenticatedSchemaView.as_view(), name="schema"),
     path(
