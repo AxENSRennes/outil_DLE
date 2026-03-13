@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="auditevent",
             constraint=models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(
                         event_type__in=[
                             "identify",
@@ -19,6 +19,7 @@ class Migration(migrations.Migration):
                             "identify_failed",
                             "signature_reauth_succeeded",
                             "signature_reauth_failed",
+                            "lock_failed",
                         ]
                     )
                     | models.Q(actor__isnull=False)
@@ -29,7 +30,9 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="auditevent",
             constraint=models.CheckConstraint(
-                check=(models.Q(target_id__isnull=True) | ~models.Q(target_type__regex=r"^\s*$")),
+                condition=(
+                    models.Q(target_id__isnull=True) | ~models.Q(target_type__regex=r"^\s*$")
+                ),
                 name="audit_target_type_not_blank_when_linked",
             ),
         ),

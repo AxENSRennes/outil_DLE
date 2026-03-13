@@ -7,15 +7,12 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         ("audit", "0005_add_actor_and_target_constraints"),
+        ("audit", "0003_alter_auditevent_event_type"),
         ("sites", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
-        migrations.RemoveConstraint(
-            model_name="auditevent",
-            name="audit_batch_event_actor_required",
-        ),
         migrations.AlterField(
             model_name="auditevent",
             name="event_type",
@@ -24,10 +21,10 @@ class Migration(migrations.Migration):
                     ("identify", "Identify"),
                     ("switch_user", "Switch User"),
                     ("lock_workstation", "Lock Workstation"),
+                    ("lock_failed", "Lock Failed"),
                     ("identify_failed", "Identify Failed"),
                     ("signature_reauth_succeeded", "Signature Reauth Succeeded"),
                     ("signature_reauth_failed", "Signature Reauth Failed"),
-                    ("lock_failed", "Lock Failed"),
                     ("batch_created", "Batch Created"),
                     ("step_draft_saved", "Step Draft Saved"),
                     ("step_completed", "Step Completed"),
@@ -42,28 +39,6 @@ class Migration(migrations.Migration):
                     ("change_reviewed", "Change Reviewed"),
                 ],
                 max_length=64,
-            ),
-        ),
-        migrations.AddConstraint(
-            model_name="auditevent",
-            constraint=models.CheckConstraint(
-                condition=models.Q(
-                    (
-                        "event_type__in",
-                        (
-                            "identify",
-                            "switch_user",
-                            "lock_workstation",
-                            "identify_failed",
-                            "signature_reauth_succeeded",
-                            "signature_reauth_failed",
-                            "lock_failed",
-                        ),
-                    ),
-                    ("actor__isnull", False),
-                    _connector="OR",
-                ),
-                name="audit_batch_event_actor_required",
             ),
         ),
     ]
