@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.db import transaction
 
-from apps.audit.models import AuditEventType
+from apps.audit.models import AuditEvent, AuditEventType
 from apps.audit.services import record_audit_event
 from apps.batches.models import BatchStep, StepStatus
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractBaseUser
+
+    from apps.sites.models import Site
 
 CORRECTABLE_STATUSES = {
     StepStatus.IN_PROGRESS,
@@ -18,12 +23,12 @@ CORRECTABLE_STATUSES = {
 def submit_correction(
     *,
     step: BatchStep,
-    actor: Any,
-    site: Any,
+    actor: AbstractBaseUser,
+    site: Site,
     corrections: list[dict[str, Any]],
     reason_for_change: str,
     ip_address: str | None = None,
-) -> Any:
+) -> AuditEvent:
     """Submit a controlled correction to a batch step's data.
 
     Wraps both the data update and audit event write in a single
@@ -34,6 +39,7 @@ def submit_correction(
     - reason_for_change is blank/whitespace-only
     - corrections list is empty
     - any correction entry has an empty field_name
+    - duplicate field_name values exist within the corrections list
     """
     if step.status not in CORRECTABLE_STATUSES:
         raise ValueError(
@@ -48,10 +54,17 @@ def submit_correction(
     if not corrections:
         raise ValueError("At least one correction entry is required.")
 
+    seen_field_names: set[str] = set()
     for entry in corrections:
         field_name = entry.get("field_name", "")
         if not field_name or not str(field_name).strip():
             raise ValueError("Each correction entry must have a non-empty field_name.")
+        if field_name in seen_field_names:
+            raise ValueError(
+                f"Duplicate field_name '{field_name}' in corrections. "
+                "Each field may only appear once per correction request."
+            )
+        seen_field_names.add(field_name)
 
     correction_details: list[dict[str, Any]] = []
     data = dict(step.data_json) if step.data_json else {}
@@ -84,7 +97,7 @@ def submit_correction(
                 "batch_id": step.batch_id,
                 "reason_for_change": stripped_reason,
                 "corrections": correction_details,
-                "ip_address": ip_address or "",
+                "ip_address": ip_address,
             },
         )
 

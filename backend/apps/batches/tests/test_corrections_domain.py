@@ -210,6 +210,21 @@ class TestSubmitCorrectionHappyPath:
 
         assert event.actor == actor
 
+    def test_ip_address_stored_as_none_when_not_provided(
+        self, batch: Batch, actor: Any, site: Site
+    ) -> None:
+        step = _make_step(batch, StepStatus.IN_PROGRESS, {"temperature": "22.5"})
+
+        event = submit_correction(
+            step=step,
+            actor=actor,
+            site=site,
+            corrections=[{"field_name": "temperature", "new_value": "23.1"}],
+            reason_for_change="Fix",
+        )
+
+        assert event.metadata["ip_address"] is None
+
 
 @pytest.mark.django_db
 class TestSubmitCorrectionValidation:
@@ -280,6 +295,23 @@ class TestSubmitCorrectionValidation:
                 actor=actor,
                 site=site,
                 corrections=[{"field_name": "", "new_value": "23.1"}],
+                reason_for_change="Fix",
+            )
+
+    def test_duplicate_field_name_raises_value_error(
+        self, batch: Batch, actor: Any, site: Site
+    ) -> None:
+        step = _make_step(batch, StepStatus.IN_PROGRESS, {"temperature": "22.5"})
+
+        with pytest.raises(ValueError, match="Duplicate field_name 'temperature'"):
+            submit_correction(
+                step=step,
+                actor=actor,
+                site=site,
+                corrections=[
+                    {"field_name": "temperature", "new_value": "23.1"},
+                    {"field_name": "temperature", "new_value": "24.0"},
+                ],
                 reason_for_change="Fix",
             )
 

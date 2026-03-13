@@ -5,7 +5,7 @@ from rest_framework import serializers
 
 class CorrectionEntrySerializer(serializers.Serializer):
     field_name = serializers.CharField(required=True, min_length=1, max_length=200)
-    new_value = serializers.JSONField(required=True)
+    new_value = serializers.JSONField(required=True, allow_null=True)
 
 
 class CorrectionRequestSerializer(serializers.Serializer):
@@ -18,8 +18,8 @@ class CorrectionRequestSerializer(serializers.Serializer):
 
 class CorrectionAppliedEntrySerializer(serializers.Serializer):
     field_name = serializers.CharField()
-    old_value = serializers.JSONField()
-    new_value = serializers.JSONField()
+    old_value = serializers.JSONField(allow_null=True)
+    new_value = serializers.JSONField(allow_null=True)
 
 
 class CorrectionResponseSerializer(serializers.Serializer):

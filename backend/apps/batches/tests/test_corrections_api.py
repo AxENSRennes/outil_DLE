@@ -147,6 +147,20 @@ class TestSubmitCorrectionSuccess:
         step.refresh_from_db()
         assert step.data_json["temperature"] == "23.1"
 
+    def test_null_new_value_accepted(self, batch: Batch, step: BatchStep, operator: Any) -> None:
+        client, token = csrf_client(user=operator)
+        payload = {
+            "corrections": [{"field_name": "temperature", "new_value": None}],
+            "reason_for_change": "Clearing erroneous value",
+        }
+        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
+
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["corrections_applied"][0]["new_value"] is None
+        step.refresh_from_db()
+        assert step.data_json["temperature"] is None
+
 
 @pytest.mark.django_db()
 class TestSubmitCorrectionValidation:
@@ -201,6 +215,20 @@ class TestSubmitCorrectionValidation:
         resp = post_json(
             client, _url(batch.pk, not_started_step.pk), _valid_payload(), csrf_token=token
         )
+        assert resp.status_code == 400
+
+    def test_duplicate_field_name_returns_400(
+        self, batch: Batch, step: BatchStep, operator: Any
+    ) -> None:
+        client, token = csrf_client(user=operator)
+        payload = {
+            "corrections": [
+                {"field_name": "temperature", "new_value": "23.1"},
+                {"field_name": "temperature", "new_value": "24.0"},
+            ],
+            "reason_for_change": "Fix",
+        }
+        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
         assert resp.status_code == 400
 
 
