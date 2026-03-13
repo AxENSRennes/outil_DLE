@@ -47,7 +47,7 @@ development_status:
   epic-1-retrospective: optional
   epic-2: in-progress
   2-1-create-the-mmr-and-draft-version-lifecycle-baseline: done
-  2-2-define-ordered-template-steps-and-step-level-guidance: ready-for-dev
+  2-2-define-ordered-template-steps-and-step-level-guidance: review
   2-3-configure-step-fields-and-signature-checkpoints: backlog
   2-4-activate-a-governed-template-version-for-operational-use: backlog
   2-5-instantiate-a-batch-from-the-active-template-snapshot: backlog

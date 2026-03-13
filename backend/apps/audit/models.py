@@ -17,6 +17,10 @@ class AuditEventType(models.TextChoices):
     SIGNATURE_REAUTH_FAILED = "signature_reauth_failed", "Signature Reauth Failed"
     MMR_CREATED = "mmr_created", "MMR Created"
     MMR_VERSION_CREATED = "mmr_version_created", "MMR Version Created"
+    MMR_VERSION_STEP_ADDED = "mmr_version_step_added", "MMR Version Step Added"
+    MMR_VERSION_STEP_UPDATED = "mmr_version_step_updated", "MMR Version Step Updated"
+    MMR_VERSION_STEP_REMOVED = "mmr_version_step_removed", "MMR Version Step Removed"
+    MMR_VERSION_STEPS_REORDERED = "mmr_version_steps_reordered", "MMR Version Steps Reordered"
 
     # Batch-domain event types
     BATCH_CREATED = "batch_created", "Batch Created"

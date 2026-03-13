@@ -1,6 +1,6 @@
 # Story 2.2: Define Ordered Template Steps and Step-Level Guidance
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -39,43 +39,43 @@ So that operators later execute a structured dossier flow instead of a flat unco
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create domain service `step_management.py` (AC: #1, #2, #3)
-  - [ ] 1.1 Create `backend/apps/mmr/domain/step_management.py`
-  - [ ] 1.2 Implement `add_step(version, step_data, actor)` — validate draft status, auto-init `schema_json` header on first step, append step key to `stepOrder`, add step definition to `steps` map with auto-injected defaults (`"fields": []`, `"signaturePolicy": {"required": false, "meaning": "performed_by"}`), record audit event
-  - [ ] 1.3 Implement `update_step(version, step_key, step_data, actor)` — validate draft status, validate step exists, merge updated properties, record audit event
-  - [ ] 1.4 Implement `remove_step(version, step_key, actor)` — validate draft status, remove from `stepOrder` and `steps`, record audit event
-  - [ ] 1.5 Implement `reorder_steps(version, step_order, actor)` — validate draft status, validate all keys exist and set matches, replace `stepOrder`, record audit event
-  - [ ] 1.6 Implement `get_steps(version)` — return step list ordered by `stepOrder`
-  - [ ] 1.7 Implement `get_step(version, step_key)` — return single step definition
-  - [ ] 1.8 Implement `_ensure_schema_initialized(version)` — auto-populate schema header from MMR/Product if `schema_json` is empty
-  - [ ] 1.9 All mutating operations use `select_for_update()` on MMRVersion to prevent concurrent edit conflicts
-  - [ ] 1.10 All mutating operations reject non-draft versions with `ValueError`
-- [ ] Task 2: Add audit event types (AC: #1, #2, #3)
-  - [ ] 2.1 Add to `AuditEventType` in `backend/apps/audit/models.py`: `MMR_VERSION_STEP_ADDED`, `MMR_VERSION_STEP_UPDATED`, `MMR_VERSION_STEP_REMOVED`, `MMR_VERSION_STEPS_REORDERED`
-  - [ ] 2.2 Create and apply migration for new event types
-- [ ] Task 3: Create API serializers for step operations (AC: #1, #2)
-  - [ ] 3.1 `StepCreateSerializer` — input: key, title, kind, instructions (optional), attachmentsPolicy (optional), required (optional), applicability (optional), repeatPolicy (optional), blockingPolicy (optional)
-  - [ ] 3.2 `StepUpdateSerializer` — same fields as create but all optional (partial update)
-  - [ ] 3.3 `StepReorderSerializer` — input: step_order (list of step keys)
-  - [ ] 3.4 `StepDetailSerializer` — output: all step properties including defaulted fields and signaturePolicy
-  - [ ] 3.5 `StepListSerializer` — output: key, title, kind, required (minimal for list)
-  - [ ] 3.6 Use typed nested serializers for `applicability`, `repeatPolicy`, `blockingPolicy`, `attachmentsPolicy` (never raw DictField)
-- [ ] Task 4: Create API views and URL routing (AC: #1, #2, #3)
-  - [ ] 4.1 `StepListCreateView` — GET list, POST add step at `/api/v1/mmrs/{mmr_id}/versions/{version_id}/steps/`
-  - [ ] 4.2 `StepDetailView` — GET, PUT, DELETE at `/api/v1/mmrs/{mmr_id}/versions/{version_id}/steps/{step_key}/`
-  - [ ] 4.3 `StepReorderView` — POST at `/api/v1/mmrs/{mmr_id}/versions/{version_id}/steps/reorder/`
-  - [ ] 4.4 All views require `IsAuthenticated` + `SiteScopedRolePermission` with `INTERNAL_CONFIGURATOR`
-  - [ ] 4.5 All views resolve site from parent MMR object (use `allow_object_level_site_resolve = True` + `get_site_for_object`)
-  - [ ] 4.6 Register URL patterns in `backend/apps/mmr/api/urls.py`
-  - [ ] 4.7 Add `@extend_schema` decorators for OpenAPI docs
-- [ ] Task 5: Update existing version detail serializer (AC: #5)
-  - [ ] 5.1 Add `step_count` computed field to `MMRVersionDetailSerializer`
-  - [ ] 5.2 Add `has_steps` boolean computed field to `MMRVersionListSerializer`
-- [ ] Task 6: Write tests (AC: #1-#5)
-  - [ ] 6.1 Domain tests: `test_step_management.py` — add/update/remove/reorder happy paths, draft-only enforcement, duplicate key rejection, reorder set mismatch rejection, schema auto-initialization, concurrent safety, audit events
-  - [ ] 6.2 API tests: `test_step_api.py` — all endpoints with RBAC (configurator allowed, operator/unauthenticated denied), CSRF on POST/PUT/DELETE, validation errors, problem-details format, draft-only enforcement via API
-  - [ ] 6.3 Serializer tests: validate enum constraints on `kind`, nested policy serializer shapes
-- [ ] Task 7: Run `make check` and fix any issues
+- [x] Task 1: Create domain service `step_management.py` (AC: #1, #2, #3)
+  - [x] 1.1 Create `backend/apps/mmr/domain/step_management.py`
+  - [x] 1.2 Implement `add_step(version, step_data, actor)` — validate draft status, auto-init `schema_json` header on first step, append step key to `stepOrder`, add step definition to `steps` map with auto-injected defaults (`"fields": []`, `"signaturePolicy": {"required": false, "meaning": "performed_by"}`), record audit event
+  - [x] 1.3 Implement `update_step(version, step_key, step_data, actor)` — validate draft status, validate step exists, merge updated properties, record audit event
+  - [x] 1.4 Implement `remove_step(version, step_key, actor)` — validate draft status, remove from `stepOrder` and `steps`, record audit event
+  - [x] 1.5 Implement `reorder_steps(version, step_order, actor)` — validate draft status, validate all keys exist and set matches, replace `stepOrder`, record audit event
+  - [x] 1.6 Implement `get_steps(version)` — return step list ordered by `stepOrder`
+  - [x] 1.7 Implement `get_step(version, step_key)` — return single step definition
+  - [x] 1.8 Implement `_ensure_schema_initialized(version)` — auto-populate schema header from MMR/Product if `schema_json` is empty
+  - [x] 1.9 All mutating operations use `select_for_update()` on MMRVersion to prevent concurrent edit conflicts
+  - [x] 1.10 All mutating operations reject non-draft versions with `ValueError`
+- [x] Task 2: Add audit event types (AC: #1, #2, #3)
+  - [x] 2.1 Add to `AuditEventType` in `backend/apps/audit/models.py`: `MMR_VERSION_STEP_ADDED`, `MMR_VERSION_STEP_UPDATED`, `MMR_VERSION_STEP_REMOVED`, `MMR_VERSION_STEPS_REORDERED`
+  - [x] 2.2 Create and apply migration for new event types
+- [x] Task 3: Create API serializers for step operations (AC: #1, #2)
+  - [x] 3.1 `StepCreateSerializer` — input: key, title, kind, instructions (optional), attachmentsPolicy (optional), required (optional), applicability (optional), repeatPolicy (optional), blockingPolicy (optional)
+  - [x] 3.2 `StepUpdateSerializer` — same fields as create but all optional (partial update)
+  - [x] 3.3 `StepReorderSerializer` — input: step_order (list of step keys)
+  - [x] 3.4 `StepDetailSerializer` — output: all step properties including defaulted fields and signaturePolicy
+  - [x] 3.5 `StepListSerializer` — output: key, title, kind, required (minimal for list)
+  - [x] 3.6 Use typed nested serializers for `applicability`, `repeatPolicy`, `blockingPolicy`, `attachmentsPolicy` (never raw DictField)
+- [x] Task 4: Create API views and URL routing (AC: #1, #2, #3)
+  - [x] 4.1 `StepListCreateView` — GET list, POST add step at `/api/v1/mmrs/{mmr_id}/versions/{version_id}/steps/`
+  - [x] 4.2 `StepDetailView` — GET, PUT, DELETE at `/api/v1/mmrs/{mmr_id}/versions/{version_id}/steps/{step_key}/`
+  - [x] 4.3 `StepReorderView` — POST at `/api/v1/mmrs/{mmr_id}/versions/{version_id}/steps/reorder/`
+  - [x] 4.4 All views require `IsAuthenticated` + `SiteScopedRolePermission` with `INTERNAL_CONFIGURATOR`
+  - [x] 4.5 All views resolve site from parent MMR object (use `allow_object_level_site_resolve = True` + `get_site_for_object`)
+  - [x] 4.6 Register URL patterns in `backend/apps/mmr/api/urls.py`
+  - [x] 4.7 Add `@extend_schema` decorators for OpenAPI docs
+- [x] Task 5: Update existing version detail serializer (AC: #5)
+  - [x] 5.1 Add `step_count` computed field to `MMRVersionDetailSerializer`
+  - [x] 5.2 Add `has_steps` boolean computed field to `MMRVersionListSerializer`
+- [x] Task 6: Write tests (AC: #1-#5)
+  - [x] 6.1 Domain tests: `test_step_management.py` — add/update/remove/reorder happy paths, draft-only enforcement, duplicate key rejection, reorder set mismatch rejection, schema auto-initialization, concurrent safety, audit events
+  - [x] 6.2 API tests: `test_step_api.py` — all endpoints with RBAC (configurator allowed, operator/unauthenticated denied), CSRF on POST/PUT/DELETE, validation errors, problem-details format, draft-only enforcement via API
+  - [x] 6.3 Serializer tests: validate enum constraints on `kind`, nested policy serializer shapes
+- [x] Task 7: Run `make check` and fix any issues
 
 ## Dev Notes
 
@@ -609,12 +609,35 @@ Key patterns from commits: transaction wrapping for audit events, narrowed excep
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Created domain service `step_management.py` with full CRUD for steps within `MMRVersion.schema_json` (JSONB)
+- Implemented snake_case ↔ camelCase conversion between API layer and schema_json storage
+- Schema auto-initialization from parent MMR/Product on first step add
+- All mutating operations use `select_for_update()` with `transaction.atomic()` for concurrency safety
+- Draft-only enforcement on all mutations (reject active/retired with ValueError → 409)
+- 4 new audit event types for step lifecycle tracking
+- 6 REST endpoints with RBAC (INTERNAL_CONFIGURATOR only), CSRF enforcement, site-scoped permissions
+- Typed nested serializers for all policy objects (no raw DictField per CLAUDE.md)
+- `step_count` and `has_steps` computed fields on version serializers
+- 55 new tests (30 domain + 25 API), 233 total passing, zero regressions
+- `make check` green: ruff, mypy, bandit, pip-audit, architecture checks all pass
+
 ### Change Log
 
+- 2026-03-13: Story 2.2 implementation complete — all 7 tasks done, all ACs satisfied
+
 ### File List
+
+- backend/apps/mmr/domain/step_management.py (new)
+- backend/apps/mmr/api/serializers.py (modified)
+- backend/apps/mmr/api/views.py (modified)
+- backend/apps/mmr/api/urls.py (modified)
+- backend/apps/audit/models.py (modified)
+- backend/apps/audit/migrations/0004_add_step_audit_event_types.py (new)
+- backend/apps/mmr/tests/test_step_management.py (new)
+- backend/apps/mmr/tests/test_step_api.py (new)
