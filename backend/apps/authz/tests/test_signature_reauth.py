@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
 import pytest
 from config.settings import base as base_settings
@@ -11,32 +10,15 @@ from rest_framework.test import APIClient
 
 from apps.audit.models import AuditEvent, AuditEventType
 from apps.authz.models import SiteRole, SiteRoleAssignment
+from apps.authz.tests.helpers import csrf_client, post_json
 from apps.sites.models import Site
-
-
-def _csrf_client(*, user: Any | None = None) -> tuple[APIClient, str]:
-    client = APIClient(enforce_csrf_checks=True)
-    client.get("/admin/login/")
-    if user is not None:
-        client.force_login(user)
-    token = client.cookies["csrftoken"].value
-    return client, token
-
-
-def _post_json(client: APIClient, path: str, payload: dict[str, Any], *, csrf_token: str) -> Any:
-    return client.post(
-        path,
-        payload,
-        format="json",
-        HTTP_X_CSRFTOKEN=csrf_token,
-    )
 
 
 @pytest.mark.django_db
 def test_signature_reauth_requires_authenticated_session() -> None:
-    client, token = _csrf_client()
+    client, token = csrf_client()
 
-    response = _post_json(
+    response = post_json(
         client,
         "/api/v1/auth/signature-reauth/",
         {
@@ -64,8 +46,8 @@ def test_signature_reauth_authorizes_active_user_with_valid_pin_and_role() -> No
     site = Site.objects.create(code="paris-line-1", name="Paris Line 1")
     SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR)
 
-    client, token = _csrf_client(user=user)
-    response = _post_json(
+    client, token = csrf_client(user=user)
+    response = post_json(
         client,
         "/api/v1/auth/signature-reauth/",
         {
@@ -110,8 +92,8 @@ def test_signature_reauth_rejects_wrong_role_and_audits_failure() -> None:
     site = Site.objects.create(code="lyon-qc", name="Lyon QC")
     SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.QUALITY_REVIEWER)
 
-    client, token = _csrf_client(user=user)
-    response = _post_json(
+    client, token = csrf_client(user=user)
+    response = post_json(
         client,
         "/api/v1/auth/signature-reauth/",
         {
@@ -146,8 +128,8 @@ def test_signature_reauth_rejects_wrong_site_and_audits_failure() -> None:
     requested_site = Site.objects.create(code="lyon-qc", name="Lyon QC")
     SiteRoleAssignment.objects.create(user=user, site=assigned_site, role=SiteRole.OPERATOR)
 
-    client, token = _csrf_client(user=user)
-    response = _post_json(
+    client, token = csrf_client(user=user)
+    response = post_json(
         client,
         "/api/v1/auth/signature-reauth/",
         {
@@ -181,8 +163,8 @@ def test_signature_reauth_rejects_bad_pin_without_leaking_secret() -> None:
     site = Site.objects.create(code="paris-line-1", name="Paris Line 1")
     SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR)
 
-    client, token = _csrf_client(user=user)
-    response = _post_json(
+    client, token = csrf_client(user=user)
+    response = post_json(
         client,
         "/api/v1/auth/signature-reauth/",
         {
@@ -247,8 +229,8 @@ def test_signature_reauth_is_rate_limited_and_audited() -> None:
     site = Site.objects.create(code="paris-line-1", name="Paris Line 1")
     SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR)
 
-    client, token = _csrf_client(user=user)
-    first_response = _post_json(
+    client, token = csrf_client(user=user)
+    first_response = post_json(
         client,
         "/api/v1/auth/signature-reauth/",
         {
@@ -258,7 +240,7 @@ def test_signature_reauth_is_rate_limited_and_audited() -> None:
         },
         csrf_token=token,
     )
-    second_response = _post_json(
+    second_response = post_json(
         client,
         "/api/v1/auth/signature-reauth/",
         {

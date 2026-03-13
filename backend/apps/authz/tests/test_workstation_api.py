@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
 import pytest
 from config.settings import base as base_settings
@@ -11,25 +10,8 @@ from rest_framework.test import APIClient
 
 from apps.audit.models import AuditEvent, AuditEventType
 from apps.authz.models import SiteRole, SiteRoleAssignment
+from apps.authz.tests.helpers import csrf_client, post_json
 from apps.sites.models import Site
-
-
-def _csrf_client(*, user: Any | None = None) -> tuple[APIClient, str]:
-    client = APIClient(enforce_csrf_checks=True)
-    client.get("/admin/login/")
-    if user is not None:
-        client.force_login(user)
-    token = client.cookies["csrftoken"].value
-    return client, token
-
-
-def _post_json(client: APIClient, path: str, payload: dict[str, Any], *, csrf_token: str) -> Any:
-    return client.post(
-        path,
-        payload,
-        format="json",
-        HTTP_X_CSRFTOKEN=csrf_token,
-    )
 
 
 @pytest.mark.django_db
@@ -45,8 +27,8 @@ def test_workstation_identify_establishes_session_and_returns_active_context() -
     site = Site.objects.create(code="paris-line-1", name="Paris Line 1")
     SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR)
 
-    client, token = _csrf_client()
-    response = _post_json(
+    client, token = csrf_client()
+    response = post_json(
         client,
         "/api/v1/auth/workstation-identify/",
         {"username": user.username, "pin": "2468"},
@@ -107,8 +89,8 @@ def test_workstation_identify_switches_active_user_and_records_switch_event() ->
     next_user.set_workstation_pin("1357")
     next_user.save(update_fields=["workstation_pin"])
 
-    client, token = _csrf_client(user=previous_user)
-    response = _post_json(
+    client, token = csrf_client(user=previous_user)
+    response = post_json(
         client,
         "/api/v1/auth/workstation-identify/",
         {"username": next_user.username, "pin": "1357"},
@@ -146,9 +128,9 @@ def test_workstation_lock_clears_authenticated_authority() -> None:
         username="line-user",
         password="admin-pass-123",
     )
-    client, token = _csrf_client(user=user)
+    client, token = csrf_client(user=user)
 
-    response = _post_json(
+    response = post_json(
         client,
         "/api/v1/auth/workstation-lock/",
         {},
@@ -176,8 +158,8 @@ def test_workstation_identify_rejects_bad_pin_and_audits_without_pin_leakage() -
     user.set_workstation_pin("2468")
     user.save(update_fields=["workstation_pin"])
 
-    client, token = _csrf_client()
-    response = _post_json(
+    client, token = csrf_client()
+    response = post_json(
         client,
         "/api/v1/auth/workstation-identify/",
         {"username": user.username, "pin": "9999"},
@@ -232,14 +214,14 @@ def test_workstation_identify_is_rate_limited_and_audited() -> None:
     user.set_workstation_pin("2468")
     user.save(update_fields=["workstation_pin"])
 
-    client, token = _csrf_client()
-    first_response = _post_json(
+    client, token = csrf_client()
+    first_response = post_json(
         client,
         "/api/v1/auth/workstation-identify/",
         {"username": user.username, "pin": "0000"},
         csrf_token=token,
     )
-    second_response = _post_json(
+    second_response = post_json(
         client,
         "/api/v1/auth/workstation-identify/",
         {"username": user.username, "pin": "0000"},
@@ -255,3 +237,63 @@ def test_workstation_identify_is_rate_limited_and_audited() -> None:
     )
     assert throttled_event.actor is None
     assert throttled_event.metadata["attempted_username"] == user.username
+
+
+@pytest.mark.django_db
+def test_workstation_lock_requires_csrf() -> None:
+    user = get_user_model().objects.create_user(
+        username="csrf-lock-user",
+        password="admin-pass-123",
+    )
+    client = APIClient(enforce_csrf_checks=True)
+    client.force_login(user)
+
+    response = client.post(
+        "/api/v1/auth/workstation-lock/",
+        {},
+        format="json",
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_workstation_lock_requires_authenticated_session() -> None:
+    client, token = csrf_client()
+
+    response = post_json(
+        client,
+        "/api/v1/auth/workstation-lock/",
+        {},
+        csrf_token=token,
+    )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "not_authenticated"
+
+
+@pytest.mark.django_db
+def test_workstation_identify_same_user_emits_identify_not_switch() -> None:
+    user = get_user_model().objects.create_user(
+        username="alice.operator",
+        password="admin-pass-123",
+        first_name="Alice",
+        last_name="Operator",
+    )
+    user.set_workstation_pin("2468")
+    user.save(update_fields=["workstation_pin"])
+
+    client, token = csrf_client(user=user)
+    response = post_json(
+        client,
+        "/api/v1/auth/workstation-identify/",
+        {"username": user.username, "pin": "2468"},
+        csrf_token=token,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["event"] == "identify"
+    assert response.json()["previous_user"] is None
+
+    assert AuditEvent.objects.filter(event_type=AuditEventType.IDENTIFY).exists()
+    assert not AuditEvent.objects.filter(event_type=AuditEventType.SWITCH_USER).exists()

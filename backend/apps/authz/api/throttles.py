@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, cast
 
 from django.core.exceptions import ImproperlyConfigured
+from rest_framework.exceptions import NotFound
 from rest_framework.settings import api_settings
 from rest_framework.throttling import SimpleRateThrottle
 from shared.permissions.site_roles import get_active_site_by_code
@@ -72,6 +73,7 @@ class WorkstationIdentifyThrottle(AuditEventThrottle):
             metadata={
                 "reason": "rate_limited",
                 "attempted_username": username,
+                "ip_address": self.get_ident(self.request),
             },
         )
 
@@ -95,7 +97,7 @@ class SignatureReauthThrottle(AuditEventThrottle):
             if isinstance(site_code, str):
                 try:
                     site = get_active_site_by_code(site_code)
-                except Exception:
+                except NotFound:
                     site = None
             roles = self.request.data.get("required_roles", [])
             if isinstance(roles, list):
@@ -109,5 +111,6 @@ class SignatureReauthThrottle(AuditEventThrottle):
             metadata={
                 "reason": "rate_limited",
                 "required_roles": required_roles,
+                "ip_address": self.get_ident(self.request),
             },
         )

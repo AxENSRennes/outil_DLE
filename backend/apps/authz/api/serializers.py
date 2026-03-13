@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from apps.authz.models import SiteRole
+
 
 class AuthenticatedUserSummarySerializer(serializers.Serializer):
     id = serializers.IntegerField()
@@ -34,7 +36,7 @@ class SiteRoleAccessProbeSerializer(serializers.Serializer):
 
 class WorkstationIdentifyRequestSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
-    pin = serializers.CharField(max_length=32, trim_whitespace=False)
+    pin = serializers.CharField(min_length=4, max_length=32, trim_whitespace=False)
 
 
 class WorkstationIdentifyResponseSerializer(AuthContextSerializer):
@@ -50,17 +52,10 @@ class WorkstationLockResponseSerializer(serializers.Serializer):
 class SignatureReauthRequestSerializer(serializers.Serializer):
     site_code = serializers.SlugField(max_length=64)
     required_roles = serializers.ListField(
-        child=serializers.ChoiceField(
-            choices=(
-                "operator",
-                "production_reviewer",
-                "quality_reviewer",
-                "internal_configurator",
-            )
-        ),
+        child=serializers.ChoiceField(choices=SiteRole.choices),
         allow_empty=False,
     )
-    pin = serializers.CharField(max_length=32, trim_whitespace=False)
+    pin = serializers.CharField(min_length=4, max_length=32, trim_whitespace=False)
 
 
 class SignatureReauthResponseSerializer(serializers.Serializer):

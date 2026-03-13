@@ -1,6 +1,6 @@
 # Story 1.3: Implement Shared-Workstation Identification and Signature Authority Guardrails
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -295,6 +295,7 @@ GPT-5 Codex
 - backend/apps/authz/domain/workstation.py
 - backend/apps/authz/migrations/0002_user_workstation_pin.py
 - backend/apps/authz/models.py
+- backend/apps/authz/tests/helpers.py
 - backend/apps/authz/tests/test_models.py
 - backend/apps/authz/tests/test_signature_reauth.py
 - backend/apps/authz/tests/test_workstation_api.py
@@ -305,3 +306,4 @@ GPT-5 Codex
 ### Change Log
 
 - 2026-03-13: Implemented shared-workstation identify/switch/lock flows, signature re-auth guardrails, canonical auth-event auditing, additive migrations, backend and security tests, and workstation auth documentation. Promoted story status to `review`.
+- 2026-03-13: Code review fixes — added PIN min-length validation (4 chars), rejected empty PIN in model method, replaced hardcoded role choices with SiteRole.choices, narrowed exception catch in throttle, added client IP to audit metadata for failed auth events, extracted shared test helpers, added tests for lock CSRF/anonymous denial/self-identify edge case.
