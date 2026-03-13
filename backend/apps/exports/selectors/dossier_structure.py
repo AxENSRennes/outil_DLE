@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from apps.exports.models import (
@@ -29,7 +30,7 @@ class DossierStructureReadModel:
     dossier_profile_id: int
     context_snapshot: dict[str, Any]
     is_active: bool
-    resolved_at: str
+    resolved_at: datetime
     elements: tuple[DossierElementReadModel, ...]
 
 
@@ -99,7 +100,7 @@ def _to_read_model(structure: BatchDossierStructure) -> DossierStructureReadMode
         dossier_profile_id=structure.dossier_profile_id,
         context_snapshot=structure.context_snapshot,
         is_active=structure.is_active,
-        resolved_at=structure.resolved_at.isoformat(),
+        resolved_at=structure.resolved_at,
         elements=tuple(
             DossierElementReadModel(
                 id=el.pk,

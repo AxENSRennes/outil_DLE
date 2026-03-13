@@ -220,7 +220,12 @@ def _condition_matches(condition: dict[str, Any], context: dict[str, Any]) -> bo
     context_key: str = condition.get("context_key", "")
     operator: str = condition.get("operator", "eq")
     expected = condition.get("value")
+    key_present = context_key in context
     actual = context.get(context_key)
+
+    # Absent keys must not silently satisfy negation/falsy operators.
+    if not key_present and operator in {"neq", "not_in", "falsy"}:
+        return False
 
     if operator == "eq":
         return actual == expected

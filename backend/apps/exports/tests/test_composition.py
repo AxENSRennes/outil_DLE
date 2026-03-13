@@ -410,6 +410,34 @@ class TestConditionMatchesNotIn:
         assert _condition_matches(condition, {"x": "a"}) is False
 
 
+class TestConditionMatchesAbsentKey:
+    """Absent context keys must not silently satisfy any operator."""
+
+    def test_eq_absent_key_returns_false(self) -> None:
+        condition = {"context_key": "missing", "operator": "eq", "value": "x"}
+        assert _condition_matches(condition, {}) is False
+
+    def test_neq_absent_key_returns_false(self) -> None:
+        condition = {"context_key": "missing", "operator": "neq", "value": "x"}
+        assert _condition_matches(condition, {}) is False
+
+    def test_in_absent_key_returns_false(self) -> None:
+        condition = {"context_key": "missing", "operator": "in", "value": ["a", "b"]}
+        assert _condition_matches(condition, {}) is False
+
+    def test_not_in_absent_key_returns_false(self) -> None:
+        condition = {"context_key": "missing", "operator": "not_in", "value": ["a", "b"]}
+        assert _condition_matches(condition, {}) is False
+
+    def test_truthy_absent_key_returns_false(self) -> None:
+        condition = {"context_key": "missing", "operator": "truthy"}
+        assert _condition_matches(condition, {}) is False
+
+    def test_falsy_absent_key_returns_false(self) -> None:
+        condition = {"context_key": "missing", "operator": "falsy"}
+        assert _condition_matches(condition, {}) is False
+
+
 @pytest.mark.django_db
 class TestAuditEvent:
     """resolve_dossier_structure creates an audit event."""
