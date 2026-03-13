@@ -38,3 +38,15 @@ def test_site_role_assignment_rejects_unknown_role_values() -> None:
 
     with pytest.raises(ValidationError):
         assignment.full_clean()
+
+
+@pytest.mark.django_db
+def test_user_workstation_pin_is_hashed_and_verifiable() -> None:
+    user = get_user_model().objects.create_user(username="pin-user", password="test-pass-123")
+
+    user.set_workstation_pin("2468")
+    user.save(update_fields=["workstation_pin"])
+
+    assert user.workstation_pin != "2468"
+    assert user.check_workstation_pin("2468") is True
+    assert user.check_workstation_pin("9999") is False

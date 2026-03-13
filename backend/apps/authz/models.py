@@ -3,14 +3,25 @@ from __future__ import annotations
 from typing import ClassVar
 
 from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
 class User(AbstractUser):
+    workstation_pin = models.CharField(max_length=128, blank=True, default="")
+
     class Meta:
         ordering = ("username",)
+
+    def set_workstation_pin(self, raw_pin: str) -> None:
+        self.workstation_pin = make_password(raw_pin)
+
+    def check_workstation_pin(self, raw_pin: str) -> bool:
+        if not self.workstation_pin:
+            return False
+        return check_password(raw_pin, self.workstation_pin)
 
 
 class SiteRole(models.TextChoices):

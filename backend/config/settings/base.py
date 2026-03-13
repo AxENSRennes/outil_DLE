@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "apps.audit.apps.AuditConfig",
     "apps.sites.apps.SitesConfig",
     "apps.authz.apps.AuthzConfig",
     "rest_framework",
@@ -124,6 +125,10 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_RATES": {
+        "workstation_identify": "10/minute",
+        "signature_reauth": "10/minute",
+    },
     "EXCEPTION_HANDLER": "shared.api.exceptions.problem_details_exception_handler",
 }
 
