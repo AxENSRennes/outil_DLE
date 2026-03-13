@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 
 import { Badge } from "@/shared/ui/badge";
@@ -29,7 +29,7 @@ interface ReviewExceptionListProps {
   flaggedSteps: FlaggedStep[];
   totalSteps: number;
   onMarkReviewed: (stepId: number) => void;
-  isMarkingReviewed: boolean;
+  markingStepId: number | null;
 }
 
 function SummaryBar({ flaggedSteps, totalSteps }: { flaggedSteps: FlaggedStep[]; totalSteps: number }) {
@@ -43,7 +43,7 @@ function SummaryBar({ flaggedSteps, totalSteps }: { flaggedSteps: FlaggedStep[];
       <Separator orientation="vertical" className="h-5" />
       <div className="flex gap-3">
         <Badge className="bg-green-600">{greenCount} OK</Badge>
-        <Badge className="bg-amber-500 text-white">{amberCount} warnings</Badge>
+        <Badge className="bg-amber-500 text-white">{amberCount} {amberCount === 1 ? "warning" : "warnings"}</Badge>
         <Badge variant="destructive">{redCount} blocking</Badge>
       </div>
     </div>
@@ -53,27 +53,46 @@ function SummaryBar({ flaggedSteps, totalSteps }: { flaggedSteps: FlaggedStep[];
 function FlaggedStepItem({
   step,
   onMarkReviewed,
-  isMarkingReviewed,
+  markingStepId,
+  index,
+  itemRefs,
 }: {
   step: FlaggedStep;
   onMarkReviewed: (stepId: number) => void;
-  isMarkingReviewed: boolean;
+  markingStepId: number | null;
+  index: number;
+  itemRefs: React.MutableRefObject<(HTMLButtonElement | null)[]>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const config = severityConfig[step.severity];
   const SeverityIcon = config.icon;
+  const isThisStepMarking = markingStepId === step.step_id;
 
   const hasReviewableFlags = step.flags.some(
     (f) => f === "changed_since_review" || f === "review_required",
   );
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = itemRefs.current[index + 1];
+      next?.focus();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const prev = itemRefs.current[index - 1];
+      prev?.focus();
+    }
+  }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="border-l-4" style={{ borderLeftColor: step.severity === "red" ? "var(--destructive)" : step.severity === "amber" ? "#f59e0b" : "#16a34a" }}>
         <CollapsibleTrigger asChild>
           <button
+            ref={(el) => { itemRefs.current[index] = el; }}
             className="flex w-full items-center gap-3 p-4 text-left hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-expanded={isOpen}
+            onKeyDown={handleKeyDown}
           >
             {isOpen ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
             <SeverityIcon className="h-4 w-4 shrink-0" />
@@ -108,9 +127,9 @@ function FlaggedStepItem({
                   e.stopPropagation();
                   onMarkReviewed(step.step_id);
                 }}
-                disabled={isMarkingReviewed}
+                disabled={isThisStepMarking}
               >
-                {isMarkingReviewed ? "Marking..." : "Mark as Reviewed"}
+                {isThisStepMarking ? "Marking..." : "Mark as Reviewed"}
               </Button>
             )}
           </CardContent>
@@ -124,8 +143,10 @@ export function ReviewExceptionList({
   flaggedSteps,
   totalSteps,
   onMarkReviewed,
-  isMarkingReviewed,
+  markingStepId,
 }: ReviewExceptionListProps) {
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
   return (
     <div>
       <SummaryBar flaggedSteps={flaggedSteps} totalSteps={totalSteps} />
@@ -137,12 +158,14 @@ export function ReviewExceptionList({
               No flagged steps. All steps are OK.
             </p>
           ) : (
-            flaggedSteps.map((step) => (
+            flaggedSteps.map((step, index) => (
               <FlaggedStepItem
                 key={step.step_id}
                 step={step}
                 onMarkReviewed={onMarkReviewed}
-                isMarkingReviewed={isMarkingReviewed}
+                markingStepId={markingStepId}
+                index={index}
+                itemRefs={itemRefs}
               />
             ))
           )}

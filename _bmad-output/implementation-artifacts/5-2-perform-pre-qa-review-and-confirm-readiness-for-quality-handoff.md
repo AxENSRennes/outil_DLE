@@ -578,4 +578,5 @@ Claude Opus 4.6 (claude-opus-4-6)
 - frontend/src/test/setup.ts
 - frontend/src/shared/ui/button.tsx (shadcn reinstall)
 - frontend/package.json (added @testing-library dependencies)
+- frontend/package-lock.json
 - _bmad-output/implementation-artifacts/sprint-status.yaml

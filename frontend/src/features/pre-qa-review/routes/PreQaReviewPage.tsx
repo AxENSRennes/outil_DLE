@@ -33,12 +33,27 @@ const severityDisplay = {
 export function PreQaReviewPage() {
   const { batchId } = useParams<{ batchId: string }>();
   const numericBatchId = Number(batchId);
+  const isValidBatchId = !!batchId && !Number.isNaN(numericBatchId);
 
   const [confirmNote, setConfirmNote] = useState("");
 
-  const { data: summary, isLoading, error } = useReviewSummary(numericBatchId);
+  const { data: summary, isLoading, error } = useReviewSummary(numericBatchId, { enabled: isValidBatchId });
   const confirmMutation = useConfirmPreQaReview();
   const markReviewedMutation = useMarkStepReviewed();
+
+  if (!isValidBatchId) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <XCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+          <p className="text-destructive font-medium">Invalid batch ID</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            The batch ID in the URL is not valid.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -112,7 +127,7 @@ export function PreQaReviewPage() {
             flaggedSteps={summary.flagged_steps}
             totalSteps={summary.step_summary.total}
             onMarkReviewed={handleMarkReviewed}
-            isMarkingReviewed={markReviewedMutation.isPending}
+            markingStepId={markReviewedMutation.isPending ? (markReviewedMutation.variables?.stepId ?? null) : null}
           />
         </CardContent>
       </Card>

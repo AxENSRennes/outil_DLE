@@ -321,7 +321,7 @@ class TestMarkStepReviewedErrors:
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_step_not_in_batch_returns_400(
+    def test_step_not_in_batch_returns_404(
         self,
         batch_awaiting_pre_qa: Batch,
         site: Site,
@@ -346,7 +346,7 @@ class TestMarkStepReviewedErrors:
             data={},
             format="json",
         )
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_nonexistent_step_returns_404(
         self,

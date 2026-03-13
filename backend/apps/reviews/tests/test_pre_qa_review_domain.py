@@ -9,7 +9,12 @@ from django.core.exceptions import ValidationError
 from apps.audit.models import AuditEvent, AuditEventType
 from apps.authz.models import User
 from apps.batches.models import Batch, BatchStatus, BatchStep, StepStatus
-from apps.reviews.domain.pre_qa_review import confirm_pre_qa_review, mark_step_reviewed
+from apps.reviews.domain.pre_qa_review import (
+    ConfirmPreQaResult,
+    MarkStepReviewedResult,
+    confirm_pre_qa_review,
+    mark_step_reviewed,
+)
 from apps.reviews.models import ReviewEvent, ReviewEventType
 from apps.sites.models import Site
 
@@ -65,7 +70,10 @@ class TestConfirmPreQaReview:
     ) -> None:
         # No steps → green severity
         result = confirm_pre_qa_review(batch=batch_awaiting_pre_qa, reviewer=reviewer)
-        assert result.status == BatchStatus.AWAITING_QUALITY_REVIEW
+        assert isinstance(result, ConfirmPreQaResult)
+        assert result.batch.status == BatchStatus.AWAITING_QUALITY_REVIEW
+        assert result.review_event is not None
+        assert result.review_event.event_type == ReviewEventType.PRE_QA_CONFIRMED
 
     def test_confirm_succeeds_from_in_pre_qa_review(
         self,
@@ -73,7 +81,7 @@ class TestConfirmPreQaReview:
         reviewer: User,
     ) -> None:
         result = confirm_pre_qa_review(batch=batch_in_pre_qa_review, reviewer=reviewer)
-        assert result.status == BatchStatus.AWAITING_QUALITY_REVIEW
+        assert result.batch.status == BatchStatus.AWAITING_QUALITY_REVIEW
 
     def test_confirm_succeeds_with_amber_severity(
         self,
@@ -90,7 +98,7 @@ class TestConfirmPreQaReview:
             open_exception_is_blocking=False,
         )
         result = confirm_pre_qa_review(batch=batch_awaiting_pre_qa, reviewer=reviewer)
-        assert result.status == BatchStatus.AWAITING_QUALITY_REVIEW
+        assert result.batch.status == BatchStatus.AWAITING_QUALITY_REVIEW
 
     def test_confirm_fails_with_red_severity(
         self,
@@ -174,10 +182,13 @@ class TestMarkStepReviewed:
             status=StepStatus.COMPLETE,
             changed_since_review=True,
         )
-        updated = mark_step_reviewed(
+        result = mark_step_reviewed(
             batch=batch_awaiting_pre_qa, step=step, reviewer=reviewer
         )
-        assert updated.changed_since_review is False
+        assert isinstance(result, MarkStepReviewedResult)
+        assert result.step.changed_since_review is False
+        assert "changed_since_review" in result.flags_cleared
+        assert result.review_event is not None
 
     def test_clears_review_required_flag(
         self,
@@ -191,10 +202,11 @@ class TestMarkStepReviewed:
             status=StepStatus.COMPLETE,
             review_required=True,
         )
-        updated = mark_step_reviewed(
+        result = mark_step_reviewed(
             batch=batch_awaiting_pre_qa, step=step, reviewer=reviewer
         )
-        assert updated.review_required is False
+        assert result.step.review_required is False
+        assert "review_required" in result.flags_cleared
 
     def test_transitions_batch_to_in_pre_qa_review(
         self,
@@ -344,9 +356,9 @@ class TestMarkStepReviewed:
             changed_since_signature=True,
         )
         # Should not raise — changed_since_signature is a reviewable flag
-        updated = mark_step_reviewed(
+        result = mark_step_reviewed(
             batch=batch_awaiting_pre_qa, step=step, reviewer=reviewer
         )
         # changed_since_signature is NOT cleared by mark_step_reviewed
         # (only changed_since_review and review_required are cleared)
-        assert updated.changed_since_signature is True
+        assert result.step.changed_since_signature is True

@@ -29,14 +29,31 @@ describe("ReviewExceptionList", () => {
         flaggedSteps={flaggedSteps}
         totalSteps={5}
         onMarkReviewed={vi.fn()}
-        isMarkingReviewed={false}
+        markingStepId={null}
       />,
     );
 
     expect(screen.getByText("5 steps total")).toBeInTheDocument();
     expect(screen.getByText("3 OK")).toBeInTheDocument();
-    expect(screen.getByText("1 warnings")).toBeInTheDocument();
+    expect(screen.getByText("1 warning")).toBeInTheDocument();
     expect(screen.getByText("1 blocking")).toBeInTheDocument();
+  });
+
+  it("renders plural warnings for multiple amber steps", () => {
+    const multiAmber: FlaggedStep[] = [
+      { step_id: 1, step_reference: "Step 1", step_status: "complete", flags: ["changed_since_review"], severity: "amber" },
+      { step_id: 2, step_reference: "Step 2", step_status: "complete", flags: ["review_required"], severity: "amber" },
+    ];
+    render(
+      <ReviewExceptionList
+        flaggedSteps={multiAmber}
+        totalSteps={5}
+        onMarkReviewed={vi.fn()}
+        markingStepId={null}
+      />,
+    );
+
+    expect(screen.getByText("2 warnings")).toBeInTheDocument();
   });
 
   it("renders flagged step references", () => {
@@ -45,7 +62,7 @@ describe("ReviewExceptionList", () => {
         flaggedSteps={flaggedSteps}
         totalSteps={5}
         onMarkReviewed={vi.fn()}
-        isMarkingReviewed={false}
+        markingStepId={null}
       />,
     );
 
@@ -59,7 +76,7 @@ describe("ReviewExceptionList", () => {
         flaggedSteps={flaggedSteps}
         totalSteps={5}
         onMarkReviewed={vi.fn()}
-        isMarkingReviewed={false}
+        markingStepId={null}
       />,
     );
 
@@ -74,7 +91,7 @@ describe("ReviewExceptionList", () => {
         flaggedSteps={flaggedSteps}
         totalSteps={5}
         onMarkReviewed={vi.fn()}
-        isMarkingReviewed={false}
+        markingStepId={null}
       />,
     );
 
@@ -92,7 +109,7 @@ describe("ReviewExceptionList", () => {
         flaggedSteps={flaggedSteps}
         totalSteps={5}
         onMarkReviewed={onMarkReviewed}
-        isMarkingReviewed={false}
+        markingStepId={null}
       />,
     );
 
@@ -107,26 +124,52 @@ describe("ReviewExceptionList", () => {
         flaggedSteps={[]}
         totalSteps={3}
         onMarkReviewed={vi.fn()}
-        isMarkingReviewed={false}
+        markingStepId={null}
       />,
     );
 
     expect(screen.getByText(/No flagged steps/)).toBeInTheDocument();
   });
 
-  it("disables mark-reviewed button when isMarkingReviewed is true", async () => {
+  it("disables only the step being marked as reviewed", async () => {
     const user = userEvent.setup();
     render(
       <ReviewExceptionList
         flaggedSteps={flaggedSteps}
         totalSteps={5}
         onMarkReviewed={vi.fn()}
-        isMarkingReviewed={true}
+        markingStepId={1}
       />,
     );
 
     await user.click(screen.getByText("Step 1 - Mixing"));
     const button = screen.getByText("Marking...");
     expect(button.closest("button")).toBeDisabled();
+  });
+
+  it("navigates between items with arrow keys", async () => {
+    const user = userEvent.setup();
+    render(
+      <ReviewExceptionList
+        flaggedSteps={flaggedSteps}
+        totalSteps={5}
+        onMarkReviewed={vi.fn()}
+        markingStepId={null}
+      />,
+    );
+
+    // Focus first item
+    const firstButton = screen.getByText("Step 1 - Mixing").closest("button")!;
+    firstButton.focus();
+    expect(firstButton).toHaveFocus();
+
+    // Arrow down → second item
+    await user.keyboard("{ArrowDown}");
+    const secondButton = screen.getByText("Step 2 - Filling").closest("button")!;
+    expect(secondButton).toHaveFocus();
+
+    // Arrow up → back to first
+    await user.keyboard("{ArrowUp}");
+    expect(firstButton).toHaveFocus();
   });
 });

@@ -27,7 +27,6 @@ from apps.reviews.api.serializers_pre_qa import (
     PreQaReviewConfirmationSerializer,
 )
 from apps.reviews.domain.pre_qa_review import confirm_pre_qa_review, mark_step_reviewed
-from apps.reviews.models import ReviewEvent, ReviewEventType
 from apps.sites.models import Site
 
 
@@ -99,7 +98,7 @@ class ConfirmPreQaReviewView(_PreQaBaseView):
         note = request_serializer.validated_data.get("note", "")
 
         try:
-            updated_batch = confirm_pre_qa_review(
+            result = confirm_pre_qa_review(
                 batch=batch,
                 reviewer=request.user,
                 note=note,
@@ -110,16 +109,11 @@ class ConfirmPreQaReviewView(_PreQaBaseView):
                 code=exc.code,
             ) from exc
 
-        review_event = ReviewEvent.objects.filter(
-            batch=updated_batch,
-            event_type=ReviewEventType.PRE_QA_CONFIRMED,
-        ).order_by("-occurred_at").first()
-
         response_data = {
-            "batch_id": updated_batch.pk,
-            "batch_reference": updated_batch.reference,
-            "batch_status": updated_batch.status,
-            "confirmed_at": review_event.occurred_at if review_event else None,
+            "batch_id": result.batch.pk,
+            "batch_reference": result.batch.reference,
+            "batch_status": result.batch.status,
+            "confirmed_at": result.review_event.occurred_at,
             "reviewer_note": note,
         }
         response_serializer = PreQaReviewConfirmationSerializer(response_data)
@@ -147,7 +141,7 @@ class MarkStepReviewedView(_PreQaBaseView):
         batch = self.get_batch()
 
         try:
-            step = BatchStep.objects.get(pk=step_id)
+            step = BatchStep.objects.get(pk=step_id, batch_id=batch.pk)
         except BatchStep.DoesNotExist:
             raise NotFound(
                 detail="Step not found.", code="step_not_found"
@@ -158,12 +152,8 @@ class MarkStepReviewedView(_PreQaBaseView):
 
         note = request_serializer.validated_data.get("note", "")
 
-        # Capture original flag state before domain clears them.
-        had_changed_since_review = step.changed_since_review
-        had_review_required = step.review_required
-
         try:
-            updated_step = mark_step_reviewed(
+            result = mark_step_reviewed(
                 batch=batch,
                 step=step,
                 reviewer=request.user,
@@ -175,20 +165,12 @@ class MarkStepReviewedView(_PreQaBaseView):
                 code=exc.code,
             ) from exc
 
-        batch.refresh_from_db(fields=["status"])
-
-        flags_cleared: list[str] = []
-        if had_changed_since_review:
-            flags_cleared.append("changed_since_review")
-        if had_review_required:
-            flags_cleared.append("review_required")
-
         response_data = {
-            "step_id": updated_step.pk,
-            "step_reference": updated_step.reference,
+            "step_id": result.step.pk,
+            "step_reference": result.step.reference,
             "review_status": "reviewed",
-            "flags_cleared": flags_cleared,
-            "batch_status": batch.status,
+            "flags_cleared": list(result.flags_cleared),
+            "batch_status": result.batch_status,
         }
         response_serializer = MarkStepReviewedResponseSerializer(response_data)
         return Response(response_serializer.data)

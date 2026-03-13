@@ -6,7 +6,10 @@ individual step review items as reviewed.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 from apps.audit.models import AuditEvent, AuditEventType
 from apps.authz.models import User
@@ -17,12 +20,26 @@ from apps.reviews.selectors.review_summary import get_batch_review_summary
 _VALID_PRE_QA_STATUSES = (BatchStatus.AWAITING_PRE_QA, BatchStatus.IN_PRE_QA_REVIEW)
 
 
+@dataclass(frozen=True)
+class ConfirmPreQaResult:
+    batch: Batch
+    review_event: ReviewEvent
+
+
+@dataclass(frozen=True)
+class MarkStepReviewedResult:
+    step: BatchStep
+    batch_status: str
+    flags_cleared: tuple[str, ...]
+    review_event: ReviewEvent
+
+
 def confirm_pre_qa_review(
     *,
     batch: Batch,
     reviewer: User,
     note: str = "",
-) -> Batch:
+) -> ConfirmPreQaResult:
     """Confirm that the batch is ready for quality handoff.
 
     Validates batch status and severity, creates a ReviewEvent, transitions
@@ -48,15 +65,16 @@ def confirm_pre_qa_review(
 
     review_event: ReviewEvent | None = None
     try:
-        review_event = ReviewEvent.objects.create(
-            batch=batch,
-            reviewer=reviewer,
-            event_type=ReviewEventType.PRE_QA_CONFIRMED,
-            note=note,
-        )
+        with transaction.atomic():
+            review_event = ReviewEvent.objects.create(
+                batch=batch,
+                reviewer=reviewer,
+                event_type=ReviewEventType.PRE_QA_CONFIRMED,
+                note=note,
+            )
 
-        batch.status = BatchStatus.AWAITING_QUALITY_REVIEW
-        batch.save(update_fields=["status", "updated_at"])
+            batch.status = BatchStatus.AWAITING_QUALITY_REVIEW
+            batch.save(update_fields=["status", "updated_at"])
     finally:
         AuditEvent.objects.create(
             actor=reviewer,
@@ -71,7 +89,7 @@ def confirm_pre_qa_review(
             },
         )
 
-    return batch
+    return ConfirmPreQaResult(batch=batch, review_event=review_event)
 
 
 def mark_step_reviewed(
@@ -80,7 +98,7 @@ def mark_step_reviewed(
     step: BatchStep,
     reviewer: User,
     note: str = "",
-) -> BatchStep:
+) -> MarkStepReviewedResult:
     """Mark a flagged step as reviewed during pre-QA.
 
     Clears ``changed_since_review`` and ``review_required`` flags,
@@ -122,21 +140,22 @@ def mark_step_reviewed(
         step.review_required = False
         flags_cleared.append("review_required")
 
-    step.save(update_fields=["changed_since_review", "review_required"])
-
-    if batch.status == BatchStatus.AWAITING_PRE_QA:
-        batch.status = BatchStatus.IN_PRE_QA_REVIEW
-        batch.save(update_fields=["status", "updated_at"])
-
     review_event: ReviewEvent | None = None
     try:
-        review_event = ReviewEvent.objects.create(
-            batch=batch,
-            reviewer=reviewer,
-            event_type=ReviewEventType.CHANGE_MARKED_REVIEWED,
-            step=step,
-            note=note,
-        )
+        with transaction.atomic():
+            step.save(update_fields=["changed_since_review", "review_required"])
+
+            if batch.status == BatchStatus.AWAITING_PRE_QA:
+                batch.status = BatchStatus.IN_PRE_QA_REVIEW
+                batch.save(update_fields=["status", "updated_at"])
+
+            review_event = ReviewEvent.objects.create(
+                batch=batch,
+                reviewer=reviewer,
+                event_type=ReviewEventType.CHANGE_MARKED_REVIEWED,
+                step=step,
+                note=note,
+            )
     finally:
         AuditEvent.objects.create(
             actor=reviewer,
@@ -152,4 +171,9 @@ def mark_step_reviewed(
             },
         )
 
-    return step
+    return MarkStepReviewedResult(
+        step=step,
+        batch_status=batch.status,
+        flags_cleared=tuple(flags_cleared),
+        review_event=review_event,
+    )

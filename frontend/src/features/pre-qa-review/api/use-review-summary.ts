@@ -7,10 +7,11 @@ export const reviewSummaryKeys = {
   detail: (batchId: number) => ["review-summary", batchId] as const,
 };
 
-export function useReviewSummary(batchId: number) {
+export function useReviewSummary(batchId: number, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: reviewSummaryKeys.detail(batchId),
     queryFn: () =>
       apiFetch<ReviewSummary>(`/batches/${batchId}/review-summary`),
+    enabled: options?.enabled,
   });
 }

@@ -85,6 +85,7 @@ beforeEach(() => {
     isPending: false,
     isSuccess: false,
     error: null,
+    variables: undefined,
   });
 });
 
@@ -184,5 +185,46 @@ describe("PreQaReviewPage", () => {
     await user.click(screen.getByText("Confirm Quality Handoff"));
     expect(screen.getByText(/This will confirm the batch/)).toBeInTheDocument();
     expect(screen.getByText("Confirm Handoff")).toBeInTheDocument();
+  });
+
+  it("calls confirmMutation when Confirm Handoff is clicked in dialog", async () => {
+    const user = userEvent.setup();
+    (useReviewSummary as Mock).mockReturnValue({
+      data: mockSummary,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage();
+    await user.click(screen.getByText("Confirm Quality Handoff"));
+    await user.click(screen.getByText("Confirm Handoff"));
+    expect(mockConfirmMutate).toHaveBeenCalledWith({ batchId: 42, note: "" });
+  });
+
+  it("calls confirmMutation with note when provided", async () => {
+    const user = userEvent.setup();
+    (useReviewSummary as Mock).mockReturnValue({
+      data: mockSummary,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage();
+    const noteInput = screen.getByPlaceholderText("Add a note about this review...");
+    await user.type(noteInput, "Looks good");
+    await user.click(screen.getByText("Confirm Quality Handoff"));
+    await user.click(screen.getByText("Confirm Handoff"));
+    expect(mockConfirmMutate).toHaveBeenCalledWith({ batchId: 42, note: "Looks good" });
+  });
+
+  it("shows invalid batch ID error for non-numeric batchId", () => {
+    (useReviewSummary as Mock).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+    });
+
+    renderPage("abc");
+    expect(screen.getByText("Invalid batch ID")).toBeInTheDocument();
   });
 });
