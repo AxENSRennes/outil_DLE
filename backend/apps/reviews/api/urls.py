@@ -8,7 +8,7 @@ app_name = "reviews"
 
 urlpatterns = [
     path(
-        "batches/<int:batch_id>/review-summary",
+        "batches/<int:batch_id>/review-summary/",
         ReviewSummaryView.as_view(),
         name="batch-review-summary",
     ),

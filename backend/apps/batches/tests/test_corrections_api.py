@@ -15,9 +15,8 @@ from apps.sites.models import Site
 _UserModel = get_user_model()
 
 
-def _url(batch_id: int, step_id: int) -> str:
-    del batch_id
-    return f"/api/v1/batch-steps/{step_id}/corrections"
+def _url(step_id: int) -> str:
+    return f"/api/v1/batch-steps/{step_id}/corrections/"
 
 
 @pytest.fixture()
@@ -77,14 +76,14 @@ def _valid_payload() -> dict[str, Any]:
 class TestSubmitCorrectionAuth:
     def test_unauthenticated_returns_401(self, batch: Batch, step: BatchStep) -> None:
         client = APIClient()
-        resp = client.post(_url(batch.pk, step.pk), _valid_payload(), format="json")
+        resp = client.post(_url(step.pk), _valid_payload(), format="json")
         assert resp.status_code == 401
 
     def test_user_without_site_role_returns_404(
         self, batch: Batch, step: BatchStep, unauthorized_user: Any
     ) -> None:
         client, token = csrf_client(user=unauthorized_user)
-        resp = post_json(client, _url(batch.pk, step.pk), _valid_payload(), csrf_token=token)
+        resp = post_json(client, _url(step.pk), _valid_payload(), csrf_token=token)
         assert resp.status_code == 404
 
     def test_operator_on_different_site_returns_404(self, batch: Batch, step: BatchStep) -> None:
@@ -92,7 +91,7 @@ class TestSubmitCorrectionAuth:
         user = _UserModel.objects.create_user(username="other-op", password="test-pass-123")
         SiteRoleAssignment.objects.create(user=user, site=other_site, role=SiteRole.OPERATOR)
         client, token = csrf_client(user=user)
-        resp = post_json(client, _url(batch.pk, step.pk), _valid_payload(), csrf_token=token)
+        resp = post_json(client, _url(step.pk), _valid_payload(), csrf_token=token)
         assert resp.status_code == 404
 
 
@@ -102,7 +101,7 @@ class TestSubmitCorrectionSuccess:
         self, batch: Batch, step: BatchStep, operator: Any
     ) -> None:
         client, token = csrf_client(user=operator)
-        resp = post_json(client, _url(batch.pk, step.pk), _valid_payload(), csrf_token=token)
+        resp = post_json(client, _url(step.pk), _valid_payload(), csrf_token=token)
 
         assert resp.status_code == 201
         data = resp.json()
@@ -120,14 +119,14 @@ class TestSubmitCorrectionSuccess:
         self, batch: Batch, step: BatchStep, production_reviewer: Any
     ) -> None:
         client, token = csrf_client(user=production_reviewer)
-        resp = post_json(client, _url(batch.pk, step.pk), _valid_payload(), csrf_token=token)
+        resp = post_json(client, _url(step.pk), _valid_payload(), csrf_token=token)
         assert resp.status_code == 201
 
     def test_audit_event_created_with_correct_metadata(
         self, batch: Batch, step: BatchStep, operator: Any
     ) -> None:
         client, token = csrf_client(user=operator)
-        resp = post_json(client, _url(batch.pk, step.pk), _valid_payload(), csrf_token=token)
+        resp = post_json(client, _url(step.pk), _valid_payload(), csrf_token=token)
 
         assert resp.status_code == 201
         event = AuditEvent.objects.get(pk=resp.json()["correction_id"])
@@ -143,7 +142,7 @@ class TestSubmitCorrectionSuccess:
         self, batch: Batch, step: BatchStep, operator: Any
     ) -> None:
         client, token = csrf_client(user=operator)
-        post_json(client, _url(batch.pk, step.pk), _valid_payload(), csrf_token=token)
+        post_json(client, _url(step.pk), _valid_payload(), csrf_token=token)
 
         step.refresh_from_db()
         assert step.data_json["temperature"] == "23.1"
@@ -154,7 +153,7 @@ class TestSubmitCorrectionSuccess:
             "corrections": [{"field_name": "temperature", "new_value": None}],
             "reason_for_change": "Clearing erroneous value",
         }
-        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
+        resp = post_json(client, _url(step.pk), payload, csrf_token=token)
 
         assert resp.status_code == 201
         data = resp.json()
@@ -172,7 +171,7 @@ class TestSubmitCorrectionValidation:
         payload = {
             "corrections": [{"field_name": "temperature", "new_value": "23.1"}],
         }
-        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
+        resp = post_json(client, _url(step.pk), payload, csrf_token=token)
         assert resp.status_code == 400
 
     def test_empty_corrections_list_returns_400(
@@ -180,12 +179,12 @@ class TestSubmitCorrectionValidation:
     ) -> None:
         client, token = csrf_client(user=operator)
         payload = {"corrections": [], "reason_for_change": "Fix"}
-        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
+        resp = post_json(client, _url(step.pk), payload, csrf_token=token)
         assert resp.status_code == 400
 
     def test_non_existent_step_returns_404(self, batch: Batch, operator: Any) -> None:
         client, token = csrf_client(user=operator)
-        resp = post_json(client, _url(batch.pk, 99999), _valid_payload(), csrf_token=token)
+        resp = post_json(client, _url(99999), _valid_payload(), csrf_token=token)
         assert resp.status_code == 404
 
     def test_not_started_step_returns_400(self, batch: Batch, operator: Any) -> None:
@@ -196,9 +195,7 @@ class TestSubmitCorrectionValidation:
             status=StepStatus.NOT_STARTED,
         )
         client, token = csrf_client(user=operator)
-        resp = post_json(
-            client, _url(batch.pk, not_started_step.pk), _valid_payload(), csrf_token=token
-        )
+        resp = post_json(client, _url(not_started_step.pk), _valid_payload(), csrf_token=token)
         assert resp.status_code == 400
 
     def test_duplicate_field_name_returns_400(
@@ -212,7 +209,7 @@ class TestSubmitCorrectionValidation:
             ],
             "reason_for_change": "Fix",
         }
-        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
+        resp = post_json(client, _url(step.pk), payload, csrf_token=token)
         assert resp.status_code == 400
 
     def test_missing_new_value_returns_400(
@@ -223,7 +220,7 @@ class TestSubmitCorrectionValidation:
             "corrections": [{"field_name": "temperature"}],
             "reason_for_change": "Fix",
         }
-        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
+        resp = post_json(client, _url(step.pk), payload, csrf_token=token)
         assert resp.status_code == 400
 
     def test_object_new_value_returns_400(
@@ -234,7 +231,7 @@ class TestSubmitCorrectionValidation:
             "corrections": [{"field_name": "temperature", "new_value": {"value": "23.1"}}],
             "reason_for_change": "Fix",
         }
-        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
+        resp = post_json(client, _url(step.pk), payload, csrf_token=token)
         assert resp.status_code == 400
 
     def test_array_new_value_returns_400(
@@ -245,7 +242,7 @@ class TestSubmitCorrectionValidation:
             "corrections": [{"field_name": "temperature", "new_value": ["23.1"]}],
             "reason_for_change": "Fix",
         }
-        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
+        resp = post_json(client, _url(step.pk), payload, csrf_token=token)
         assert resp.status_code == 400
 
 
@@ -262,7 +259,7 @@ class TestSubmitCorrectionResponseShape:
             ],
             "reason_for_change": "Transcription error on both readings",
         }
-        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
+        resp = post_json(client, _url(step.pk), payload, csrf_token=token)
 
         assert resp.status_code == 201
         data = resp.json()

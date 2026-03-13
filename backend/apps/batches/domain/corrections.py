@@ -54,8 +54,8 @@ def submit_correction(
 
     seen_field_names: set[str] = set()
     for entry in corrections:
-        field_name = entry.get("field_name", "")
-        if not field_name or not str(field_name).strip():
+        field_name = str(entry.get("field_name", "")).strip()
+        if not field_name:
             raise ValueError("Each correction entry must have a non-empty field_name.")
         if "new_value" not in entry:
             raise ValueError("Each correction entry must include new_value.")
