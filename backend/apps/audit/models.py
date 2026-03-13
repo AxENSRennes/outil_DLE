@@ -14,6 +14,8 @@ class AuditEventType(models.TextChoices):
     IDENTIFY_FAILED = "identify_failed", "Identify Failed"
     SIGNATURE_REAUTH_SUCCEEDED = "signature_reauth_succeeded", "Signature Reauth Succeeded"
     SIGNATURE_REAUTH_FAILED = "signature_reauth_failed", "Signature Reauth Failed"
+    PRE_QA_REVIEW_CONFIRMED = "pre_qa_review_confirmed", "Pre-QA Review Confirmed"
+    REVIEW_ITEM_MARKED_REVIEWED = "review_item_marked_reviewed", "Review Item Marked Reviewed"
 
 
 class AuditEvent(models.Model):
