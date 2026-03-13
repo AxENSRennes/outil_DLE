@@ -22,6 +22,7 @@ lint: lint-python lint-frontend
 
 lint-python:
 	$(PYTHON) -m ruff check $(BACKEND_DIR)
+	$(PYTHON) -m ruff format --check $(BACKEND_DIR)
 
 lint-frontend:
 	npm --prefix $(FRONTEND_DIR) run lint

@@ -6,66 +6,153 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('sites', '0001_initial'),
+        ("sites", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Batch',
+            name="Batch",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('mmr_version_id', models.PositiveIntegerField(blank=True, null=True)),
-                ('batch_number', models.CharField(max_length=100, unique=True)),
-                ('status', models.CharField(choices=[('draft', 'Draft'), ('in_progress', 'In Progress'), ('awaiting_pre_qa', 'Awaiting Pre-QA'), ('under_review', 'Under Review'), ('released', 'Released'), ('rejected', 'Rejected')], default='draft', max_length=32)),
-                ('snapshot_json', models.JSONField()),
-                ('lot_size_target', models.DecimalField(blank=True, decimal_places=3, max_digits=12, null=True)),
-                ('lot_size_actual', models.DecimalField(blank=True, decimal_places=3, max_digits=12, null=True)),
-                ('batch_context_json', models.JSONField(blank=True, default=dict)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('started_at', models.DateTimeField(blank=True, null=True)),
-                ('completed_at', models.DateTimeField(blank=True, null=True)),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='created_batches', to=settings.AUTH_USER_MODEL)),
-                ('site', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='batches', to='sites.site')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("mmr_version_id", models.PositiveIntegerField(blank=True, null=True)),
+                ("batch_number", models.CharField(max_length=100, unique=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("draft", "Draft"),
+                            ("in_progress", "In Progress"),
+                            ("awaiting_pre_qa", "Awaiting Pre-QA"),
+                            ("under_review", "Under Review"),
+                            ("released", "Released"),
+                            ("rejected", "Rejected"),
+                        ],
+                        default="draft",
+                        max_length=32,
+                    ),
+                ),
+                ("snapshot_json", models.JSONField()),
+                (
+                    "lot_size_target",
+                    models.DecimalField(blank=True, decimal_places=3, max_digits=12, null=True),
+                ),
+                (
+                    "lot_size_actual",
+                    models.DecimalField(blank=True, decimal_places=3, max_digits=12, null=True),
+                ),
+                ("batch_context_json", models.JSONField(blank=True, default=dict)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("started_at", models.DateTimeField(blank=True, null=True)),
+                ("completed_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="created_batches",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "site",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="batches",
+                        to="sites.site",
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'batches',
+                "verbose_name_plural": "batches",
             },
         ),
         migrations.CreateModel(
-            name='BatchStep',
+            name="BatchStep",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('step_key', models.CharField(max_length=100)),
-                ('occurrence_key', models.CharField(default='default', max_length=100)),
-                ('occurrence_index', models.PositiveIntegerField(default=1)),
-                ('title', models.CharField(max_length=255)),
-                ('sequence_order', models.PositiveIntegerField()),
-                ('is_applicable', models.BooleanField(default=True)),
-                ('status', models.CharField(choices=[('not_started', 'Not Started'), ('in_progress', 'In Progress'), ('complete', 'Complete'), ('signed', 'Signed')], default='not_started', max_length=32)),
-                ('signature_state', models.CharField(choices=[('not_required', 'Not Required'), ('required', 'Required'), ('signed', 'Signed')], default='not_required', max_length=32)),
-                ('blocks_execution_progress', models.BooleanField(default=False)),
-                ('blocks_step_completion', models.BooleanField(default=True)),
-                ('blocks_signature', models.BooleanField(default=False)),
-                ('blocks_pre_qa_handoff', models.BooleanField(default=True)),
-                ('data_json', models.JSONField(default=dict)),
-                ('meta_json', models.JSONField(blank=True, default=dict)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('started_at', models.DateTimeField(blank=True, null=True)),
-                ('completed_at', models.DateTimeField(blank=True, null=True)),
-                ('signed_at', models.DateTimeField(blank=True, null=True)),
-                ('batch', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='steps', to='batches.batch')),
-                ('last_edited_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='edited_batch_steps', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("step_key", models.CharField(max_length=100)),
+                ("occurrence_key", models.CharField(default="default", max_length=100)),
+                ("occurrence_index", models.PositiveIntegerField(default=1)),
+                ("title", models.CharField(max_length=255)),
+                ("sequence_order", models.PositiveIntegerField()),
+                ("is_applicable", models.BooleanField(default=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("not_started", "Not Started"),
+                            ("in_progress", "In Progress"),
+                            ("complete", "Complete"),
+                            ("signed", "Signed"),
+                        ],
+                        default="not_started",
+                        max_length=32,
+                    ),
+                ),
+                (
+                    "signature_state",
+                    models.CharField(
+                        choices=[
+                            ("not_required", "Not Required"),
+                            ("required", "Required"),
+                            ("signed", "Signed"),
+                        ],
+                        default="not_required",
+                        max_length=32,
+                    ),
+                ),
+                ("blocks_execution_progress", models.BooleanField(default=False)),
+                ("blocks_step_completion", models.BooleanField(default=True)),
+                ("blocks_signature", models.BooleanField(default=False)),
+                ("blocks_pre_qa_handoff", models.BooleanField(default=True)),
+                ("data_json", models.JSONField(default=dict)),
+                ("meta_json", models.JSONField(blank=True, default=dict)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("started_at", models.DateTimeField(blank=True, null=True)),
+                ("completed_at", models.DateTimeField(blank=True, null=True)),
+                ("signed_at", models.DateTimeField(blank=True, null=True)),
+                (
+                    "batch",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="steps",
+                        to="batches.batch",
+                    ),
+                ),
+                (
+                    "last_edited_by",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="edited_batch_steps",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['sequence_order'],
-                'constraints': [models.UniqueConstraint(fields=('batch', 'step_key', 'occurrence_key'), name='uniq_batch_step_occurrence')],
+                "ordering": ["sequence_order"],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("batch", "step_key", "occurrence_key"),
+                        name="uniq_batch_step_occurrence",
+                    )
+                ],
             },
         ),
     ]

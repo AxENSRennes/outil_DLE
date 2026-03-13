@@ -81,9 +81,7 @@ def other_site() -> Site:
 @pytest.fixture()
 def operator(site: Site) -> Any:
     user = User.objects.create_user(username="op1", password="test")
-    SiteRoleAssignment.objects.create(
-        user=user, site=site, role=SiteRole.OPERATOR, is_active=True
-    )
+    SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR, is_active=True)
     return user
 
 

@@ -62,11 +62,7 @@ class BatchStepDetailView(APIView):
         return obj.batch.site
 
     def _get_step(self, step_id: int) -> BatchStep:
-        step = (
-            BatchStep.objects.select_related("batch__site")
-            .filter(id=step_id)
-            .first()
-        )
+        step = BatchStep.objects.select_related("batch__site").filter(id=step_id).first()
         if step is None:
             raise NotFound(detail="Batch step not found.", code="batch_step_not_found")
         return step

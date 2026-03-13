@@ -90,9 +90,7 @@ class Command(BaseCommand):
         )
 
         if not batch_created:
-            self.stdout.write(
-                self.style.WARNING("  Batch LOT-2026-001 already exists, skipping.")
-            )
+            self.stdout.write(self.style.WARNING("  Batch LOT-2026-001 already exists, skipping."))
             return
 
         steps_config = snapshot_json.get("steps", {})

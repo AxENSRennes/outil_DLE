@@ -43,12 +43,8 @@ class Batch(models.Model):
         default=BatchStatus.DRAFT,
     )
     snapshot_json = models.JSONField()
-    lot_size_target = models.DecimalField(
-        max_digits=12, decimal_places=3, null=True, blank=True
-    )
-    lot_size_actual = models.DecimalField(
-        max_digits=12, decimal_places=3, null=True, blank=True
-    )
+    lot_size_target = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    lot_size_actual = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
     batch_context_json = models.JSONField(default=dict, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
