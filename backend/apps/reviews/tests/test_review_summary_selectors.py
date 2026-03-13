@@ -62,7 +62,7 @@ class TestGetBatchReviewSummary:
     def test_empty_batch_returns_green(self, batch: Batch) -> None:
         summary = get_batch_review_summary(batch)
         assert summary.batch_id == batch.pk
-        assert summary.batch_reference == "LOT-2026-0001"
+        assert summary.batch_number == "LOT-2026-0001"
         assert summary.batch_status == "awaiting_pre_qa"
         assert summary.severity == "green"
         assert summary.step_summary.total == 0

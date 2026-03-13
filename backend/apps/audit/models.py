@@ -39,6 +39,7 @@ class AuditEventType(models.TextChoices):
     CHANGE_REVIEWED = "change_reviewed", "Change Reviewed"
     BATCH_EXECUTION_VIEWED = "batch_execution_viewed", "Batch Execution Viewed"
     BATCH_STEP_VIEWED = "batch_step_viewed", "Batch Step Viewed"
+    DOSSIER_RESOLVED = "dossier_resolved", "Dossier Resolved"
 
 
 AUTH_OPTIONAL_ACTOR_EVENT_TYPES: tuple[str, ...] = (
@@ -100,7 +101,6 @@ class AuditEvent(models.Model):
         # full_clean() is intentionally called before every save to enforce
         # Python-level invariants (actor requirement, target consistency) in
         # addition to the DB-level CHECK constraints.  Do not remove this call.
-        self.target_type = self.target_type.strip()
         self.full_clean()
         super().save(*args, **kwargs)
 
@@ -122,21 +122,23 @@ class AuditEvent(models.Model):
         ]
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(target_type="", target_id__isnull=True)
                     | (~models.Q(target_type="") & models.Q(target_id__isnull=False))
                 ),
                 name="audit_target_type_id_consistent",
             ),
             models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(event_type__in=AUTH_OPTIONAL_ACTOR_EVENT_TYPES)
                     | models.Q(actor__isnull=False)
                 ),
                 name="audit_batch_event_actor_required",
             ),
             models.CheckConstraint(
-                check=(models.Q(target_id__isnull=True) | ~models.Q(target_type__regex=r"^\s*$")),
+                condition=(
+                    models.Q(target_id__isnull=True) | ~models.Q(target_type__regex=r"^\s*$")
+                ),
                 name="audit_target_type_not_blank_when_linked",
             ),
         ]

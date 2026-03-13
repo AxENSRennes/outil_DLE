@@ -53,7 +53,7 @@ class FlaggedStep:
 @dataclass(frozen=True)
 class ReviewSummary:
     batch_id: int
-    batch_reference: str
+    batch_number: str
     batch_status: str
     severity: Severity
     step_summary: StepSummary

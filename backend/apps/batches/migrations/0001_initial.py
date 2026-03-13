@@ -36,8 +36,11 @@ class Migration(migrations.Migration):
                             ("awaiting_quality_review", "Awaiting Quality Review"),
                             ("in_quality_review", "In Quality Review"),
                             ("returned_for_correction", "Returned for Correction"),
+                            ("review_required", "Review required"),
+                            ("under_review", "Under review"),
                             ("released", "Released"),
                             ("rejected", "Rejected"),
+                            ("archived", "Archived"),
                         ],
                         default="draft",
                         max_length=32,
@@ -213,6 +216,10 @@ class Migration(migrations.Migration):
             options={
                 "ordering": ("-signed_at",),
             },
+        ),
+        migrations.AddIndex(
+            model_name="batch",
+            index=models.Index(fields=["site", "status"], name="batch_site_status_idx"),
         ),
         migrations.AddConstraint(
             model_name="batchstep",

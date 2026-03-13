@@ -62,6 +62,7 @@ class StepSignatureAdmin(admin.ModelAdmin):
 @admin.register(DossierChecklistItem)
 class DossierChecklistItemAdmin(admin.ModelAdmin):
     list_display = ("document_name", "batch", "is_present")
+    list_filter = ("is_present",)
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False

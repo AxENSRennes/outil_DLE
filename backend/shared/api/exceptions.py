@@ -47,3 +47,15 @@ class ServiceUnavailable(APIException):
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     default_detail = "A required dependency is unavailable."
     default_code = "service_unavailable"
+
+
+class Conflict(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = "The request conflicted with a concurrent operation."
+    default_code = "conflict"
+
+
+class UnprocessableEntity(APIException):
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    default_detail = "The request could not be processed."
+    default_code = "unprocessable_entity"

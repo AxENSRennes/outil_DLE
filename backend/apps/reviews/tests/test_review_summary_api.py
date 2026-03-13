@@ -143,7 +143,7 @@ class TestReviewSummaryEndpointSuccess:
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["batch_id"] == batch.pk
-        assert data["batch_reference"] == "LOT-2026-0042"
+        assert data["batch_number"] == "LOT-2026-0042"
         assert data["batch_status"] == "awaiting_pre_qa"
         assert data["severity"] == "green"
 

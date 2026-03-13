@@ -14,8 +14,11 @@ class BatchStatus(models.TextChoices):
     AWAITING_QUALITY_REVIEW = "awaiting_quality_review", "Awaiting Quality Review"
     IN_QUALITY_REVIEW = "in_quality_review", "In Quality Review"
     RETURNED_FOR_CORRECTION = "returned_for_correction", "Returned for Correction"
+    REVIEW_REQUIRED = "review_required", "Review required"
+    UNDER_REVIEW = "under_review", "Under review"
     RELEASED = "released", "Released"
     REJECTED = "rejected", "Rejected"
+    ARCHIVED = "archived", "Archived"
 
 
 class BatchStepStatus(models.TextChoices):
@@ -66,6 +69,12 @@ class Batch(models.Model):
     class Meta:
         verbose_name_plural = "batches"
         ordering: ClassVar[list[str]] = ["-created_at"]
+        indexes: ClassVar[list[models.Index]] = [
+            models.Index(
+                fields=["site", "status"],
+                name="batch_site_status_idx",
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.batch_number

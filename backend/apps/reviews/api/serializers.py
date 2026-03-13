@@ -37,7 +37,7 @@ class FlaggedStepSerializer(serializers.Serializer):
 
 class ReviewSummarySerializer(serializers.Serializer):
     batch_id = serializers.IntegerField()
-    batch_reference = serializers.CharField()
+    batch_number = serializers.CharField()
     batch_status = serializers.CharField()
     severity = serializers.ChoiceField(choices=["green", "amber", "red"])
     step_summary = StepSummarySerializer()
