@@ -307,3 +307,32 @@ GPT-5 Codex
 
 - 2026-03-13: Implemented shared-workstation identify/switch/lock flows, signature re-auth guardrails, canonical auth-event auditing, additive migrations, backend and security tests, and workstation auth documentation. Promoted story status to `review`.
 - 2026-03-13: Code review fixes — added PIN min-length validation (4 chars), rejected empty PIN in model method, replaced hardcoded role choices with SiteRole.choices, narrowed exception catch in throttle, added client IP to audit metadata for failed auth events, extracted shared test helpers, added tests for lock CSRF/anonymous denial/self-identify edge case.
+- 2026-03-13: Applied final review fixes for atomic identify/audit behavior, audited unknown-site signature failures, enforced model-level minimum workstation PIN length, added missing signature-failure IP metadata, and expanded regression coverage.
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Axel  
+**Date:** 2026-03-13  
+**Outcome:** Approved after fixes
+
+#### Summary
+
+- Reviewed the committed Story 1.3 implementation directly; there were no staged or unstaged application source diffs to validate against git at review time.
+- Fixed four review findings in the authz/audit flow and added regressions for the previously uncovered failure paths.
+- Re-verified with:
+  - `/home/axel/wsl_venv/bin/python -m pytest backend/apps/authz/tests/test_models.py backend/apps/authz/tests/test_workstation_api.py backend/apps/authz/tests/test_signature_reauth.py backend/apps/audit/tests/test_services.py`
+  - `/home/axel/wsl_venv/bin/python -m ruff check backend/apps/authz/models.py backend/apps/authz/domain/workstation.py backend/apps/authz/api/views.py backend/apps/authz/tests/test_models.py backend/apps/authz/tests/test_workstation_api.py backend/apps/authz/tests/test_signature_reauth.py`
+
+#### Findings
+
+1. **[High] Identify needed to fail closed if audit persistence failed.**
+   Fixed by rolling the request back to an unauthenticated state when the audit write raises after workstation identify.
+
+2. **[High] Signature re-auth failures for unknown sites were not audited.**
+   Fixed by recording `signature_reauth_failed` before re-raising `site_not_found`.
+
+3. **[Medium] Minimum workstation PIN length was enforced only at the API serializer layer.**
+   Fixed by enforcing the same minimum length in the `User.set_workstation_pin()` model helper.
+
+4. **[Medium] Signature re-auth failure events were missing client IP metadata.**
+   Fixed by attaching `ip_address` to invalid-credential, missing-role, and site-not-found signature failure events.

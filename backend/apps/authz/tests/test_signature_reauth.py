@@ -113,6 +113,7 @@ def test_signature_reauth_rejects_wrong_role_and_audits_failure() -> None:
     assert event.metadata == {
         "required_roles": ["operator"],
         "reason": "missing_required_role",
+        "ip_address": "127.0.0.1",
     }
 
 
@@ -149,6 +150,7 @@ def test_signature_reauth_rejects_wrong_site_and_audits_failure() -> None:
     assert event.metadata == {
         "required_roles": ["operator"],
         "reason": "missing_required_role",
+        "ip_address": "127.0.0.1",
     }
 
 
@@ -183,8 +185,44 @@ def test_signature_reauth_rejects_bad_pin_without_leaking_secret() -> None:
     assert event.site == site
     assert event.metadata["required_roles"] == ["operator"]
     assert event.metadata["reason"] == "invalid_credentials"
+    assert event.metadata["ip_address"] == "127.0.0.1"
     assert "pin" not in event.metadata
     assert "9999" not in json.dumps(event.metadata)
+
+
+@pytest.mark.django_db
+def test_signature_reauth_rejects_unknown_site_and_audits_failure() -> None:
+    user = get_user_model().objects.create_user(
+        username="missing-site-user",
+        password="admin-pass-123",
+    )
+    user.set_workstation_pin("2468")
+    user.save(update_fields=["workstation_pin"])
+
+    client, token = csrf_client(user=user)
+    response = post_json(
+        client,
+        "/api/v1/auth/signature-reauth/",
+        {
+            "site_code": "missing-site",
+            "required_roles": ["operator"],
+            "pin": "2468",
+        },
+        csrf_token=token,
+    )
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "site_not_found"
+
+    event = AuditEvent.objects.get(event_type=AuditEventType.SIGNATURE_REAUTH_FAILED)
+    assert event.actor == user
+    assert event.site is None
+    assert event.metadata == {
+        "required_roles": ["operator"],
+        "reason": "site_not_found",
+        "site_code": "missing-site",
+        "ip_address": "127.0.0.1",
+    }
 
 
 @pytest.mark.django_db

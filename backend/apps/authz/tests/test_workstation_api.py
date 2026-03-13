@@ -173,6 +173,7 @@ def test_workstation_identify_rejects_bad_pin_and_audits_without_pin_leakage() -
     assert event.actor is None
     assert event.metadata["attempted_username"] == user.username
     assert event.metadata["reason"] == "invalid_credentials"
+    assert event.metadata["ip_address"] == "127.0.0.1"
     assert "pin" not in event.metadata
     assert "9999" not in json.dumps(event.metadata)
 
@@ -297,3 +298,39 @@ def test_workstation_identify_same_user_emits_identify_not_switch() -> None:
 
     assert AuditEvent.objects.filter(event_type=AuditEventType.IDENTIFY).exists()
     assert not AuditEvent.objects.filter(event_type=AuditEventType.SWITCH_USER).exists()
+
+
+@pytest.mark.django_db
+def test_workstation_identify_rolls_back_session_when_audit_write_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user = get_user_model().objects.create_user(
+        username="rollback-user",
+        password="admin-pass-123",
+    )
+    user.set_workstation_pin("2468")
+    user.save(update_fields=["workstation_pin"])
+
+    def fail_record_audit_event(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("audit unavailable")
+
+    monkeypatch.setattr(
+        "apps.authz.domain.workstation.record_audit_event",
+        fail_record_audit_event,
+    )
+
+    client, token = csrf_client()
+    client.raise_request_exception = False
+    response = post_json(
+        client,
+        "/api/v1/auth/workstation-identify/",
+        {"username": user.username, "pin": "2468"},
+        csrf_token=token,
+    )
+
+    assert response.status_code == 500
+
+    context_response = client.get("/api/v1/auth/context/")
+    assert context_response.status_code == 403
+    assert context_response.json()["code"] == "not_authenticated"
+    assert not AuditEvent.objects.filter(event_type=AuditEventType.IDENTIFY).exists()

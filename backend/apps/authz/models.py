@@ -18,6 +18,8 @@ class User(AbstractUser):
     def set_workstation_pin(self, raw_pin: str) -> None:
         if not raw_pin:
             raise ValueError("Workstation PIN must not be empty.")
+        if len(raw_pin) < 4:
+            raise ValueError("Workstation PIN must be at least 4 characters long.")
         self.workstation_pin = make_password(raw_pin)
 
     def check_workstation_pin(self, raw_pin: str) -> bool:

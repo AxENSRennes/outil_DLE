@@ -50,3 +50,14 @@ def test_user_workstation_pin_is_hashed_and_verifiable() -> None:
     assert user.workstation_pin != "2468"
     assert user.check_workstation_pin("2468") is True
     assert user.check_workstation_pin("9999") is False
+
+
+@pytest.mark.django_db
+def test_user_workstation_pin_rejects_empty_and_short_values() -> None:
+    user = get_user_model().objects.create_user(username="short-pin-user", password="test-pass-123")
+
+    with pytest.raises(ValueError, match="must not be empty"):
+        user.set_workstation_pin("")
+
+    with pytest.raises(ValueError, match="at least 4 characters"):
+        user.set_workstation_pin("123")

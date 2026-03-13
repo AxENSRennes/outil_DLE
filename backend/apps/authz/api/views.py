@@ -89,6 +89,7 @@ class SignatureReauthView(APIView):
         serializer = SignatureReauthRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         payload = reauthenticate_signature_authority(
+            request,
             user=cast(User, request.user),
             site_code=serializer.validated_data["site_code"],
             required_roles=tuple(serializer.validated_data["required_roles"]),

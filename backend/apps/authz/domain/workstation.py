@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from django.contrib.auth import login, logout
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied
 from shared.permissions.site_roles import get_active_site_by_code
 
 from apps.audit.models import AuditEventType
@@ -79,8 +79,6 @@ def identify_workstation_user(request: Any, *, username: str, pin: str) -> dict[
     previous_user = request.user if getattr(request.user, "is_authenticated", False) else None
     switched_user = isinstance(previous_user, User) and previous_user.pk != user.pk
 
-    login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-
     event_metadata: dict[str, Any] = {"outcome": "identified"}
     if switched_user and previous_user is not None:
         event_type = AuditEventType.SWITCH_USER
@@ -89,11 +87,17 @@ def identify_workstation_user(request: Any, *, username: str, pin: str) -> dict[
     else:
         event_type = AuditEventType.IDENTIFY
 
-    record_audit_event(
-        event_type,
-        actor=user,
-        metadata=event_metadata,
-    )
+    try:
+        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        record_audit_event(
+            event_type,
+            actor=user,
+            metadata=event_metadata,
+        )
+    except Exception:
+        # Failing closed is safer than leaving an authenticated session without an audit trail.
+        logout(request)
+        raise
 
     payload = build_auth_context_payload(user)
     payload.update(
@@ -120,18 +124,38 @@ def lock_workstation(request: Any) -> dict[str, str]:
 
 
 def reauthenticate_signature_authority(
-    *, user: User, site_code: str, required_roles: tuple[str, ...], pin: str
+    request: Any,
+    *,
+    user: User,
+    site_code: str,
+    required_roles: tuple[str, ...],
+    pin: str,
 ) -> dict[str, Any]:
-    site = get_active_site_by_code(site_code)
+    try:
+        site = get_active_site_by_code(site_code)
+    except NotFound:
+        record_audit_event(
+            AuditEventType.SIGNATURE_REAUTH_FAILED,
+            actor=user,
+            metadata={
+                "required_roles": list(required_roles),
+                "reason": "site_not_found",
+                "site_code": site_code,
+                "ip_address": _get_client_ip(request),
+            },
+        )
+        raise
+
+    failure_metadata = {
+        "required_roles": list(required_roles),
+        "ip_address": _get_client_ip(request),
+    }
     if not user.check_workstation_pin(pin):
         record_audit_event(
             AuditEventType.SIGNATURE_REAUTH_FAILED,
             actor=user,
             site=site,
-            metadata={
-                "required_roles": list(required_roles),
-                "reason": "invalid_credentials",
-            },
+            metadata=failure_metadata | {"reason": "invalid_credentials"},
         )
         raise PermissionDenied(
             detail="Invalid signature re-authentication credentials.",
@@ -146,10 +170,7 @@ def reauthenticate_signature_authority(
             AuditEventType.SIGNATURE_REAUTH_FAILED,
             actor=user,
             site=site,
-            metadata={
-                "required_roles": list(required_roles),
-                "reason": "missing_required_role",
-            },
+            metadata=failure_metadata | {"reason": "missing_required_role"},
         )
         raise PermissionDenied(
             detail="The active user is not authorized for this signature context.",
