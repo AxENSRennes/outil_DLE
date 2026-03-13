@@ -40,11 +40,21 @@ def record_audit_event(
     actor: Any | None = None,
     site: Any | None = None,
     metadata: dict[str, Any] | None = None,
+    target_type: str = "",
+    target_id: int | None = None,
 ) -> AuditEvent:
     validated_event_type = AuditEventType(event_type)
+
+    if target_id is not None and not target_type:
+        raise ValueError("target_type is required when target_id is provided")
+    if target_type and target_id is None:
+        raise ValueError("target_id is required when target_type is provided")
+
     return AuditEvent.objects.create(
         event_type=validated_event_type,
         actor=actor,
         site=site,
         metadata=_sanitize_metadata(metadata or {}),
+        target_type=target_type,
+        target_id=target_id,
     )

@@ -73,12 +73,109 @@ def test_record_audit_event_rejects_invalid_event_type() -> None:
 
 
 @pytest.mark.django_db
+def test_record_audit_event_with_target_linkage() -> None:
+    event = record_audit_event(
+        AuditEventType.BATCH_CREATED,
+        target_type="batch",
+        target_id=42,
+        metadata={"mmr_version_id": 1, "batch_number": "B-001"},
+    )
+    assert event.target_type == "batch"
+    assert event.target_id == 42
+    assert event.metadata == {"mmr_version_id": 1, "batch_number": "B-001"}
+
+
+@pytest.mark.django_db
+def test_record_audit_event_target_id_without_target_type_raises() -> None:
+    with pytest.raises(ValueError, match="target_type is required"):
+        record_audit_event(AuditEventType.BATCH_CREATED, target_id=1)
+    assert AuditEvent.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_record_audit_event_target_type_without_target_id_raises() -> None:
+    with pytest.raises(ValueError, match="target_id is required"):
+        record_audit_event(AuditEventType.BATCH_CREATED, target_type="batch")
+    assert AuditEvent.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_record_audit_event_sanitizes_batch_domain_metadata() -> None:
+    event = record_audit_event(
+        AuditEventType.STEP_DRAFT_SAVED,
+        target_type="batch_step",
+        target_id=7,
+        metadata={
+            "batch_id": 1,
+            "field_count": 5,
+            "password": "should-be-stripped",
+        },
+    )
+    assert "password" not in event.metadata
+    assert event.metadata["batch_id"] == 1
+    assert event.metadata["field_count"] == 5
+
+
+@pytest.mark.django_db
+def test_record_audit_event_without_target_leaves_defaults() -> None:
+    event = record_audit_event(AuditEventType.IDENTIFY)
+    assert event.target_type == ""
+    assert event.target_id is None
+
+
+@pytest.mark.django_db
 def test_deleting_user_with_audit_events_raises_protected_error() -> None:
     user = get_user_model().objects.create_user(username="protected-user", password="test-pass-123")
     record_audit_event(AuditEventType.IDENTIFY, actor=user)
 
     with pytest.raises(ProtectedError):
         user.delete()
+
+
+BATCH_DOMAIN_EVENT_TYPES = [
+    "batch_created",
+    "step_draft_saved",
+    "step_completed",
+    "step_signed",
+    "batch_submitted_for_pre_qa",
+    "pre_qa_review_confirmed",
+    "quality_review_started",
+    "batch_released",
+    "batch_rejected",
+    "batch_returned_for_correction",
+    "correction_submitted",
+    "change_reviewed",
+]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("event_type_value", BATCH_DOMAIN_EVENT_TYPES)
+def test_batch_domain_event_type_can_be_recorded(event_type_value: str) -> None:
+    event = record_audit_event(AuditEventType(event_type_value))
+    assert event.event_type == event_type_value
+    assert AuditEvent.objects.filter(event_type=event_type_value).exists()
+
+
+def test_all_batch_domain_event_types_are_valid_enum_members() -> None:
+    for event_type_value in BATCH_DOMAIN_EVENT_TYPES:
+        member = AuditEventType(event_type_value)
+        assert member.value == event_type_value
+
+
+@pytest.mark.django_db
+def test_existing_auth_event_types_still_work() -> None:
+    """Regression: existing auth-event types remain functional."""
+    auth_types = [
+        AuditEventType.IDENTIFY,
+        AuditEventType.SWITCH_USER,
+        AuditEventType.LOCK_WORKSTATION,
+        AuditEventType.IDENTIFY_FAILED,
+        AuditEventType.SIGNATURE_REAUTH_SUCCEEDED,
+        AuditEventType.SIGNATURE_REAUTH_FAILED,
+    ]
+    for et in auth_types:
+        event = record_audit_event(et)
+        assert event.event_type == et.value
 
 
 @pytest.mark.django_db

@@ -15,6 +15,26 @@ class AuditEventType(models.TextChoices):
     SIGNATURE_REAUTH_SUCCEEDED = "signature_reauth_succeeded", "Signature Reauth Succeeded"
     SIGNATURE_REAUTH_FAILED = "signature_reauth_failed", "Signature Reauth Failed"
 
+    # Batch-domain event types
+    BATCH_CREATED = "batch_created", "Batch Created"
+    STEP_DRAFT_SAVED = "step_draft_saved", "Step Draft Saved"
+    STEP_COMPLETED = "step_completed", "Step Completed"
+    STEP_SIGNED = "step_signed", "Step Signed"
+    BATCH_SUBMITTED_FOR_PRE_QA = (
+        "batch_submitted_for_pre_qa",
+        "Batch Submitted for Pre-QA",
+    )
+    PRE_QA_REVIEW_CONFIRMED = "pre_qa_review_confirmed", "Pre-QA Review Confirmed"
+    QUALITY_REVIEW_STARTED = "quality_review_started", "Quality Review Started"
+    BATCH_RELEASED = "batch_released", "Batch Released"
+    BATCH_REJECTED = "batch_rejected", "Batch Rejected"
+    BATCH_RETURNED_FOR_CORRECTION = (
+        "batch_returned_for_correction",
+        "Batch Returned for Correction",
+    )
+    CORRECTION_SUBMITTED = "correction_submitted", "Correction Submitted"
+    CHANGE_REVIEWED = "change_reviewed", "Change Reviewed"
+
 
 class AuditEvent(models.Model):
     actor = models.ForeignKey(
@@ -34,6 +54,8 @@ class AuditEvent(models.Model):
     event_type = models.CharField(max_length=64, choices=AuditEventType.choices)
     occurred_at = models.DateTimeField(auto_now_add=True)
     metadata = models.JSONField(default=dict, blank=True)
+    target_type = models.CharField(max_length=64, blank=True, default="")
+    target_id = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ("-occurred_at", "-id")
@@ -41,6 +63,14 @@ class AuditEvent(models.Model):
             models.Index(
                 fields=["event_type", "occurred_at"],
                 name="audit_event_type_occurred_idx",
+            ),
+            models.Index(
+                fields=["target_type", "target_id"],
+                name="audit_target_type_id_idx",
+            ),
+            models.Index(
+                fields=["actor", "occurred_at"],
+                name="audit_actor_occurred_idx",
             ),
         ]
 
