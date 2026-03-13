@@ -161,6 +161,17 @@ def _normalize_step_output(step_dict: dict[str, Any]) -> dict[str, Any]:
     }
     for key, default in defaults.items():
         step_dict.setdefault(key, default)
+    if step_dict.get("blocking_policy") is not None:
+        for k, v in {
+            "blocks_execution_progress": False,
+            "blocks_step_completion": False,
+            "blocks_signature": False,
+            "blocks_pre_qa_handoff": False,
+        }.items():
+            step_dict["blocking_policy"].setdefault(k, v)
+    if step_dict.get("attachments_policy") is not None:
+        step_dict["attachments_policy"].setdefault("supports_attachments", False)
+        step_dict["attachments_policy"].setdefault("attachment_kinds", [])
     return step_dict
 
 
@@ -259,7 +270,12 @@ def update_step(*, version: MMRVersion, step_key: str, step_data: dict, actor: A
             camel_prop = _to_camel_case(prop)
             if value is not None:
                 if isinstance(value, dict):
-                    step_def[camel_prop] = _dict_keys_to_camel(value)
+                    camel_value = _dict_keys_to_camel(value)
+                    existing = step_def.get(camel_prop, {})
+                    if isinstance(existing, dict):
+                        step_def[camel_prop] = {**existing, **camel_value}
+                    else:
+                        step_def[camel_prop] = camel_value
                 else:
                     step_def[camel_prop] = value
             else:

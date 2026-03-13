@@ -324,6 +324,37 @@ def test_update_step_blocking_policy(
 
 
 @pytest.mark.django_db
+def test_update_step_partial_blocking_policy_preserves_existing(
+    draft_version: MMRVersion, user: Any
+) -> None:
+    """Partial update of blocking_policy must merge, not replace."""
+    add_step(
+        version=draft_version,
+        step_data={
+            "key": "fab",
+            "title": "Fab",
+            "kind": "manufacturing",
+            "blocking_policy": {
+                "blocks_signature": True,
+                "blocks_pre_qa_handoff": True,
+            },
+        },
+        actor=user,
+    )
+    result = update_step(
+        version=draft_version,
+        step_key="fab",
+        step_data={"blocking_policy": {"blocks_step_completion": True}},
+        actor=user,
+    )
+    bp = result["blocking_policy"]
+    assert bp["blocks_step_completion"] is True
+    assert bp["blocks_signature"] is True
+    assert bp["blocks_pre_qa_handoff"] is True
+    assert bp["blocks_execution_progress"] is False  # default from normalize
+
+
+@pytest.mark.django_db
 def test_update_step_clear_optional_property(
     draft_version: MMRVersion, sample_step_data: dict, user: Any
 ) -> None:

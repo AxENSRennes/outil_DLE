@@ -371,6 +371,39 @@ def test_update_step_non_draft_returns_409(
 
 
 @pytest.mark.django_db
+def test_update_step_partial_blocking_policy_preserves_existing_via_api(
+    configurator: Any, mmr: MMR, draft_version: MMRVersion
+) -> None:
+    """End-to-end: partial blocking_policy update must merge, not replace."""
+    add_step(
+        version=draft_version,
+        step_data={
+            "key": "fab",
+            "title": "Fab",
+            "kind": "manufacturing",
+            "blocking_policy": {
+                "blocks_signature": True,
+                "blocks_pre_qa_handoff": True,
+            },
+        },
+        actor=configurator,
+    )
+    client, token = csrf_client(user=configurator)
+    resp = _put_json(
+        client,
+        _step_detail_url(mmr, draft_version, "fab"),
+        {"blocking_policy": {"blocks_step_completion": True}},
+        csrf_token=token,
+    )
+    assert resp.status_code == 200
+    bp = resp.json()["blocking_policy"]
+    assert bp["blocks_step_completion"] is True
+    assert bp["blocks_signature"] is True
+    assert bp["blocks_pre_qa_handoff"] is True
+    assert bp["blocks_execution_progress"] is False
+
+
+@pytest.mark.django_db
 def test_update_step_ignores_key_in_payload(
     configurator: Any, mmr: MMR, draft_version: MMRVersion, sample_step_data: dict
 ) -> None:
