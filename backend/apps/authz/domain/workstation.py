@@ -5,6 +5,7 @@ from typing import Any
 from django.contrib.auth import login, logout
 from django.contrib.auth.hashers import check_password, make_password
 from rest_framework.exceptions import NotFound, PermissionDenied
+from shared.http import get_client_ip
 from shared.permissions.site_roles import get_active_site_by_code
 
 from apps.audit.models import AuditEventType
@@ -55,21 +56,6 @@ def _get_user_by_username(username: str) -> User | None:
     return User.objects.filter(username=username, is_active=True).first()
 
 
-def _get_client_ip(request: Any) -> str | None:
-    """Return the client IP from the request for audit metadata.
-
-    Advisory/best-effort: X-Forwarded-For is trusted as-is, which is acceptable
-    because this value is only used in audit metadata, not for access control.
-    If deployed behind an untrusted proxy layer, consider gating on a
-    TRUSTED_PROXIES setting or using django-ipware.
-    """
-    forwarded_for: str | None = request.META.get("HTTP_X_FORWARDED_FOR")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
-    remote_addr: str | None = request.META.get("REMOTE_ADDR")
-    return remote_addr
-
-
 def identify_workstation_user(request: Any, *, username: str, pin: str) -> dict[str, Any]:
     user = _get_user_by_username(username)
     if user is None:
@@ -80,7 +66,7 @@ def identify_workstation_user(request: Any, *, username: str, pin: str) -> dict[
             metadata={
                 "attempted_username": username,
                 "reason": "invalid_credentials",
-                "ip_address": _get_client_ip(request),
+                "ip_address": get_client_ip(request),
             },
         )
         raise PermissionDenied(
@@ -93,7 +79,7 @@ def identify_workstation_user(request: Any, *, username: str, pin: str) -> dict[
             metadata={
                 "attempted_username": username,
                 "reason": "invalid_credentials",
-                "ip_address": _get_client_ip(request),
+                "ip_address": get_client_ip(request),
             },
         )
         raise PermissionDenied(
@@ -168,14 +154,14 @@ def reauthenticate_signature_authority(
                 "required_roles": list(required_roles),
                 "reason": "site_not_found",
                 "site_code": site_code,
-                "ip_address": _get_client_ip(request),
+                "ip_address": get_client_ip(request),
             },
         )
         raise
 
     failure_metadata = {
         "required_roles": list(required_roles),
-        "ip_address": _get_client_ip(request),
+        "ip_address": get_client_ip(request),
     }
     if not user.check_workstation_pin(pin):
         record_audit_event(
