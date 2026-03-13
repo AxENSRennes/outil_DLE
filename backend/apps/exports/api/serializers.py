@@ -21,10 +21,3 @@ class DossierStructureSerializer(serializers.Serializer):
     is_active = serializers.BooleanField()
     resolved_at = serializers.CharField()
     elements = DossierElementSerializer(many=True)
-
-
-class DossierCompletenessItemSerializer(serializers.Serializer):
-    element_identifier = serializers.CharField()
-    element_type = serializers.CharField()
-    title = serializers.CharField()
-    applicability = serializers.CharField()

@@ -8,8 +8,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 
+from apps.audit.models import AuditEventType
+from apps.audit.services import record_audit_event
 from apps.batches.models import Batch
 from apps.exports.models import (
     ApplicabilityStatus,
@@ -28,6 +30,8 @@ def resolve_dossier_structure(
     batch: Batch,
     *,
     force: bool = False,
+    actor: Any | None = None,
+    site: Any | None = None,
 ) -> BatchDossierStructure:
     """Resolve the dossier structure for a batch from its context and profile.
 
@@ -38,6 +42,8 @@ def resolve_dossier_structure(
     Args:
         batch: The batch to resolve the dossier structure for.
         force: If True, deactivate existing structure and create a new one.
+        actor: Optional user for audit trail.
+        site: Optional site for audit trail.
 
     Returns:
         The resolved (or existing) ``BatchDossierStructure`` with its elements.
@@ -62,43 +68,68 @@ def resolve_dossier_structure(
     required_ids, not_applicable_ids = _evaluate_rules(profile, context)
     element_catalog = _build_element_catalog(profile)
 
-    with transaction.atomic():
-        if force:
-            BatchDossierStructure.objects.filter(batch=batch, is_active=True).update(
-                is_active=False,
-            )
-
-        structure = BatchDossierStructure.objects.create(
-            batch=batch,
-            dossier_profile=profile,
-            context_snapshot=context,
-            is_active=True,
-        )
-
-        elements_to_create: list[DossierElement] = []
-        for order, entry in enumerate(element_catalog, start=1):
-            identifier = entry["identifier"]
-            if identifier in not_applicable_ids:
-                applicability = ApplicabilityStatus.NOT_APPLICABLE
-            elif identifier in required_ids:
-                applicability = ApplicabilityStatus.REQUIRED
-            else:
-                # Elements not mentioned in any rule are excluded entirely
-                continue
-
-            elements_to_create.append(
-                DossierElement(
-                    structure=structure,
-                    element_identifier=identifier,
-                    element_type=entry.get("type", DossierElementType.SUB_DOCUMENT),
-                    display_order=order,
-                    applicability=applicability,
-                    title=entry.get("title", ""),
-                    metadata=entry.get("metadata", {}),
+    try:
+        with transaction.atomic():
+            if force:
+                BatchDossierStructure.objects.filter(batch=batch, is_active=True).update(
+                    is_active=False,
                 )
+
+            structure = BatchDossierStructure.objects.create(
+                batch=batch,
+                dossier_profile=profile,
+                context_snapshot=context,
+                is_active=True,
             )
 
-        DossierElement.objects.bulk_create(elements_to_create)
+            elements_to_create: list[DossierElement] = []
+            for order, entry in enumerate(element_catalog, start=1):
+                identifier = entry["identifier"]
+                if identifier in not_applicable_ids:
+                    applicability = ApplicabilityStatus.NOT_APPLICABLE
+                elif identifier in required_ids:
+                    applicability = ApplicabilityStatus.REQUIRED
+                else:
+                    # Elements not mentioned in any rule are excluded entirely
+                    continue
+
+                elements_to_create.append(
+                    DossierElement(
+                        structure=structure,
+                        element_identifier=identifier,
+                        element_type=entry.get("type", DossierElementType.SUB_DOCUMENT),
+                        display_order=order,
+                        applicability=applicability,
+                        title=entry.get("title", ""),
+                        metadata=entry.get("metadata", {}),
+                    )
+                )
+
+            DossierElement.objects.bulk_create(elements_to_create)
+
+            record_audit_event(
+                AuditEventType.DOSSIER_RESOLVED,
+                actor=actor,
+                site=site,
+                metadata={
+                    "batch_id": batch.pk,
+                    "profile_id": profile.pk,
+                    "structure_id": structure.pk,
+                    "force": force,
+                },
+            )
+    except IntegrityError:
+        # Unique constraint race: another request resolved concurrently.
+        # Fail-closed to idempotent — return the winning row.
+        existing = (
+            BatchDossierStructure.objects.filter(batch=batch, is_active=True)
+            .select_related("dossier_profile")
+            .prefetch_related("elements")
+            .first()
+        )
+        if existing is not None:
+            return existing
+        raise  # pragma: no cover - unexpected state
 
     # Re-fetch with prefetched elements for a consistent return value.
     return (
@@ -194,7 +225,7 @@ def _condition_matches(condition: dict[str, Any], context: dict[str, Any]) -> bo
         return actual in expected
     if operator == "not_in":
         if not isinstance(expected, list):
-            return True
+            return False
         return actual not in expected
     if operator == "truthy":
         return bool(actual)

@@ -112,6 +112,13 @@ class BatchDossierStructure(models.Model):
                 name="exports_bds_batch_active_idx",
             ),
         ]
+        constraints: ClassVar[list[models.BaseConstraint]] = [
+            models.UniqueConstraint(
+                fields=["batch"],
+                condition=models.Q(is_active=True),
+                name="exports_bds_one_active_per_batch",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"DossierStructure for {self.batch} (active={self.is_active})"

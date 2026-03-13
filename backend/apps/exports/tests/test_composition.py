@@ -7,9 +7,11 @@ from typing import Any
 import pytest
 from django.contrib.auth import get_user_model
 
+from apps.audit.models import AuditEvent, AuditEventType
 from apps.batches.models import Batch
 from apps.exports.domain.composition import (
     DossierCompositionError,
+    _condition_matches,
     resolve_dossier_structure,
 )
 from apps.exports.models import (
@@ -338,3 +340,59 @@ class TestElementTypes:
         assert el_map["batch-header"].element_type == DossierElementType.SUB_DOCUMENT
         assert el_map["paillette-control"].element_type == DossierElementType.IN_PROCESS_CONTROL
         assert el_map["release-checklist"].element_type == DossierElementType.CHECKLIST_ITEM
+
+
+class TestConditionMatchesNotIn:
+    """not_in operator with non-list value returns False (bug fix)."""
+
+    def test_not_in_with_non_list_value_returns_false(self) -> None:
+        condition = {"context_key": "x", "operator": "not_in", "value": "not-a-list"}
+        assert _condition_matches(condition, {"x": "anything"}) is False
+
+    def test_not_in_with_list_value_works(self) -> None:
+        condition = {"context_key": "x", "operator": "not_in", "value": ["a", "b"]}
+        assert _condition_matches(condition, {"x": "c"}) is True
+        assert _condition_matches(condition, {"x": "a"}) is False
+
+
+@pytest.mark.django_db
+class TestAuditEvent:
+    """resolve_dossier_structure creates an audit event."""
+
+    def test_audit_event_created_on_resolve(self) -> None:
+        fx = _make_profile_and_batch(
+            batch_context={"paillette_present": True, "format_family": "CREAM"},
+        )
+        initial_count = AuditEvent.objects.filter(
+            event_type=AuditEventType.DOSSIER_RESOLVED,
+        ).count()
+
+        resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
+
+        assert (
+            AuditEvent.objects.filter(event_type=AuditEventType.DOSSIER_RESOLVED).count()
+            == initial_count + 1
+        )
+        event = AuditEvent.objects.filter(
+            event_type=AuditEventType.DOSSIER_RESOLVED,
+        ).latest("occurred_at")
+        assert event.actor == fx["user"]
+        assert event.site == fx["site"]
+        assert event.metadata["batch_id"] == fx["batch"].pk
+
+    def test_idempotent_call_does_not_create_second_audit_event(self) -> None:
+        fx = _make_profile_and_batch(
+            batch_context={"paillette_present": True, "format_family": "CREAM"},
+        )
+        resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
+        count_after_first = AuditEvent.objects.filter(
+            event_type=AuditEventType.DOSSIER_RESOLVED,
+        ).count()
+
+        # Second call is idempotent — returns existing, no new audit event.
+        resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
+
+        assert (
+            AuditEvent.objects.filter(event_type=AuditEventType.DOSSIER_RESOLVED).count()
+            == count_after_first
+        )

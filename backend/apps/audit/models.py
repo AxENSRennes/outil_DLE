@@ -14,6 +14,7 @@ class AuditEventType(models.TextChoices):
     IDENTIFY_FAILED = "identify_failed", "Identify Failed"
     SIGNATURE_REAUTH_SUCCEEDED = "signature_reauth_succeeded", "Signature Reauth Succeeded"
     SIGNATURE_REAUTH_FAILED = "signature_reauth_failed", "Signature Reauth Failed"
+    DOSSIER_RESOLVED = "dossier_resolved", "Dossier Resolved"
 
 
 class AuditEvent(models.Model):

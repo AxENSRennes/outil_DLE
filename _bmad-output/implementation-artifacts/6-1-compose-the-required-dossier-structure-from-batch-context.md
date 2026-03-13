@@ -332,6 +332,7 @@ New files:
 - backend/apps/exports/admin.py
 - backend/apps/exports/migrations/__init__.py
 - backend/apps/exports/migrations/0001_initial.py
+- backend/apps/exports/migrations/0002_batchdossierstructure_exports_bds_one_active_per_batch.py
 - backend/apps/exports/domain/__init__.py
 - backend/apps/exports/domain/composition.py
 - backend/apps/exports/selectors/__init__.py
@@ -366,7 +367,19 @@ New files:
 - backend/apps/batches/api/__init__.py
 - backend/apps/batches/tests/__init__.py
 
+New files (review fix migrations):
+- backend/apps/audit/migrations/0004_alter_auditevent_event_type.py
+- backend/apps/exports/migrations/0002_batchdossierstructure_exports_bds_one_active_per_batch.py
+
 Modified files:
 - backend/config/settings/base.py (added MmrConfig, BatchesConfig, ExportsConfig to INSTALLED_APPS)
 - backend/shared/api/urls.py (wired exports API URLs)
+- backend/shared/api/exceptions.py (added UnprocessableEntity)
+- backend/apps/audit/models.py (added DOSSIER_RESOLVED)
+- backend/apps/exports/models.py (added UniqueConstraint on BatchDossierStructure)
+- backend/apps/exports/domain/composition.py (audit event, race condition handling, not_in bug fix, actor/site params)
+- backend/apps/exports/api/views.py (SiteScopedRolePermission, get_site(), problem-details 422)
+- backend/apps/exports/api/serializers.py (removed dead DossierCompletenessItemSerializer)
+- backend/apps/exports/tests/test_api.py (SiteRoleAssignment fixtures, role denial tests, 422 format update)
+- backend/apps/exports/tests/test_composition.py (not_in bug test, audit event tests)
 - _bmad-output/implementation-artifacts/sprint-status.yaml (story status update)

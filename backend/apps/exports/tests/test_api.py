@@ -8,6 +8,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
+from apps.authz.models import SiteRole, SiteRoleAssignment
 from apps.authz.tests.helpers import csrf_client, post_json
 from apps.batches.models import Batch
 from apps.exports.domain.composition import resolve_dossier_structure
@@ -30,6 +31,7 @@ def _make_api_fixtures(
     user = User.objects.create_user(
         username=f"api-user-{User.objects.count()}", password="testpass"
     )
+    SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR)
     mmr = MMR.objects.create(site=site, name="API MMR", code=f"MMR-A{MMR.objects.count()}")
     version = MMRVersion.objects.create(
         mmr=mmr, version_number=1, schema_json={"schemaVersion": "v1"}, created_by=user
@@ -130,6 +132,19 @@ class TestGetDossierStructure:
 
         assert response.status_code == 403
 
+    def test_wrong_role_rejected(self) -> None:
+        fx = _make_api_fixtures(with_structure=True)
+        wrong_user = User.objects.create_user(username="wrong-role-get", password="testpass")
+        SiteRoleAssignment.objects.create(
+            user=wrong_user, site=fx["site"], role=SiteRole.INTERNAL_CONFIGURATOR,
+        )
+        client = APIClient()
+        client.force_login(wrong_user)
+
+        response = client.get(f"/api/v1/batches/{fx['batch'].pk}/dossier-structure/")
+
+        assert response.status_code == 403
+
 
 @pytest.mark.django_db
 class TestResolveDossier:
@@ -221,4 +236,21 @@ class TestResolveDossier:
 
         assert response.status_code == 422
         data = response.json()
-        assert data["type"] == "composition_error"
+        assert data["code"] == "composition_error"
+
+    def test_wrong_role_rejected(self) -> None:
+        fx = _make_api_fixtures(with_profile=True)
+        wrong_user = User.objects.create_user(username="wrong-role-post", password="testpass")
+        SiteRoleAssignment.objects.create(
+            user=wrong_user, site=fx["site"], role=SiteRole.INTERNAL_CONFIGURATOR,
+        )
+        client, token = csrf_client(user=wrong_user)
+
+        response = post_json(
+            client,
+            f"/api/v1/batches/{fx['batch'].pk}/resolve-dossier/",
+            {},
+            csrf_token=token,
+        )
+
+        assert response.status_code == 403
