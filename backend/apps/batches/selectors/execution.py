@@ -83,7 +83,10 @@ def get_step_detail_payload(step: BatchStep) -> dict[str, Any]:
         "is_applicable": step.is_applicable,
         "instructions": step_def.get("instructions", ""),
         "fields": step_def.get("fields", []),
-        "signature_policy": step_def.get("signaturePolicy", {}),
+        "signature_policy": {
+            "required": step_def.get("signaturePolicy", {}).get("required", False),
+            "meaning": step_def.get("signaturePolicy", {}).get("meaning", ""),
+        },
         "blocking_policy": {
             "blocks_execution_progress": step.blocks_execution_progress,
             "blocks_step_completion": step.blocks_step_completion,

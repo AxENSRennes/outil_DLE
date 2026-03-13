@@ -47,6 +47,26 @@ class BlockingPolicySerializer(serializers.Serializer):
     blocks_pre_qa_handoff = serializers.BooleanField()
 
 
+class FieldOptionSerializer(serializers.Serializer):
+    value = serializers.CharField()
+    label = serializers.CharField()
+
+
+class FieldDefinitionSerializer(serializers.Serializer):
+    key = serializers.CharField()
+    type = serializers.CharField()
+    label = serializers.CharField()
+    required = serializers.BooleanField(required=False, default=False)
+    options = FieldOptionSerializer(many=True, required=False)
+    unit = serializers.CharField(required=False, allow_blank=True)
+    validation = serializers.DictField(required=False)
+
+
+class SignaturePolicySerializer(serializers.Serializer):
+    required = serializers.BooleanField(default=False)
+    meaning = serializers.CharField(default="", allow_blank=True)
+
+
 class BatchStepDetailSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     batch_id = serializers.IntegerField()
@@ -57,8 +77,8 @@ class BatchStepDetailSerializer(serializers.Serializer):
     status = serializers.CharField()
     is_applicable = serializers.BooleanField()
     instructions = serializers.CharField(allow_blank=True)
-    fields = serializers.ListField()
-    signature_policy = serializers.DictField()
+    fields = FieldDefinitionSerializer(many=True)
+    signature_policy = SignaturePolicySerializer()
     blocking_policy = BlockingPolicySerializer()
     data = serializers.DictField()
     meta = serializers.DictField()
