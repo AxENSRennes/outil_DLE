@@ -216,28 +216,37 @@ def test_workstation_identify_is_rate_limited_and_audited() -> None:
     user.save(update_fields=["workstation_pin"])
 
     client, token = csrf_client()
-    first_response = post_json(
-        client,
+    forwarded_for = "10.0.0.1, 192.168.1.1"
+    first_response = client.post(
         "/api/v1/auth/workstation-identify/",
         {"username": user.username, "pin": "0000"},
-        csrf_token=token,
+        format="json",
+        HTTP_X_CSRFTOKEN=token,
+        HTTP_X_FORWARDED_FOR=forwarded_for,
     )
-    second_response = post_json(
-        client,
+    second_response = client.post(
         "/api/v1/auth/workstation-identify/",
         {"username": user.username, "pin": "0000"},
-        csrf_token=token,
+        format="json",
+        HTTP_X_CSRFTOKEN=token,
+        HTTP_X_FORWARDED_FOR=forwarded_for,
     )
 
     assert first_response.status_code == 403
     assert second_response.status_code == 429
 
+    invalid_credentials_event = AuditEvent.objects.get(
+        event_type=AuditEventType.IDENTIFY_FAILED,
+        metadata__reason="invalid_credentials",
+    )
     throttled_event = AuditEvent.objects.get(
         event_type=AuditEventType.IDENTIFY_FAILED,
         metadata__reason="rate_limited",
     )
+    assert invalid_credentials_event.metadata["ip_address"] == "10.0.0.1"
     assert throttled_event.actor is None
     assert throttled_event.metadata["attempted_username"] == user.username
+    assert throttled_event.metadata["ip_address"] == "10.0.0.1"
 
 
 @pytest.mark.django_db

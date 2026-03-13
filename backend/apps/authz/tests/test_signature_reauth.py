@@ -268,33 +268,42 @@ def test_signature_reauth_is_rate_limited_and_audited() -> None:
     SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR)
 
     client, token = csrf_client(user=user)
-    first_response = post_json(
-        client,
+    forwarded_for = "10.0.0.1, 192.168.1.1"
+    first_response = client.post(
         "/api/v1/auth/signature-reauth/",
         {
             "site_code": site.code,
             "required_roles": ["operator"],
             "pin": "0000",
         },
-        csrf_token=token,
+        format="json",
+        HTTP_X_CSRFTOKEN=token,
+        HTTP_X_FORWARDED_FOR=forwarded_for,
     )
-    second_response = post_json(
-        client,
+    second_response = client.post(
         "/api/v1/auth/signature-reauth/",
         {
             "site_code": site.code,
             "required_roles": ["operator"],
             "pin": "0000",
         },
-        csrf_token=token,
+        format="json",
+        HTTP_X_CSRFTOKEN=token,
+        HTTP_X_FORWARDED_FOR=forwarded_for,
     )
 
     assert first_response.status_code == 403
     assert second_response.status_code == 429
 
+    invalid_credentials_event = AuditEvent.objects.get(
+        event_type=AuditEventType.SIGNATURE_REAUTH_FAILED,
+        metadata__reason="invalid_credentials",
+    )
     throttled_event = AuditEvent.objects.get(
         event_type=AuditEventType.SIGNATURE_REAUTH_FAILED,
         metadata__reason="rate_limited",
     )
+    assert invalid_credentials_event.metadata["ip_address"] == "10.0.0.1"
     assert throttled_event.actor == user
     assert throttled_event.site == site
+    assert throttled_event.metadata["ip_address"] == "10.0.0.1"

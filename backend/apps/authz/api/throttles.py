@@ -11,6 +11,7 @@ from shared.permissions.site_roles import get_active_site_by_code
 
 from apps.audit.models import AuditEventType
 from apps.audit.services import record_audit_event
+from apps.authz.domain.workstation import _get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,7 @@ class WorkstationIdentifyThrottle(AuditEventThrottle):
             metadata={
                 "reason": "rate_limited",
                 "attempted_username": username,
-                "ip_address": self.get_ident(self.request),
+                "ip_address": _get_client_ip(self.request),
             },
         )
 
@@ -118,6 +119,6 @@ class SignatureReauthThrottle(AuditEventThrottle):
             metadata={
                 "reason": "rate_limited",
                 "required_roles": required_roles,
-                "ip_address": self.get_ident(self.request),
+                "ip_address": _get_client_ip(self.request),
             },
         )
