@@ -5,7 +5,7 @@ from typing import Any
 from django.contrib import admin
 from django.http import HttpRequest
 
-from apps.batches.models import Batch, BatchStep
+from apps.batches.models import Batch, BatchStep, DossierChecklistItem, StepSignature
 
 
 @admin.register(Batch)
@@ -33,6 +33,35 @@ class BatchStepAdmin(admin.ModelAdmin):
     search_fields = ("step_key", "title", "batch__batch_number")
     ordering = ("batch", "sequence_order")
     readonly_fields = ("data_json", "meta_json", "created_at", "updated_at")
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_change_permission(self, request: HttpRequest, obj: Any = None) -> bool:
+        return False
+
+    def has_delete_permission(self, request: HttpRequest, obj: Any = None) -> bool:
+        return False
+
+
+@admin.register(StepSignature)
+class StepSignatureAdmin(admin.ModelAdmin):
+    list_display = ("step", "signer", "meaning", "signed_at")
+    readonly_fields = ("step", "signer", "meaning", "signed_at")
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_change_permission(self, request: HttpRequest, obj: Any = None) -> bool:
+        return False
+
+    def has_delete_permission(self, request: HttpRequest, obj: Any = None) -> bool:
+        return False
+
+
+@admin.register(DossierChecklistItem)
+class DossierChecklistItemAdmin(admin.ModelAdmin):
+    list_display = ("document_name", "batch", "is_present")
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False

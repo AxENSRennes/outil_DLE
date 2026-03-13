@@ -65,8 +65,8 @@ development_status:
   4-3-surface-integrity-states-and-re-review-flags-after-relevant-changes: backlog
   4-4-provide-reviewers-with-change-history-for-the-dossier-context: backlog
   epic-4-retrospective: optional
-  epic-5: backlog
-  5-1-provide-a-dedicated-review-summary-for-batch-completeness: backlog
+  epic-5: in-progress
+  5-1-provide-a-dedicated-review-summary-for-batch-completeness: done
   5-2-perform-pre-qa-review-and-confirm-readiness-for-quality-handoff: backlog
   5-3-inspect-dossier-integrity-from-a-dedicated-quality-review-surface: backlog
   5-4-make-quality-disposition-decisions-for-release-rejection-or-return-for-correction: backlog

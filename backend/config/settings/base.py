@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.sites.apps.SitesConfig",
     "apps.authz.apps.AuthzConfig",
     "apps.batches.apps.BatchesConfig",
+    "apps.reviews.apps.ReviewsConfig",
     "rest_framework",
     "drf_spectacular",
 ]
