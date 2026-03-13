@@ -14,9 +14,7 @@ from apps.batches.selectors.completeness import (
 
 @pytest.mark.django_db
 class TestStepCompletenessByGroup:
-    def test_all_not_started_returns_zero_completed(
-        self, batch_pms_glitter: Batch
-    ) -> None:
+    def test_all_not_started_returns_zero_completed(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
         results = get_step_completeness_by_group(batch_pms_glitter)
         for group in results:
@@ -37,9 +35,7 @@ class TestStepCompletenessByGroup:
             step.save()
 
         results = get_step_completeness_by_group(batch_pms_glitter)
-        fpc_group = next(
-            r for r in results if r["step_key"] == "finished_product_control"
-        )
+        fpc_group = next(r for r in results if r["step_key"] == "finished_product_control")
         assert fpc_group["total"] == 5
         assert fpc_group["completed"] == 3
         assert fpc_group["incomplete"] == 2
@@ -48,9 +44,7 @@ class TestStepCompletenessByGroup:
         generate_repeated_controls(batch_pms_glitter)
         # gencod_control_uni2_uni3 is not applicable for PMS
         results = get_step_completeness_by_group(batch_pms_glitter)
-        gencod_group = [
-            r for r in results if r["step_key"] == "gencod_control_uni2_uni3"
-        ]
+        gencod_group = [r for r in results if r["step_key"] == "gencod_control_uni2_uni3"]
         # Non-applicable steps should NOT appear in completeness (filtered out)
         assert len(gencod_group) == 0
 
@@ -60,72 +54,57 @@ class TestDocumentRequirementCompleteness:
     def test_initial_completeness(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
         results = get_document_requirement_completeness(batch_pms_glitter)
-        fab_doc = next(
-            r for r in results if r["document_code"] == "fabrication_bulk"
-        )
+        fab_doc = next(r for r in results if r["document_code"] == "fabrication_bulk")
         assert fab_doc["expected_count"] == 1
-        assert fab_doc["actual_completed"] == 0
+        assert fab_doc["actual_count"] == 1
+        assert fab_doc["completed_count"] == 0
         assert fab_doc["is_complete"] is False
+        assert fab_doc["is_blocking"] is True
 
     def test_completed_doc_requirement(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        fab = BatchStep.objects.get(
-            batch=batch_pms_glitter, step_key="fabrication_bulk"
-        )
+        fab = BatchStep.objects.get(batch=batch_pms_glitter, step_key="fabrication_bulk")
         fab.status = BatchStepStatus.COMPLETED
         fab.save()
 
         results = get_document_requirement_completeness(batch_pms_glitter)
-        fab_doc = next(
-            r for r in results if r["document_code"] == "fabrication_bulk"
-        )
-        assert fab_doc["actual_completed"] == 1
+        fab_doc = next(r for r in results if r["document_code"] == "fabrication_bulk")
+        assert fab_doc["completed_count"] == 1
         assert fab_doc["is_complete"] is True
+        assert fab_doc["is_blocking"] is False
 
-    def test_non_applicable_doc_not_complete(
+    def test_non_applicable_doc_is_complete_and_not_blocking(
         self, batch_pms_glitter: Batch
     ) -> None:
         generate_repeated_controls(batch_pms_glitter)
         results = get_document_requirement_completeness(batch_pms_glitter)
-        gencod_doc = next(
-            r for r in results if r["document_code"] == "gencod_control_uni2_uni3"
-        )
+        gencod_doc = next(r for r in results if r["document_code"] == "gencod_control_uni2_uni3")
         assert gencod_doc["is_applicable"] is False
-        assert gencod_doc["is_complete"] is False
+        assert gencod_doc["actual_count"] == 3
+        assert gencod_doc["completed_count"] == 0
+        assert gencod_doc["is_complete"] is True
+        assert gencod_doc["is_blocking"] is False
 
-
-    def test_flagged_status_counts_as_completed(
-        self, batch_pms_glitter: Batch
-    ) -> None:
+    def test_flagged_status_counts_as_completed(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        fab = BatchStep.objects.get(
-            batch=batch_pms_glitter, step_key="fabrication_bulk"
-        )
+        fab = BatchStep.objects.get(batch=batch_pms_glitter, step_key="fabrication_bulk")
         fab.status = BatchStepStatus.FLAGGED
         fab.save()
 
         results = get_document_requirement_completeness(batch_pms_glitter)
-        fab_doc = next(
-            r for r in results if r["document_code"] == "fabrication_bulk"
-        )
-        assert fab_doc["actual_completed"] == 1
+        fab_doc = next(r for r in results if r["document_code"] == "fabrication_bulk")
+        assert fab_doc["completed_count"] == 1
         assert fab_doc["is_complete"] is True
 
-    def test_under_review_status_counts_as_completed(
-        self, batch_pms_glitter: Batch
-    ) -> None:
+    def test_under_review_status_counts_as_completed(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        fab = BatchStep.objects.get(
-            batch=batch_pms_glitter, step_key="fabrication_bulk"
-        )
+        fab = BatchStep.objects.get(batch=batch_pms_glitter, step_key="fabrication_bulk")
         fab.status = BatchStepStatus.UNDER_REVIEW
         fab.save()
 
         results = get_document_requirement_completeness(batch_pms_glitter)
-        fab_doc = next(
-            r for r in results if r["document_code"] == "fabrication_bulk"
-        )
-        assert fab_doc["actual_completed"] == 1
+        fab_doc = next(r for r in results if r["document_code"] == "fabrication_bulk")
+        assert fab_doc["completed_count"] == 1
         assert fab_doc["is_complete"] is True
 
 
@@ -133,9 +112,7 @@ class TestDocumentRequirementCompleteness:
 class TestOccurrenceDetails:
     def test_returns_all_occurrences(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        details = get_occurrence_details(
-            batch_pms_glitter, "gencod_control_uni2_uni3"
-        )
+        details = get_occurrence_details(batch_pms_glitter, "gencod_control_uni2_uni3")
         assert len(details) == 3
         indices = [d["occurrence_index"] for d in details]
         assert indices == [1, 2, 3]

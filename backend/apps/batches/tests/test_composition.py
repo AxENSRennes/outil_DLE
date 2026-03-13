@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 
 from apps.batches.domain.composition import CompositionError, generate_repeated_controls
+from apps.batches.domain.occurrences import add_occurrence
 from apps.batches.models import (
     Batch,
     BatchDocumentRepeatMode,
@@ -35,29 +36,21 @@ class TestGenerateRepeatedControlsPMS:
         # Total = 5 + 1 + 1 + 1 + 3 = 11
         assert len(steps) == 11
 
-    def test_single_steps_have_default_occurrence(
-        self, batch_pms_glitter: Batch
-    ) -> None:
+    def test_single_steps_have_default_occurrence(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        fab = BatchStep.objects.get(
-            batch=batch_pms_glitter, step_key="fabrication_bulk"
-        )
+        fab = BatchStep.objects.get(batch=batch_pms_glitter, step_key="fabrication_bulk")
         assert fab.occurrence_key == "default"
         assert fab.occurrence_index == 1
 
     def test_per_team_step_occurrence_key(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        pkg = BatchStep.objects.get(
-            batch=batch_pms_glitter, step_key="packaging_execution"
-        )
+        pkg = BatchStep.objects.get(batch=batch_pms_glitter, step_key="packaging_execution")
         assert pkg.occurrence_key == "packaging_execution_per_team_1"
         assert pkg.occurrence_index == 1
 
     def test_per_box_step_occurrence_key(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        fpc = BatchStep.objects.get(
-            batch=batch_pms_glitter, step_key="finished_product_control"
-        )
+        fpc = BatchStep.objects.get(batch=batch_pms_glitter, step_key="finished_product_control")
         assert fpc.occurrence_key == "finished_product_control_per_box_1"
         assert fpc.occurrence_index == 1
 
@@ -87,13 +80,9 @@ class TestGenerateRepeatedControlsPMS:
         )
         assert leakage.is_applicable is True
 
-    def test_sequence_order_respects_step_order(
-        self, batch_pms_glitter: Batch
-    ) -> None:
+    def test_sequence_order_respects_step_order(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        steps = list(
-            BatchStep.objects.filter(batch=batch_pms_glitter).order_by("sequence_order")
-        )
+        steps = list(BatchStep.objects.filter(batch=batch_pms_glitter).order_by("sequence_order"))
         step_keys_order = []
         for s in steps:
             if s.step_key not in step_keys_order:
@@ -112,9 +101,7 @@ class TestGenerateRepeatedControlsPMS:
         ]
         assert step_keys_order == expected_order
 
-    def test_occurrence_key_uniqueness_per_step_key(
-        self, batch_pms_glitter: Batch
-    ) -> None:
+    def test_occurrence_key_uniqueness_per_step_key(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
         # Unique constraint is (batch, step_key, occurrence_key)
         tuples = list(
@@ -152,9 +139,7 @@ class TestGenerateRepeatedControlsPMS:
 
     def test_blocking_flags_from_template(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        fab = BatchStep.objects.get(
-            batch=batch_pms_glitter, step_key="fabrication_bulk"
-        )
+        fab = BatchStep.objects.get(batch=batch_pms_glitter, step_key="fabrication_bulk")
         assert fab.blocks_execution_progress is False
         assert fab.blocks_step_completion is True
         assert fab.blocks_signature is True
@@ -162,9 +147,7 @@ class TestGenerateRepeatedControlsPMS:
 
     def test_signature_state_from_template(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        fab = BatchStep.objects.get(
-            batch=batch_pms_glitter, step_key="fabrication_bulk"
-        )
+        fab = BatchStep.objects.get(batch=batch_pms_glitter, step_key="fabrication_bulk")
         assert fab.signature_state == "required"
 
         gencod = BatchStep.objects.filter(
@@ -175,9 +158,7 @@ class TestGenerateRepeatedControlsPMS:
 
     def test_meta_json_contains_fields(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        fab = BatchStep.objects.get(
-            batch=batch_pms_glitter, step_key="fabrication_bulk"
-        )
+        fab = BatchStep.objects.get(batch=batch_pms_glitter, step_key="fabrication_bulk")
         assert "fields" in fab.meta_json
         assert len(fab.meta_json["fields"]) == 3
 
@@ -198,9 +179,7 @@ class TestGenerateRepeatedControlsUNI2:
         assert gencod is not None
         assert gencod.is_applicable is True
 
-    def test_intermediate_leakage_not_applicable_for_uni2(
-        self, batch_uni2: Batch
-    ) -> None:
+    def test_intermediate_leakage_not_applicable_for_uni2(self, batch_uni2: Batch) -> None:
         generate_repeated_controls(batch_uni2)
         leakage = BatchStep.objects.get(
             batch=batch_uni2, step_key="intermediate_leakage_pms_glitter"
@@ -216,9 +195,7 @@ class TestGenerateRepeatedControlsUNI2:
 
 @pytest.mark.django_db
 class TestCompositionIdempotency:
-    def test_recompose_does_not_duplicate_steps(
-        self, batch_pms_glitter: Batch
-    ) -> None:
+    def test_recompose_does_not_duplicate_steps(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
         first_count = BatchStep.objects.filter(batch=batch_pms_glitter).count()
 
@@ -228,13 +205,9 @@ class TestCompositionIdempotency:
 
         assert first_count == second_count
 
-    def test_recompose_preserves_in_progress_steps(
-        self, batch_pms_glitter: Batch
-    ) -> None:
+    def test_recompose_preserves_in_progress_steps(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        fab = BatchStep.objects.get(
-            batch=batch_pms_glitter, step_key="fabrication_bulk"
-        )
+        fab = BatchStep.objects.get(batch=batch_pms_glitter, step_key="fabrication_bulk")
         fab.status = BatchStepStatus.IN_PROGRESS
         fab.data_json = {"some": "data"}
         fab.save()
@@ -246,20 +219,37 @@ class TestCompositionIdempotency:
         assert fab.status == BatchStepStatus.IN_PROGRESS
         assert fab.data_json == {"some": "data"}
 
-    def test_recompose_doc_requirements_not_duplicated(
+    def test_recompose_doc_requirements_not_duplicated(self, batch_pms_glitter: Batch) -> None:
+        generate_repeated_controls(batch_pms_glitter)
+        first_count = BatchDocumentRequirement.objects.filter(batch=batch_pms_glitter).count()
+
+        generate_repeated_controls(batch_pms_glitter)
+        second_count = BatchDocumentRequirement.objects.filter(batch=batch_pms_glitter).count()
+
+        assert first_count == second_count
+
+    def test_recompose_syncs_doc_requirement_counts_for_preserved_steps(
         self, batch_pms_glitter: Batch
     ) -> None:
         generate_repeated_controls(batch_pms_glitter)
-        first_count = BatchDocumentRequirement.objects.filter(
-            batch=batch_pms_glitter
-        ).count()
+        add_occurrence(batch_pms_glitter, "finished_product_control")
+
+        first_step = BatchStep.objects.get(
+            batch=batch_pms_glitter,
+            step_key="finished_product_control",
+            occurrence_index=1,
+        )
+        first_step.status = BatchStepStatus.IN_PROGRESS
+        first_step.save(update_fields=["status", "updated_at"])
 
         generate_repeated_controls(batch_pms_glitter)
-        second_count = BatchDocumentRequirement.objects.filter(
-            batch=batch_pms_glitter
-        ).count()
 
-        assert first_count == second_count
+        doc_req = BatchDocumentRequirement.objects.get(
+            batch=batch_pms_glitter,
+            document_code="finished_product_control",
+        )
+        assert doc_req.expected_count == 2
+        assert doc_req.actual_count == 2
 
 
 @pytest.mark.django_db
@@ -324,26 +314,18 @@ class TestHiddenApplicability:
             batch=batch_with_hidden_step, step_key="hidden_step"
         ).exists()
 
-    def test_mark_na_step_created_not_applicable(
-        self, batch_with_hidden_step: Batch
-    ) -> None:
+    def test_mark_na_step_created_not_applicable(self, batch_with_hidden_step: Batch) -> None:
         generate_repeated_controls(batch_with_hidden_step)
-        step = BatchStep.objects.get(
-            batch=batch_with_hidden_step, step_key="mark_na_step"
-        )
+        step = BatchStep.objects.get(batch=batch_with_hidden_step, step_key="mark_na_step")
         assert step.is_applicable is False
 
-    def test_no_doc_requirement_for_hidden_step(
-        self, batch_with_hidden_step: Batch
-    ) -> None:
+    def test_no_doc_requirement_for_hidden_step(self, batch_with_hidden_step: Batch) -> None:
         generate_repeated_controls(batch_with_hidden_step)
         assert not BatchDocumentRequirement.objects.filter(
             batch=batch_with_hidden_step, document_code="hidden_step"
         ).exists()
 
-    def test_doc_requirement_created_for_mark_na_step(
-        self, batch_with_hidden_step: Batch
-    ) -> None:
+    def test_doc_requirement_created_for_mark_na_step(self, batch_with_hidden_step: Batch) -> None:
         generate_repeated_controls(batch_with_hidden_step)
         doc_req = BatchDocumentRequirement.objects.get(
             batch=batch_with_hidden_step, document_code="mark_na_step"

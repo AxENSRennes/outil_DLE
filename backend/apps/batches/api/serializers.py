@@ -4,7 +4,6 @@ from rest_framework import serializers
 
 from apps.batches.models import (
     Batch,
-    BatchDocumentRequirement,
     BatchStep,
 )
 
@@ -41,26 +40,19 @@ class BatchStepSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-class BatchDocumentRequirementSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BatchDocumentRequirement
-        fields = (
-            "id",
-            "document_code",
-            "title",
-            "source_step_key",
-            "is_required",
-            "is_applicable",
-            "repeat_mode",
-            "expected_count",
-            "actual_count",
-            "status",
-            "applicability_basis_json",
-            "meta_json",
-            "created_at",
-            "updated_at",
-        )
-        read_only_fields = fields
+class DocumentRequirementReadModelSerializer(serializers.Serializer):
+    document_code = serializers.CharField()
+    title = serializers.CharField()
+    source_step_key = serializers.CharField()
+    is_required = serializers.BooleanField()
+    is_applicable = serializers.BooleanField()
+    repeat_mode = serializers.CharField()
+    expected_count = serializers.IntegerField()
+    actual_count = serializers.IntegerField()
+    completed_count = serializers.IntegerField()
+    is_complete = serializers.BooleanField()
+    is_blocking = serializers.BooleanField()
+    applicability_basis_json = serializers.JSONField()
 
 
 class BatchSummarySerializer(serializers.ModelSerializer):
@@ -87,7 +79,8 @@ class StepGroupSerializer(serializers.Serializer):
 
 
 class CompositionResponseSerializer(serializers.Serializer):
-    batch_id = serializers.IntegerField()
-    batch_number = serializers.CharField()
+    batch = BatchSummarySerializer()
     steps_created = serializers.IntegerField()
     document_requirements_created = serializers.IntegerField()
+    step_groups = StepGroupSerializer(many=True)
+    document_requirements = DocumentRequirementReadModelSerializer(many=True)
