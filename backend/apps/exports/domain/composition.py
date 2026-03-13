@@ -26,6 +26,10 @@ class DossierCompositionError(Exception):
     """Raised when dossier composition fails due to invalid configuration."""
 
 
+SUPPORTED_OPERATORS = {"eq", "neq", "in", "not_in", "truthy", "falsy"}
+ACTIVE_STRUCTURE_CONSTRAINT = "exports_bds_one_active_per_batch"
+
+
 def resolve_dossier_structure(
     batch: Batch,
     *,
@@ -64,9 +68,11 @@ def resolve_dossier_structure(
 
     profile = _get_dossier_profile(batch)
     context = _extract_batch_context(batch)
-
-    required_ids, not_applicable_ids = _evaluate_rules(profile, context)
     element_catalog = _build_element_catalog(profile)
+    known_identifiers = {entry["identifier"] for entry in element_catalog}
+
+    _validate_profile_configuration(profile, known_identifiers)
+    required_ids, not_applicable_ids = _evaluate_rules(profile, context)
 
     try:
         with transaction.atomic():
@@ -118,17 +124,18 @@ def resolve_dossier_structure(
                     "force": force,
                 },
             )
-    except IntegrityError:
+    except IntegrityError as exc:
         # Unique constraint race: another request resolved concurrently.
         # Fail-closed to idempotent — return the winning row.
-        existing = (
-            BatchDossierStructure.objects.filter(batch=batch, is_active=True)
-            .select_related("dossier_profile")
-            .prefetch_related("elements")
-            .first()
-        )
-        if existing is not None:
-            return existing
+        if _is_active_structure_race(exc):
+            existing = (
+                BatchDossierStructure.objects.filter(batch=batch, is_active=True)
+                .select_related("dossier_profile")
+                .prefetch_related("elements")
+                .first()
+            )
+            if existing is not None:
+                return existing
         raise  # pragma: no cover - unexpected state
 
     # Re-fetch with prefetched elements for a consistent return value.
@@ -235,6 +242,93 @@ def _condition_matches(condition: dict[str, Any], context: dict[str, Any]) -> bo
     return False
 
 
+def _validate_profile_configuration(
+    profile: DossierProfile,
+    known_identifiers: set[str],
+) -> None:
+    """Validate catalog/rule consistency before any write happens."""
+    rules: dict[str, Any] = profile.rules or {}
+
+    _validate_identifier_list(
+        rules.get("default_required", []),
+        field_name="default_required",
+        known_identifiers=known_identifiers,
+    )
+
+    conditions = rules.get("conditions", [])
+    if not isinstance(conditions, list):
+        raise DossierCompositionError(
+            f"DossierProfile {profile.pk} has invalid 'conditions'; expected a list.",
+        )
+
+    for index, condition in enumerate(conditions, start=1):
+        if not isinstance(condition, dict):
+            raise DossierCompositionError(
+                f"DossierProfile {profile.pk} condition #{index} must be an object.",
+            )
+
+        context_key = condition.get("context_key")
+        if not isinstance(context_key, str) or not context_key.strip():
+            raise DossierCompositionError(
+                f"DossierProfile {profile.pk} condition #{index} has an invalid context_key.",
+            )
+
+        operator = condition.get("operator", "eq")
+        if operator not in SUPPORTED_OPERATORS:
+            raise DossierCompositionError(
+                f"DossierProfile {profile.pk} condition #{index} uses unsupported operator "
+                f"'{operator}'.",
+            )
+
+        expected = condition.get("value")
+        if operator in {"in", "not_in"} and not isinstance(expected, list):
+            raise DossierCompositionError(
+                f"DossierProfile {profile.pk} condition #{index} requires a list value for "
+                f"operator '{operator}'.",
+            )
+
+        _validate_identifier_list(
+            condition.get("include_elements", []),
+            field_name=f"conditions[{index}].include_elements",
+            known_identifiers=known_identifiers,
+        )
+        _validate_identifier_list(
+            condition.get("exclude_elements", []),
+            field_name=f"conditions[{index}].exclude_elements",
+            known_identifiers=known_identifiers,
+        )
+
+
+def _validate_identifier_list(
+    raw_value: Any,
+    *,
+    field_name: str,
+    known_identifiers: set[str],
+) -> list[str]:
+    """Validate a list of catalog identifiers and fail closed on bad config."""
+    if not isinstance(raw_value, list):
+        raise DossierCompositionError(f"DossierProfile field '{field_name}' must be a list.")
+
+    identifiers: list[str] = []
+    unknown_identifiers: list[str] = []
+    for item in raw_value:
+        if not isinstance(item, str) or not item.strip():
+            raise DossierCompositionError(
+                f"DossierProfile field '{field_name}' must contain non-empty string identifiers.",
+            )
+        identifiers.append(item)
+        if item not in known_identifiers:
+            unknown_identifiers.append(item)
+
+    if unknown_identifiers:
+        formatted = ", ".join(sorted(unknown_identifiers))
+        raise DossierCompositionError(
+            f"DossierProfile field '{field_name}' references unknown elements: {formatted}.",
+        )
+
+    return identifiers
+
+
 def _build_element_catalog(profile: DossierProfile) -> list[dict[str, Any]]:
     """Build an ordered list of all possible elements from the profile.
 
@@ -243,11 +337,50 @@ def _build_element_catalog(profile: DossierProfile) -> list[dict[str, Any]]:
     """
     elements: list[Any] = profile.elements or []
     catalog: list[dict[str, Any]] = []
+    seen_identifiers: set[str] = set()
 
-    for entry in elements:
+    for index, entry in enumerate(elements, start=1):
         if isinstance(entry, str):
-            catalog.append({"identifier": entry})
+            identifier = entry
+            normalized_entry = {"identifier": identifier}
         elif isinstance(entry, dict) and "identifier" in entry:
-            catalog.append(entry)
+            identifier = entry["identifier"]
+            normalized_entry = entry
+        else:
+            raise DossierCompositionError(
+                f"DossierProfile {profile.pk} element #{index} must be a string or object "
+                "with an identifier.",
+            )
+
+        if not isinstance(identifier, str) or not identifier.strip():
+            raise DossierCompositionError(
+                f"DossierProfile {profile.pk} element #{index} has an invalid identifier.",
+            )
+
+        if identifier in seen_identifiers:
+            raise DossierCompositionError(
+                f"DossierProfile {profile.pk} defines duplicate element identifier '{identifier}'.",
+            )
+
+        element_type = normalized_entry.get("type", DossierElementType.SUB_DOCUMENT)
+        if element_type not in DossierElementType.values:
+            raise DossierCompositionError(
+                f"DossierProfile {profile.pk} element '{identifier}' uses unsupported type "
+                f"'{element_type}'.",
+            )
+
+        seen_identifiers.add(identifier)
+        catalog.append(normalized_entry)
 
     return catalog
+
+
+def _is_active_structure_race(exc: IntegrityError) -> bool:
+    """Detect the expected concurrent create race on the active-structure constraint."""
+    cause = exc.__cause__
+    diag = getattr(cause, "diag", None)
+    constraint_name = getattr(diag, "constraint_name", None)
+    if constraint_name == ACTIVE_STRUCTURE_CONSTRAINT:
+        return True
+
+    return ACTIVE_STRUCTURE_CONSTRAINT in str(exc)

@@ -314,6 +314,51 @@ class TestEdgeCases:
         with pytest.raises(DossierCompositionError, match="No DossierProfile found"):
             resolve_dossier_structure(batch)
 
+    def test_unknown_operator_fails_closed(self) -> None:
+        fx = _make_profile_and_batch(
+            batch_context={"paillette_present": True},
+            rules={
+                "default_required": ["batch-header"],
+                "conditions": [
+                    {
+                        "context_key": "paillette_present",
+                        "operator": "equals",
+                        "value": True,
+                        "include_elements": ["paillette-control"],
+                        "exclude_elements": [],
+                    },
+                ],
+            },
+        )
+
+        with pytest.raises(DossierCompositionError, match="unsupported operator"):
+            resolve_dossier_structure(fx["batch"])
+
+    def test_unknown_element_reference_fails_closed(self) -> None:
+        fx = _make_profile_and_batch(
+            batch_context={"format_family": "CREAM"},
+            rules={
+                "default_required": ["batch-header", "missing-element"],
+                "conditions": [],
+            },
+        )
+
+        with pytest.raises(DossierCompositionError, match="unknown elements: missing-element"):
+            resolve_dossier_structure(fx["batch"])
+
+    def test_duplicate_catalog_identifier_fails_closed(self) -> None:
+        fx = _make_profile_and_batch(
+            batch_context={"paillette_present": True},
+            elements=[
+                {"identifier": "batch-header", "type": "sub_document"},
+                {"identifier": "batch-header", "type": "checklist_item"},
+            ],
+            rules={"default_required": ["batch-header"], "conditions": []},
+        )
+
+        with pytest.raises(DossierCompositionError, match="duplicate element identifier"):
+            resolve_dossier_structure(fx["batch"])
+
 
 @pytest.mark.django_db
 class TestContextSnapshot:

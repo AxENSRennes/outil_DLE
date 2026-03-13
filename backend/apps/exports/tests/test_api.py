@@ -238,6 +238,27 @@ class TestResolveDossier:
         data = response.json()
         assert data["code"] == "composition_error"
 
+    def test_invalid_profile_configuration_returns_422(self) -> None:
+        fx = _make_api_fixtures(with_profile=True)
+        fx["profile"].rules = {
+            "default_required": ["batch-header", "missing-element"],
+            "conditions": [],
+        }
+        fx["profile"].save(update_fields=["rules"])
+        client, token = csrf_client(user=fx["user"])
+
+        response = post_json(
+            client,
+            f"/api/v1/batches/{fx['batch'].pk}/resolve-dossier/",
+            {},
+            csrf_token=token,
+        )
+
+        assert response.status_code == 422
+        data = response.json()
+        assert data["code"] == "composition_error"
+        assert "unknown elements" in data["detail"]
+
     def test_wrong_role_rejected(self) -> None:
         fx = _make_api_fixtures(with_profile=True)
         wrong_user = User.objects.create_user(username="wrong-role-post", password="testpass")

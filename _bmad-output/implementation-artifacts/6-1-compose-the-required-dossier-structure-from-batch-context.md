@@ -1,6 +1,6 @@
 # Story 6.1: Compose the Required Dossier Structure from Batch Context
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -312,16 +312,19 @@ Claude Opus 4.6
 - Created foundation stub apps `mmr` and `batches` with minimal models as FK targets (Epic 2 not yet implemented, per Dev Notes guidance)
 - Implemented `DossierProfile`, `BatchDossierStructure`, `DossierElement` models with PROTECT FK, JSONB rules, ClassVar indexes, unique constraints
 - Implemented `resolve_dossier_structure()` domain service with rule evaluation engine supporting: eq, neq, in, not_in, truthy, falsy operators; default-required elements; idempotency; force-regenerate with audit preservation
+- Hardened dossier composition to fail closed on invalid rule config (unsupported operators, unknown element references, duplicate catalog identifiers) instead of silently degrading required controls
+- Narrowed IntegrityError handling so only the expected active-structure race is treated as idempotent; invalid configuration now surfaces as a governed error response
 - Implemented frozen dataclass read models in selectors: `DossierStructureReadModel`, `DossierElementReadModel`, `DossierCompletenessItem`
 - Exposed `GET /api/v1/batches/{batch_id}/dossier-structure/` and `POST /api/v1/batches/{batch_id}/resolve-dossier/` endpoints with CSRF protection, extend_schema, and IsAuthenticated permission
 - Admin: DossierProfile editable, BatchDossierStructure + DossierElement read-only (append-only governed records)
-- 32 new tests: 13 domain (composition), 10 API (GET/POST/auth/CSRF/422), 9 model (FK PROTECT, ordering, uniqueness, admin permissions)
-- All 100 tests pass (68 existing + 32 new), zero regressions
+- 36 new tests: 16 domain (composition), 11 API (GET/POST/auth/CSRF/422), 9 model (FK PROTECT, ordering, uniqueness, admin permissions)
+- All 111 tests pass, zero regressions
 - All quality gates pass: lint, typecheck, security (bandit, pip-audit), architecture boundary check
 
 ### Change Log
 
 - 2026-03-13: Story 6.1 implementation complete — dossier composition service, models, API, admin, and comprehensive tests
+- 2026-03-13: Senior review fixes applied — fail-closed profile validation, stricter IntegrityError handling, and regression coverage for invalid configuration
 
 ### File List
 
@@ -377,9 +380,34 @@ Modified files:
 - backend/shared/api/exceptions.py (added UnprocessableEntity)
 - backend/apps/audit/models.py (added DOSSIER_RESOLVED)
 - backend/apps/exports/models.py (added UniqueConstraint on BatchDossierStructure)
-- backend/apps/exports/domain/composition.py (audit event, race condition handling, not_in bug fix, actor/site params)
+- backend/apps/exports/domain/composition.py (audit event, fail-closed profile validation, scoped race condition handling, not_in bug fix, actor/site params)
 - backend/apps/exports/api/views.py (SiteScopedRolePermission, get_site(), problem-details 422)
 - backend/apps/exports/api/serializers.py (removed dead DossierCompletenessItemSerializer)
-- backend/apps/exports/tests/test_api.py (SiteRoleAssignment fixtures, role denial tests, 422 format update)
-- backend/apps/exports/tests/test_composition.py (not_in bug test, audit event tests)
+- backend/apps/exports/tests/test_api.py (SiteRoleAssignment fixtures, role denial tests, invalid profile 422 coverage)
+- backend/apps/exports/tests/test_composition.py (not_in bug test, audit event tests, fail-closed invalid config coverage)
 - _bmad-output/implementation-artifacts/sprint-status.yaml (story status update)
+
+## Senior Developer Review (AI)
+
+### Reviewer
+
+Axel
+
+### Date
+
+2026-03-13
+
+### Outcome
+
+Approved
+
+### Findings Addressed
+
+- Fixed silent degradation where unsupported operators or malformed rule values could mark required elements as `not_applicable` instead of failing closed.
+- Fixed silent omission risk where rules could reference elements missing from the profile catalog without raising an error.
+- Fixed overly broad `IntegrityError` recovery so only the expected one-active-structure race is treated as idempotent; configuration defects now surface as `422 composition_error`.
+
+### Verification
+
+- `pytest backend/apps/exports/tests -q`
+- `make check`
