@@ -5,7 +5,7 @@ BACKEND_DIR ?= backend
 FRONTEND_DIR ?= frontend
 BANDIT_EXCLUDES := $(BACKEND_DIR)/tests/*,$(BACKEND_DIR)/apps/*/tests/*
 
-.PHONY: help lint lint-python lint-frontend format format-python typecheck typecheck-python typecheck-frontend test test-backend test-frontend security architecture-check architecture-check-backend architecture-check-frontend doctor check
+.PHONY: help lint lint-python lint-frontend format format-python format-check format-check-python typecheck typecheck-python typecheck-frontend test test-backend test-frontend security architecture-check architecture-check-backend architecture-check-frontend doctor check
 
 help:
 	@printf '%s\n' \
@@ -18,7 +18,7 @@ help:
 		'make doctor        Run react-doctor on the frontend app' \
 		'make check         Run the full local quality suite'
 
-lint: lint-python lint-frontend
+lint: lint-python format-check-python lint-frontend
 
 lint-python:
 	$(PYTHON) -m ruff check $(BACKEND_DIR)
@@ -26,6 +26,11 @@ lint-python:
 
 lint-frontend:
 	npm --prefix $(FRONTEND_DIR) run lint
+
+format-check: format-check-python
+
+format-check-python:
+	$(PYTHON) -m ruff format --check $(BACKEND_DIR)
 
 format: format-python
 
