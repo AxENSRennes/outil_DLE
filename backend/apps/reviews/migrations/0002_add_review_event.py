@@ -6,29 +6,69 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('batches', '0002_step_signature_protect_on_delete'),
-        ('reviews', '0001_initial'),
+        ("batches", "0002_step_signature_protect_on_delete"),
+        ("reviews", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ReviewEvent',
+            name="ReviewEvent",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('event_type', models.CharField(choices=[('pre_qa_confirmed', 'Pre-QA Confirmed'), ('change_marked_reviewed', 'Change Marked Reviewed')], max_length=64)),
-                ('note', models.TextField(blank=True, default='')),
-                ('occurred_at', models.DateTimeField(auto_now_add=True)),
-                ('metadata', models.JSONField(blank=True, default=dict)),
-                ('batch', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='review_events', to='batches.batch')),
-                ('reviewer', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='review_events', to=settings.AUTH_USER_MODEL)),
-                ('step', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='review_events', to='batches.batchstep')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "event_type",
+                    models.CharField(
+                        choices=[
+                            ("pre_qa_confirmed", "Pre-QA Confirmed"),
+                            ("change_marked_reviewed", "Change Marked Reviewed"),
+                        ],
+                        max_length=64,
+                    ),
+                ),
+                ("note", models.TextField(blank=True, default="")),
+                ("occurred_at", models.DateTimeField(auto_now_add=True)),
+                ("metadata", models.JSONField(blank=True, default=dict)),
+                (
+                    "batch",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="review_events",
+                        to="batches.batch",
+                    ),
+                ),
+                (
+                    "reviewer",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="review_events",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "step",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="review_events",
+                        to="batches.batchstep",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('-occurred_at', '-id'),
-                'indexes': [models.Index(fields=['event_type', 'occurred_at'], name='review_event_type_occurred_idx')],
+                "ordering": ("-occurred_at", "-id"),
+                "indexes": [
+                    models.Index(
+                        fields=["event_type", "occurred_at"], name="review_event_type_occurred_idx"
+                    )
+                ],
             },
         ),
     ]

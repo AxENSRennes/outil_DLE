@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from apps.audit.models import AuditEvent, AuditEventType
+from apps.audit.models import AuditEventType
+from apps.audit.services import record_audit_event
 from apps.authz.models import User
 from apps.batches.models import Batch, BatchStatus, BatchStep
 from apps.reviews.models import ReviewEvent, ReviewEventType
@@ -79,7 +80,7 @@ def confirm_pre_qa_review(
     try:
         with transaction.atomic():
             # Lock the batch row to prevent concurrent confirms (TOCTOU).
-            batch = Batch.objects.select_for_update().get(pk=batch.pk)
+            batch = Batch.objects.select_related("site").select_for_update().get(pk=batch.pk)
             _validate_pre_qa_batch_status(batch)
 
             summary = get_batch_review_summary(batch)
@@ -102,21 +103,21 @@ def confirm_pre_qa_review(
             batch.save(update_fields=["status", "updated_at"])
             committed = True
     finally:
-        AuditEvent.objects.create(
+        record_audit_event(
+            AuditEventType.PRE_QA_REVIEW_CONFIRMED,
             actor=reviewer,
             site=batch.site,
-            event_type=AuditEventType.PRE_QA_REVIEW_CONFIRMED,
+            target_type="batch",
+            target_id=batch.pk,
             metadata={
-                "batch_id": batch.pk,
                 "batch_reference": batch.reference,
                 "reviewer_id": reviewer.pk,
                 "note": note,
-                "review_event_id": (
-                    review_event.pk if review_event and committed else None
-                ),
+                "review_event_id": (review_event.pk if review_event and committed else None),
             },
         )
 
+    assert review_event is not None
     return ConfirmPreQaResult(batch=batch, review_event=review_event)
 
 
@@ -149,7 +150,7 @@ def mark_step_reviewed(
     try:
         with transaction.atomic():
             # Lock rows to prevent concurrent reviews of the same step.
-            batch = Batch.objects.select_for_update().get(pk=batch.pk)
+            batch = Batch.objects.select_related("site").select_for_update().get(pk=batch.pk)
             step = BatchStep.objects.select_for_update().get(pk=step.pk)
             _validate_pre_qa_batch_status(batch)
             _validate_reviewable_step(batch=batch, step=step)
@@ -177,22 +178,22 @@ def mark_step_reviewed(
             )
             committed = True
     finally:
-        AuditEvent.objects.create(
+        record_audit_event(
+            AuditEventType.CHANGE_REVIEWED,
             actor=reviewer,
             site=batch.site,
-            event_type=AuditEventType.REVIEW_ITEM_MARKED_REVIEWED,
+            target_type="batch_step",
+            target_id=step.pk,
             metadata={
                 "batch_id": batch.pk,
-                "step_id": step.pk,
                 "step_reference": step.reference,
                 "reviewer_id": reviewer.pk,
                 "flags_cleared": flags_cleared,
-                "review_event_id": (
-                    review_event.pk if review_event and committed else None
-                ),
+                "review_event_id": (review_event.pk if review_event and committed else None),
             },
         )
 
+    assert review_event is not None
     return MarkStepReviewedResult(
         step=step,
         batch_status=batch.status,

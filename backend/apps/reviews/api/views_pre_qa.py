@@ -143,9 +143,7 @@ class MarkStepReviewedView(_PreQaBaseView):
         try:
             step = BatchStep.objects.get(pk=step_id, batch_id=batch.pk)
         except BatchStep.DoesNotExist:
-            raise NotFound(
-                detail="Step not found.", code="step_not_found"
-            ) from None
+            raise NotFound(detail="Step not found.", code="step_not_found") from None
 
         request_serializer = MarkStepReviewedRequestSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)

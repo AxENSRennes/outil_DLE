@@ -280,9 +280,10 @@ class TestReviewSummaryEndpointSuccess:
         data = response.json()
         assert data["severity"] == "amber"
         assert len(data["flagged_steps"]) == 2
-        assert {
-            flagged_step["step_reference"] for flagged_step in data["flagged_steps"]
-        } == {"Step 1 - Preparation", "Step 2 - Mixing"}
+        assert {flagged_step["step_reference"] for flagged_step in data["flagged_steps"]} == {
+            "Step 1 - Preparation",
+            "Step 2 - Mixing",
+        }
         for flagged_step in data["flagged_steps"]:
             assert "step_incomplete" in flagged_step["flags"]
 

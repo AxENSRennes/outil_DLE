@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from apps.audit.models import AuditEvent, AuditEventType
+from apps.audit.models import BATCH_DOMAIN_EVENT_TYPES, AuditEvent, AuditEventType
 
 SENSITIVE_METADATA_KEYS = {
     "access_token",
@@ -40,11 +40,25 @@ def record_audit_event(
     actor: Any | None = None,
     site: Any | None = None,
     metadata: dict[str, Any] | None = None,
+    target_type: str = "",
+    target_id: int | None = None,
 ) -> AuditEvent:
     validated_event_type = AuditEventType(event_type)
+    target_type = target_type.strip()
+
+    if validated_event_type.value in BATCH_DOMAIN_EVENT_TYPES and actor is None:
+        raise ValueError("actor is required for batch-domain audit events")
+
+    if target_id is not None and not target_type:
+        raise ValueError("target_type is required when target_id is provided")
+    if target_type and target_id is None:
+        raise ValueError("target_id is required when target_type is provided")
+
     return AuditEvent.objects.create(
         event_type=validated_event_type,
         actor=actor,
         site=site,
         metadata=_sanitize_metadata(metadata or {}),
+        target_type=target_type,
+        target_id=target_id,
     )
