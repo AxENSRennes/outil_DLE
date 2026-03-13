@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("audit", "0008_alter_auditevent_event_type"),
+        ("audit", "0009_alter_auditevent_event_type"),
     ]
 
     operations = [
@@ -39,6 +39,7 @@ class Migration(migrations.Migration):
                     ("batch_returned_for_correction", "Batch Returned for Correction"),
                     ("correction_submitted", "Correction Submitted"),
                     ("change_reviewed", "Change Reviewed"),
+                    ("dossier_resolved", "Dossier Resolved"),
                 ],
                 max_length=64,
             ),
