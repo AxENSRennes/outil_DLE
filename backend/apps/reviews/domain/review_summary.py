@@ -38,7 +38,7 @@ class FlagCounts:
 class ChecklistSummary:
     expected_documents: int
     present_documents: int
-    missing_documents: list[str] = field(default_factory=list)
+    missing_documents: tuple[str, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True)
@@ -46,7 +46,7 @@ class FlaggedStep:
     step_id: int
     step_reference: str
     step_status: str
-    flags: list[str]
+    flags: tuple[str, ...]
     severity: Severity
 
 
@@ -59,7 +59,7 @@ class ReviewSummary:
     step_summary: StepSummary
     flags: FlagCounts
     checklist: ChecklistSummary
-    flagged_steps: list[FlaggedStep]
+    flagged_steps: tuple[FlaggedStep, ...]
 
 
 def evaluate_step_completeness(steps: list[dict[str, Any]]) -> StepSummary:
@@ -151,7 +151,7 @@ def evaluate_checklist(items: list[dict[str, Any]]) -> ChecklistSummary:
     """Evaluate dossier checklist completeness."""
     expected = len(items)
     present = sum(1 for item in items if item.get("is_present"))
-    missing = [str(item["document_name"]) for item in items if not item.get("is_present")]
+    missing = tuple(str(item["document_name"]) for item in items if not item.get("is_present"))
     return ChecklistSummary(
         expected_documents=expected,
         present_documents=present,
@@ -159,7 +159,7 @@ def evaluate_checklist(items: list[dict[str, Any]]) -> ChecklistSummary:
     )
 
 
-def _derive_step_flags(step: dict[str, Any]) -> list[str]:
+def _derive_step_flags(step: dict[str, Any]) -> tuple[str, ...]:
     """Collect all active flags for a single step."""
     flags: list[str] = []
     if not step.get("required_data_complete", True):
@@ -174,10 +174,10 @@ def _derive_step_flags(step: dict[str, Any]) -> list[str]:
         flags.append("review_required")
     if step.get("has_open_exception"):
         flags.append("open_exception")
-    return flags
+    return tuple(flags)
 
 
-def _derive_step_severity(step: dict[str, Any], flags: list[str]) -> Severity:
+def _derive_step_severity(step: dict[str, Any], flags: tuple[str, ...]) -> Severity:
     """Derive severity for a single step based on its flags."""
     red_flags = {"missing_required_data", "missing_required_signature"}
     if any(f in red_flags for f in flags):
@@ -189,8 +189,8 @@ def _derive_step_severity(step: dict[str, Any], flags: list[str]) -> Severity:
     return "green"
 
 
-def build_flagged_steps(steps: list[dict[str, Any]]) -> list[FlaggedStep]:
-    """Build the list of steps that have at least one active flag."""
+def build_flagged_steps(steps: list[dict[str, Any]]) -> tuple[FlaggedStep, ...]:
+    """Build the tuple of steps that have at least one active flag."""
     flagged: list[FlaggedStep] = []
     for step in steps:
         flags = _derive_step_flags(step)
@@ -204,7 +204,7 @@ def build_flagged_steps(steps: list[dict[str, Any]]) -> list[FlaggedStep]:
                     severity=_derive_step_severity(step, flags),
                 )
             )
-    return flagged
+    return tuple(flagged)
 
 
 def derive_traffic_light_severity(

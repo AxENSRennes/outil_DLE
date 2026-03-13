@@ -48,7 +48,7 @@ class TestGetBatchReviewSummary:
         assert summary.batch_status == "awaiting_pre_qa"
         assert summary.severity == "green"
         assert summary.step_summary.total == 0
-        assert summary.flagged_steps == []
+        assert summary.flagged_steps == ()
         assert summary.checklist.expected_documents == 0
 
     def test_batch_id_input_is_supported(self, batch: Batch) -> None:
@@ -134,7 +134,7 @@ class TestGetBatchReviewSummary:
         summary = get_batch_review_summary(batch)
         assert summary.checklist.expected_documents == 2
         assert summary.checklist.present_documents == 1
-        assert summary.checklist.missing_documents == ["mixing-record"]
+        assert summary.checklist.missing_documents == ("mixing-record",)
 
     def test_partial_completion(self, batch: Batch) -> None:
         BatchStep.objects.create(

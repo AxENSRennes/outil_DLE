@@ -184,7 +184,7 @@ def test_checklist_all_present() -> None:
     result = evaluate_checklist(items)
     assert result.expected_documents == 2
     assert result.present_documents == 2
-    assert result.missing_documents == []
+    assert result.missing_documents == ()
 
 
 def test_checklist_some_missing() -> None:
@@ -196,14 +196,14 @@ def test_checklist_some_missing() -> None:
     result = evaluate_checklist(items)
     assert result.expected_documents == 3
     assert result.present_documents == 1
-    assert result.missing_documents == ["doc-b", "doc-c"]
+    assert result.missing_documents == ("doc-b", "doc-c")
 
 
 def test_checklist_empty() -> None:
     result = evaluate_checklist([])
     assert result.expected_documents == 0
     assert result.present_documents == 0
-    assert result.missing_documents == []
+    assert result.missing_documents == ()
 
 
 # ---------------------------------------------------------------------------
@@ -226,7 +226,7 @@ def test_flagged_steps_no_flags() -> None:
         },
     ]
     result = build_flagged_steps(steps)
-    assert result == []
+    assert result == ()
 
 
 def test_flagged_steps_red_severity() -> None:

@@ -17,6 +17,8 @@ class FlagCountsSerializer(serializers.Serializer):
     changed_since_review = serializers.IntegerField()
     changed_since_signature = serializers.IntegerField()
     open_exceptions = serializers.IntegerField()
+    review_required = serializers.IntegerField()
+    blocking_open_exceptions = serializers.IntegerField()
 
 
 class ChecklistSummarySerializer(serializers.Serializer):

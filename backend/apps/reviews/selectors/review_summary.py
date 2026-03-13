@@ -55,7 +55,7 @@ def _load_checklist(batch: Batch) -> list[dict[str, Any]]:
         .order_by("document_name")
         .values("document_name", "is_present")
     )
-    return [dict(row) for row in qs]
+    return [dict(row) for row in qs]  # widen TypedDict to dict[str, Any] for mypy
 
 
 def _resolve_batch(batch_or_id: Batch | int) -> Batch:
