@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from rest_framework import serializers
 
 from apps.mmr.domain.step_management import VALID_STEP_KINDS
@@ -145,6 +147,15 @@ class RepeatPolicySerializer(serializers.Serializer):
     )
     min_records = serializers.IntegerField(min_value=0, required=False)
     max_records = serializers.IntegerField(min_value=1, required=False)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        min_r = attrs.get("min_records")
+        max_r = attrs.get("max_records")
+        if min_r is not None and max_r is not None and min_r > max_r:
+            raise serializers.ValidationError(
+                "min_records must be less than or equal to max_records."
+            )
+        return attrs
 
 
 class BlockingPolicySerializer(serializers.Serializer):

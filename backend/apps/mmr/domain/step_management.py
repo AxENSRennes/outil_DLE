@@ -8,6 +8,7 @@ from django.db import transaction
 
 from apps.audit.models import AuditEventType
 from apps.audit.services import record_audit_event
+from apps.mmr.domain.exceptions import StepNotFoundError
 from apps.mmr.models import MMRVersion, MMRVersionStatus
 
 logger = logging.getLogger(__name__)
@@ -212,6 +213,8 @@ def add_step(*, version: MMRVersion, step_data: dict, actor: Any) -> dict:
         step_def["fields"] = []
         step_def["signaturePolicy"] = {"required": False, "meaning": "performed_by"}
 
+        schema.setdefault("stepOrder", [])
+        schema.setdefault("steps", {})
         schema["stepOrder"].append(key)
         schema["steps"][key] = step_def
 
@@ -233,7 +236,7 @@ def update_step(*, version: MMRVersion, step_key: str, step_data: dict, actor: A
     with transaction.atomic():
         version = (
             MMRVersion.objects.select_for_update()
-            .select_related("mmr", "mmr__site", "mmr__product")
+            .select_related("mmr", "mmr__site")
             .get(pk=version.pk)
         )
         _validate_draft(version)
@@ -242,7 +245,7 @@ def update_step(*, version: MMRVersion, step_key: str, step_data: dict, actor: A
         steps = schema.get("steps", {})
 
         if step_key not in steps:
-            raise ValueError(f"Step '{step_key}' not found in this version.")
+            raise StepNotFoundError(f"Step '{step_key}' not found in this version.")
 
         if "kind" in step_data:
             _validate_step_kind(step_data["kind"])
@@ -292,7 +295,7 @@ def remove_step(*, version: MMRVersion, step_key: str, actor: Any) -> None:
         step_order = schema.get("stepOrder", [])
 
         if step_key not in steps:
-            raise ValueError(f"Step '{step_key}' not found in this version.")
+            raise StepNotFoundError(f"Step '{step_key}' not found in this version.")
 
         del steps[step_key]
         step_order.remove(step_key)
@@ -377,5 +380,5 @@ def get_step(*, version: MMRVersion, step_key: str) -> dict:
     schema = version.schema_json or {}
     steps = schema.get("steps", {})
     if step_key not in steps:
-        raise ValueError(f"Step '{step_key}' not found in this version.")
+        raise StepNotFoundError(f"Step '{step_key}' not found in this version.")
     return _normalize_step_output(_dict_keys_to_snake(steps[step_key]))

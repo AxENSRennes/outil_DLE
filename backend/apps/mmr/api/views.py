@@ -27,6 +27,7 @@ from apps.mmr.api.serializers import (
     StepReorderSerializer,
     StepUpdateSerializer,
 )
+from apps.mmr.domain.exceptions import StepNotFoundError
 from apps.mmr.domain.mmr_service import create_mmr
 from apps.mmr.domain.step_management import (
     add_step,
@@ -294,7 +295,7 @@ class StepDetailView(_StepViewMixin, APIView):
             return self._not_found()
         try:
             step = get_step(version=version, step_key=step_key)
-        except ValueError:
+        except StepNotFoundError:
             return self._not_found("Step not found.")
         output = StepDetailSerializer(step)
         return Response(output.data)
@@ -314,11 +315,10 @@ class StepDetailView(_StepViewMixin, APIView):
                 step_data=serializer.validated_data,
                 actor=request.user,
             )
+        except StepNotFoundError:
+            return self._not_found("Step not found.")
         except ValueError as exc:
-            detail = str(exc)
-            if "not found" in detail.lower():
-                return self._not_found("Step not found.")
-            return self._domain_error("Step update failed", detail)
+            return self._domain_error("Step update failed", str(exc))
         output = StepDetailSerializer(step)
         return Response(output.data)
 
@@ -334,11 +334,10 @@ class StepDetailView(_StepViewMixin, APIView):
                 step_key=step_key,
                 actor=request.user,
             )
+        except StepNotFoundError:
+            return self._not_found("Step not found.")
         except ValueError as exc:
-            detail = str(exc)
-            if "not found" in detail.lower():
-                return self._not_found("Step not found.")
-            return self._domain_error("Step removal failed", detail)
+            return self._domain_error("Step removal failed", str(exc))
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
