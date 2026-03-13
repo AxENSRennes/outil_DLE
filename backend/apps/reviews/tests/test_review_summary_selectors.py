@@ -14,8 +14,9 @@ from apps.batches.models import (
     StepSignature,
     StepStatus,
 )
+from apps.mmr.models import MMR, MMRVersion
 from apps.reviews.selectors.review_summary import get_batch_review_summary
-from apps.sites.models import Site
+from apps.sites.models import Product, Site
 
 _UserModel = get_user_model()
 
@@ -26,11 +27,22 @@ def site(db: None) -> Site:
 
 
 @pytest.fixture()
-def batch(site: Site) -> Batch:
+def mmr_version(site: Site) -> MMRVersion:
+    user = _UserModel.objects.create_user(username="template_author", password="testpass1234")
+    product = Product.objects.create(site=site, name="Test Product", code="PROD-001")
+    mmr = MMR.objects.create(site=site, product=product, name="Test MMR", code="MMR-001")
+    return MMRVersion.objects.create(mmr=mmr, version_number=1, created_by=user)
+
+
+@pytest.fixture()
+def batch(site: Site, mmr_version: MMRVersion) -> Batch:
+    user = _UserModel.objects.create_user(username="batch_creator", password="testpass1234")
     return Batch.objects.create(
-        reference="LOT-2026-0001",
+        batch_number="LOT-2026-0001",
         status=BatchStatus.AWAITING_PRE_QA,
         site=site,
+        mmr_version=mmr_version,
+        created_by=user,
     )
 
 
@@ -44,7 +56,7 @@ class TestGetBatchReviewSummary:
     def test_empty_batch_returns_green(self, batch: Batch) -> None:
         summary = get_batch_review_summary(batch)
         assert summary.batch_id == batch.pk
-        assert summary.batch_reference == "LOT-2026-0001"
+        assert summary.batch_number == "LOT-2026-0001"
         assert summary.batch_status == "awaiting_pre_qa"
         assert summary.severity == "green"
         assert summary.step_summary.total == 0

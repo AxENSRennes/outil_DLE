@@ -9,9 +9,9 @@ from apps.batches.models import Batch, BatchStep, DossierChecklistItem, StepSign
 
 @admin.register(Batch)
 class BatchAdmin(admin.ModelAdmin):
-    list_display = ("reference", "status", "site", "created_at")
+    list_display = ("batch_number", "site", "mmr_version", "status", "created_at")
     list_filter = ("status", "site")
-    search_fields = ("reference",)
+    search_fields = ("batch_number",)
 
 
 @admin.register(BatchStep)
