@@ -53,6 +53,13 @@ def _get_user_by_username(username: str) -> User | None:
 
 
 def _get_client_ip(request: Any) -> str | None:
+    """Return the client IP from the request for audit metadata.
+
+    Advisory/best-effort: X-Forwarded-For is trusted as-is, which is acceptable
+    because this value is only used in audit metadata, not for access control.
+    If deployed behind an untrusted proxy layer, consider gating on a
+    TRUSTED_PROXIES setting or using django-ipware.
+    """
     forwarded_for: str | None = request.META.get("HTTP_X_FORWARDED_FOR")
     if forwarded_for:
         return forwarded_for.split(",")[0].strip()
@@ -114,12 +121,14 @@ def identify_workstation_user(request: Any, *, username: str, pin: str) -> dict[
 
 def lock_workstation(request: Any) -> dict[str, str]:
     user = request.user if isinstance(request.user, User) else None
-    record_audit_event(
-        AuditEventType.LOCK_WORKSTATION,
-        actor=user,
-        metadata={"outcome": "locked"},
-    )
-    logout(request)
+    try:
+        record_audit_event(
+            AuditEventType.LOCK_WORKSTATION,
+            actor=user,
+            metadata={"outcome": "locked"},
+        )
+    finally:
+        logout(request)
     return {"status": "locked"}
 
 

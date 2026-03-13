@@ -9,6 +9,7 @@ from apps.authz.models import SiteRoleAssignment, User
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     ordering = ("username",)
+    readonly_fields = (*DjangoUserAdmin.readonly_fields, "workstation_pin")
 
 
 @admin.register(SiteRoleAssignment)
