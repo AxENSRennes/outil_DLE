@@ -9,7 +9,8 @@ from rest_framework.test import APIClient
 from apps.audit.models import AuditEvent, AuditEventType
 from apps.authz.models import SiteRole, SiteRoleAssignment
 from apps.authz.tests.helpers import csrf_client, post_json
-from apps.batches.models import Batch, BatchStatus, BatchStep, StepStatus
+from apps.batches.models import Batch, BatchStep, StepStatus
+from apps.batches.tests.factories import BatchFactory
 from apps.sites.models import Site
 
 _UserModel = get_user_model()
@@ -26,11 +27,7 @@ def site(db: None) -> Site:
 
 @pytest.fixture()
 def batch(site: Site) -> Batch:
-    return Batch.objects.create(
-        reference="LOT-2026-0042",
-        status=BatchStatus.IN_PROGRESS,
-        site=site,
-    )
+    return BatchFactory(site=site)  # type: ignore[return-value]
 
 
 @pytest.fixture()

@@ -8,7 +8,8 @@ from django.contrib.auth import get_user_model
 
 from apps.audit.models import AuditEvent, AuditEventType
 from apps.batches.domain.corrections import submit_correction
-from apps.batches.models import Batch, BatchStatus, BatchStep, StepStatus
+from apps.batches.models import Batch, BatchStep, StepStatus
+from apps.batches.tests.factories import BatchFactory
 from apps.sites.models import Site
 
 _UserModel = get_user_model()
@@ -26,11 +27,7 @@ def actor(db: None) -> Any:
 
 @pytest.fixture()
 def batch(site: Site) -> Batch:
-    return Batch.objects.create(
-        reference="LOT-2026-0042",
-        status=BatchStatus.IN_PROGRESS,
-        site=site,
-    )
+    return BatchFactory(site=site)  # type: ignore[return-value]
 
 
 def _make_step(batch: Batch, status: str, data: dict[str, Any] | None = None) -> BatchStep:
