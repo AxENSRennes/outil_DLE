@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('batches', '0002_initial'),
-        ('exports', '0001_initial'),
+        ("batches", "0002_initial"),
+        ("exports", "0001_initial"),
     ]
 
     operations = [
         migrations.AddConstraint(
-            model_name='batchdossierstructure',
-            constraint=models.UniqueConstraint(condition=models.Q(('is_active', True)), fields=('batch',), name='exports_bds_one_active_per_batch'),
+            model_name="batchdossierstructure",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("is_active", True)),
+                fields=("batch",),
+                name="exports_bds_one_active_per_batch",
+            ),
         ),
     ]

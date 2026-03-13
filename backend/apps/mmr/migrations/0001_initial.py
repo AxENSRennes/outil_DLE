@@ -6,54 +6,95 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('sites', '0001_initial'),
+        ("sites", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='MMR',
+            name="MMR",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255)),
-                ('code', models.CharField(max_length=100)),
-                ('is_active', models.BooleanField(default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('site', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='mmrs', to='sites.site')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("code", models.CharField(max_length=100)),
+                ("is_active", models.BooleanField(default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "site",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="mmrs",
+                        to="sites.site",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'MMR',
-                'verbose_name_plural': 'MMRs',
+                "verbose_name": "MMR",
+                "verbose_name_plural": "MMRs",
             },
         ),
         migrations.CreateModel(
-            name='MMRVersion',
+            name="MMRVersion",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('version_number', models.PositiveIntegerField()),
-                ('status', models.CharField(choices=[('draft', 'Draft'), ('active', 'Active'), ('retired', 'Retired')], default='draft', max_length=20)),
-                ('schema_json', models.JSONField(default=dict)),
-                ('change_summary', models.TextField(blank=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='created_mmr_versions', to=settings.AUTH_USER_MODEL)),
-                ('mmr', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='versions', to='mmr.mmr')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("version_number", models.PositiveIntegerField()),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[("draft", "Draft"), ("active", "Active"), ("retired", "Retired")],
+                        default="draft",
+                        max_length=20,
+                    ),
+                ),
+                ("schema_json", models.JSONField(default=dict)),
+                ("change_summary", models.TextField(blank=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="created_mmr_versions",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "mmr",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="versions",
+                        to="mmr.mmr",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-version_number'],
+                "ordering": ["-version_number"],
             },
         ),
         migrations.AddConstraint(
-            model_name='mmr',
-            constraint=models.UniqueConstraint(fields=('site', 'code'), name='mmr_unique_code_per_site'),
+            model_name="mmr",
+            constraint=models.UniqueConstraint(
+                fields=("site", "code"), name="mmr_unique_code_per_site"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='mmrversion',
-            constraint=models.UniqueConstraint(fields=('mmr', 'version_number'), name='mmr_unique_version_number'),
+            model_name="mmrversion",
+            constraint=models.UniqueConstraint(
+                fields=("mmr", "version_number"), name="mmr_unique_version_number"
+            ),
         ),
     ]

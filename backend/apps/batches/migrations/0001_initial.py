@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,19 +14,47 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Batch',
+            name="Batch",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('batch_number', models.CharField(max_length=100, unique=True)),
-                ('status', models.CharField(choices=[('draft', 'Draft'), ('ready', 'Ready'), ('in_execution', 'In execution'), ('review_required', 'Review required'), ('under_review', 'Under review'), ('released', 'Released'), ('rejected', 'Rejected'), ('archived', 'Archived')], default='draft', max_length=32)),
-                ('batch_context_json', models.JSONField(blank=True, default=dict)),
-                ('snapshot_json', models.JSONField(default=dict)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='created_batches', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("batch_number", models.CharField(max_length=100, unique=True)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("draft", "Draft"),
+                            ("ready", "Ready"),
+                            ("in_execution", "In execution"),
+                            ("review_required", "Review required"),
+                            ("under_review", "Under review"),
+                            ("released", "Released"),
+                            ("rejected", "Rejected"),
+                            ("archived", "Archived"),
+                        ],
+                        default="draft",
+                        max_length=32,
+                    ),
+                ),
+                ("batch_context_json", models.JSONField(blank=True, default=dict)),
+                ("snapshot_json", models.JSONField(default=dict)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "created_by",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="created_batches",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'batches',
+                "verbose_name_plural": "batches",
             },
         ),
     ]

@@ -83,9 +83,7 @@ def get_dossier_completeness_checklist(
 
 def has_resolved_dossier(batch_id: int) -> bool:
     """Check whether a batch already has an active resolved dossier structure."""
-    return BatchDossierStructure.objects.filter(
-        batch_id=batch_id, is_active=True
-    ).exists()
+    return BatchDossierStructure.objects.filter(batch_id=batch_id, is_active=True).exists()
 
 
 # ---------------------------------------------------------------------------

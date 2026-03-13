@@ -25,9 +25,7 @@ def _make_api_fixtures(
     with_structure: bool = False,
 ) -> dict[str, Any]:
     """Create minimal fixtures for API tests."""
-    site = Site.objects.create(
-        code=f"site-api-{Site.objects.count()}", name="API Test Site"
-    )
+    site = Site.objects.create(code=f"site-api-{Site.objects.count()}", name="API Test Site")
     user = User.objects.create_user(
         username=f"api-user-{User.objects.count()}", password="testpass"
     )
@@ -136,7 +134,9 @@ class TestGetDossierStructure:
         fx = _make_api_fixtures(with_structure=True)
         wrong_user = User.objects.create_user(username="wrong-role-get", password="testpass")
         SiteRoleAssignment.objects.create(
-            user=wrong_user, site=fx["site"], role=SiteRole.INTERNAL_CONFIGURATOR,
+            user=wrong_user,
+            site=fx["site"],
+            role=SiteRole.INTERNAL_CONFIGURATOR,
         )
         client = APIClient()
         client.force_login(wrong_user)
@@ -242,7 +242,9 @@ class TestResolveDossier:
         fx = _make_api_fixtures(with_profile=True)
         wrong_user = User.objects.create_user(username="wrong-role-post", password="testpass")
         SiteRoleAssignment.objects.create(
-            user=wrong_user, site=fx["site"], role=SiteRole.INTERNAL_CONFIGURATOR,
+            user=wrong_user,
+            site=fx["site"],
+            role=SiteRole.INTERNAL_CONFIGURATOR,
         )
         client, token = csrf_client(user=wrong_user)
 

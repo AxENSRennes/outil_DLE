@@ -108,9 +108,7 @@ class TestBatchDossierStructure:
             is_active=True,
         )
         structures = list(
-            BatchDossierStructure.objects.filter(batch=fx["batch"]).values_list(
-                "pk", flat=True
-            )
+            BatchDossierStructure.objects.filter(batch=fx["batch"]).values_list("pk", flat=True)
         )
         # s2 was created later → should appear first
         assert structures[0] == s2.pk

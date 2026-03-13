@@ -5,28 +5,33 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('batches', '0001_initial'),
-        ('mmr', '0001_initial'),
-        ('sites', '0001_initial'),
+        ("batches", "0001_initial"),
+        ("mmr", "0001_initial"),
+        ("sites", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='batch',
-            name='mmr_version',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='batches', to='mmr.mmrversion'),
+            model_name="batch",
+            name="mmr_version",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="batches",
+                to="mmr.mmrversion",
+            ),
         ),
         migrations.AddField(
-            model_name='batch',
-            name='site',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='batches', to='sites.site'),
+            model_name="batch",
+            name="site",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT, related_name="batches", to="sites.site"
+            ),
         ),
         migrations.AddIndex(
-            model_name='batch',
-            index=models.Index(fields=['site', 'status'], name='batch_site_status_idx'),
+            model_name="batch",
+            index=models.Index(fields=["site", "status"], name="batch_site_status_idx"),
         ),
     ]

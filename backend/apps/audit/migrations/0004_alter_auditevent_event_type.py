@@ -4,15 +4,26 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('audit', '0003_alter_auditevent_event_type'),
+        ("audit", "0003_alter_auditevent_event_type"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='auditevent',
-            name='event_type',
-            field=models.CharField(choices=[('identify', 'Identify'), ('switch_user', 'Switch User'), ('lock_workstation', 'Lock Workstation'), ('lock_failed', 'Lock Failed'), ('identify_failed', 'Identify Failed'), ('signature_reauth_succeeded', 'Signature Reauth Succeeded'), ('signature_reauth_failed', 'Signature Reauth Failed'), ('dossier_resolved', 'Dossier Resolved')], max_length=64),
+            model_name="auditevent",
+            name="event_type",
+            field=models.CharField(
+                choices=[
+                    ("identify", "Identify"),
+                    ("switch_user", "Switch User"),
+                    ("lock_workstation", "Lock Workstation"),
+                    ("lock_failed", "Lock Failed"),
+                    ("identify_failed", "Identify Failed"),
+                    ("signature_reauth_succeeded", "Signature Reauth Succeeded"),
+                    ("signature_reauth_failed", "Signature Reauth Failed"),
+                    ("dossier_resolved", "Dossier Resolved"),
+                ],
+                max_length=64,
+            ),
         ),
     ]
