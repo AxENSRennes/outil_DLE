@@ -69,7 +69,7 @@ def test_workstation_identify_establishes_session_and_returns_active_context() -
     event = AuditEvent.objects.get(event_type=AuditEventType.IDENTIFY)
     assert event.actor == user
     assert event.site is None
-    assert event.metadata == {"outcome": "identified"}
+    assert event.metadata == {"outcome": "identified", "ip_address": "127.0.0.1"}
 
 
 @pytest.mark.django_db
@@ -120,6 +120,7 @@ def test_workstation_identify_switches_active_user_and_records_switch_event() ->
     assert switch_event.actor == next_user
     assert switch_event.metadata == {
         "outcome": "identified",
+        "ip_address": "127.0.0.1",
         "previous_user_id": previous_user.id,
         "previous_username": previous_user.username,
     }
@@ -149,7 +150,7 @@ def test_workstation_lock_clears_authenticated_authority() -> None:
 
     event = AuditEvent.objects.get(event_type=AuditEventType.LOCK_WORKSTATION)
     assert event.actor == user
-    assert event.metadata == {"outcome": "locked"}
+    assert event.metadata == {"outcome": "locked", "ip_address": "127.0.0.1"}
 
 
 @pytest.mark.django_db

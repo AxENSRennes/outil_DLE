@@ -90,7 +90,7 @@ def identify_workstation_user(request: Any, *, username: str, pin: str) -> dict[
     previous_user = request.user if getattr(request.user, "is_authenticated", False) else None
     switched_user = isinstance(previous_user, User) and previous_user.pk != user.pk
 
-    event_metadata: dict[str, Any] = {"outcome": "identified"}
+    event_metadata: dict[str, Any] = {"outcome": "identified", "ip_address": get_client_ip(request)}
     if switched_user and previous_user is not None:
         event_type = AuditEventType.SWITCH_USER
         event_metadata["previous_user_id"] = previous_user.id
@@ -129,7 +129,7 @@ def lock_workstation(request: Any) -> dict[str, str]:
         record_audit_event(
             AuditEventType.LOCK_WORKSTATION,
             actor=user,
-            metadata={"outcome": "locked"},
+            metadata={"outcome": "locked", "ip_address": get_client_ip(request)},
         )
     finally:
         logout(request)
@@ -197,6 +197,7 @@ def reauthenticate_signature_authority(
         metadata={
             "required_roles": list(required_roles),
             "outcome": "authorized",
+            "ip_address": get_client_ip(request),
         },
     )
     return {

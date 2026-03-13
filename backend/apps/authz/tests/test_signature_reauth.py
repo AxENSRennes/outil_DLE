@@ -78,7 +78,11 @@ def test_signature_reauth_authorizes_active_user_with_valid_pin_and_role() -> No
     event = AuditEvent.objects.get(event_type=AuditEventType.SIGNATURE_REAUTH_SUCCEEDED)
     assert event.actor == user
     assert event.site == site
-    assert event.metadata == {"required_roles": ["operator"], "outcome": "authorized"}
+    assert event.metadata == {
+        "required_roles": ["operator"],
+        "outcome": "authorized",
+        "ip_address": "127.0.0.1",
+    }
 
 
 @pytest.mark.django_db
