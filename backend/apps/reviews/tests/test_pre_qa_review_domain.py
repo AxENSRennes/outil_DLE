@@ -164,6 +164,27 @@ class TestConfirmPreQaReview:
         assert audit.metadata["batch_id"] == batch_awaiting_pre_qa.pk
         assert audit.metadata["batch_reference"] == batch_awaiting_pre_qa.reference
 
+    def test_confirm_revalidates_locked_batch_status(
+        self,
+        batch_awaiting_pre_qa: Batch,
+        reviewer: User,
+    ) -> None:
+        stale_batch = Batch.objects.get(pk=batch_awaiting_pre_qa.pk)
+        Batch.objects.filter(pk=batch_awaiting_pre_qa.pk).update(
+            status=BatchStatus.AWAITING_QUALITY_REVIEW
+        )
+
+        with pytest.raises(ValidationError, match="awaiting_pre_qa or in_pre_qa_review"):
+            confirm_pre_qa_review(batch=stale_batch, reviewer=reviewer)
+
+        assert (
+            ReviewEvent.objects.filter(
+                batch=batch_awaiting_pre_qa,
+                event_type=ReviewEventType.PRE_QA_CONFIRMED,
+            ).count()
+            == 0
+        )
+
 
 # --- mark_step_reviewed tests ---
 
@@ -362,3 +383,64 @@ class TestMarkStepReviewed:
             mark_step_reviewed(
                 batch=batch_awaiting_pre_qa, step=step, reviewer=reviewer
             )
+
+    def test_mark_reviewed_revalidates_locked_batch_status(
+        self,
+        batch_awaiting_pre_qa: Batch,
+        reviewer: User,
+    ) -> None:
+        step = BatchStep.objects.create(
+            batch=batch_awaiting_pre_qa,
+            order=1,
+            reference="Step 1",
+            status=StepStatus.COMPLETE,
+            changed_since_review=True,
+        )
+        stale_batch = Batch.objects.get(pk=batch_awaiting_pre_qa.pk)
+        Batch.objects.filter(pk=batch_awaiting_pre_qa.pk).update(
+            status=BatchStatus.AWAITING_QUALITY_REVIEW
+        )
+
+        with pytest.raises(ValidationError, match="awaiting_pre_qa or in_pre_qa_review"):
+            mark_step_reviewed(batch=stale_batch, step=step, reviewer=reviewer)
+
+        assert (
+            ReviewEvent.objects.filter(
+                batch=batch_awaiting_pre_qa,
+                event_type=ReviewEventType.CHANGE_MARKED_REVIEWED,
+            ).count()
+            == 0
+        )
+
+    def test_mark_reviewed_revalidates_locked_step_flags(
+        self,
+        batch_awaiting_pre_qa: Batch,
+        reviewer: User,
+    ) -> None:
+        step = BatchStep.objects.create(
+            batch=batch_awaiting_pre_qa,
+            order=1,
+            reference="Step 1",
+            status=StepStatus.COMPLETE,
+            changed_since_review=True,
+        )
+        stale_step = BatchStep.objects.get(pk=step.pk)
+        BatchStep.objects.filter(pk=step.pk).update(
+            changed_since_review=False,
+            review_required=False,
+        )
+
+        with pytest.raises(ValidationError, match="no reviewable flags"):
+            mark_step_reviewed(
+                batch=batch_awaiting_pre_qa,
+                step=stale_step,
+                reviewer=reviewer,
+            )
+
+        assert (
+            ReviewEvent.objects.filter(
+                batch=batch_awaiting_pre_qa,
+                event_type=ReviewEventType.CHANGE_MARKED_REVIEWED,
+            ).count()
+            == 0
+        )

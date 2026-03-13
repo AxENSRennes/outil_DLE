@@ -267,6 +267,7 @@ def test_flagged_steps_amber_severity() -> None:
     result = build_flagged_steps(steps)
     assert len(result) == 1
     assert result[0].severity == "amber"
+    assert "step_incomplete" not in result[0].flags
     assert "changed_since_review" in result[0].flags
 
 
@@ -290,6 +291,50 @@ def test_flagged_steps_review_required_is_amber() -> None:
     assert len(result) == 1
     assert result[0].severity == "amber"
     assert "review_required" in result[0].flags
+
+
+def test_flagged_steps_not_started_is_amber_and_visible() -> None:
+    steps = [
+        {
+            "id": 10,
+            "reference": "Step 10 - Preparation",
+            "status": "not_started",
+            "required_data_complete": True,
+            "requires_signature": False,
+            "has_signature": False,
+            "changed_since_review": False,
+            "changed_since_signature": False,
+            "review_required": False,
+            "has_open_exception": False,
+            "open_exception_is_blocking": False,
+        },
+    ]
+    result = build_flagged_steps(steps)
+    assert len(result) == 1
+    assert result[0].severity == "amber"
+    assert result[0].flags == ("step_incomplete",)
+
+
+def test_flagged_steps_in_progress_is_amber_and_visible() -> None:
+    steps = [
+        {
+            "id": 11,
+            "reference": "Step 11 - Mixing",
+            "status": "in_progress",
+            "required_data_complete": True,
+            "requires_signature": False,
+            "has_signature": False,
+            "changed_since_review": False,
+            "changed_since_signature": False,
+            "review_required": False,
+            "has_open_exception": False,
+            "open_exception_is_blocking": False,
+        },
+    ]
+    result = build_flagged_steps(steps)
+    assert len(result) == 1
+    assert result[0].severity == "amber"
+    assert result[0].flags == ("step_incomplete",)
 
 
 def test_flagged_steps_missing_signature_is_red() -> None:

@@ -162,6 +162,12 @@ class TestGetBatchReviewSummary:
         assert summary.step_summary.not_started == 1
         assert summary.step_summary.in_progress == 1
         assert summary.severity == "amber"
+        assert len(summary.flagged_steps) == 2
+        assert {
+            flagged_step.step_reference for flagged_step in summary.flagged_steps
+        } == {"Step 2", "Step 3"}
+        for flagged_step in summary.flagged_steps:
+            assert "step_incomplete" in flagged_step.flags
 
     def test_blocking_open_exception_returns_red(self, batch: Batch) -> None:
         BatchStep.objects.create(

@@ -162,6 +162,8 @@ def evaluate_checklist(items: list[dict[str, Any]]) -> ChecklistSummary:
 def _derive_step_flags(step: dict[str, Any]) -> tuple[str, ...]:
     """Collect all active flags for a single step."""
     flags: list[str] = []
+    if step.get("status") in {StepStatus.NOT_STARTED, StepStatus.IN_PROGRESS}:
+        flags.append("step_incomplete")
     if not step.get("required_data_complete", True):
         flags.append("missing_required_data")
     if step.get("requires_signature") and not step.get("has_signature"):

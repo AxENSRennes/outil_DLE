@@ -23,6 +23,7 @@ const flagLabels: Record<string, string> = {
   changed_since_signature: "Changed Since Signature",
   review_required: "Review Required",
   open_exception: "Open Exception",
+  step_incomplete: "Incomplete",
 };
 
 interface ReviewExceptionListProps {
@@ -155,7 +156,7 @@ export function ReviewExceptionList({
         <div className="space-y-2 p-4">
           {flaggedSteps.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              No flagged steps. All steps are OK.
+              No flagged review items.
             </p>
           ) : (
             flaggedSteps.map((step, index) => (

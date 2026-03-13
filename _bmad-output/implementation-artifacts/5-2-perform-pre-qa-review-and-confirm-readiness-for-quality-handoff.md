@@ -44,7 +44,7 @@ So that I can confirm readiness for quality handoff or stop the dossier before i
   - [x] 3.3 Implement `mark_step_reviewed(batch, step, reviewer, note=None)`:
     - Validate batch status is `awaiting_pre_qa` or `in_pre_qa_review`
     - Validate step belongs to the batch
-    - Validate step has at least one reviewable flag (`changed_since_review`, `changed_since_signature`, or `review_required`)
+    - Validate step has at least one reviewable flag (`changed_since_review` or `review_required`); `changed_since_signature` remains a re-signature integrity signal and is not cleared by review
     - Clear `changed_since_review` and `review_required` flags on the step; save
     - If batch status is `awaiting_pre_qa`, transition to `in_pre_qa_review`
     - Create `ReviewEvent(event_type=CHANGE_MARKED_REVIEWED, batch=batch, step=step, reviewer=reviewer, note=note)`
@@ -238,8 +238,8 @@ Admin: append-only (has_add/change/delete_permission all return False). All fiel
   "batch_status": "in_pre_qa_review"
 }
 ```
-- **Error (400):** `"no_reviewable_flags"` when step has no flags to clear, or `"step_not_in_batch"` when step doesn't belong to the batch
-- **Error (401/404):** Same as above
+- **Error (400):** `"no_reviewable_flags"` when step has no review-clearable flags
+- **Error (401/404):** Same as above; nested `step_id` lookup is fail-closed and returns `404` when the step is not found under the requested batch
 
 ### Validation Rules for Confirm Action
 
@@ -343,7 +343,7 @@ This follows the existing `appConfig.apiBaseUrl` pattern and includes credential
 5. Mark-reviewed clears flags on step → 200, flags cleared
 6. Mark-reviewed transitions batch from `awaiting_pre_qa` to `in_pre_qa_review`
 7. Mark-reviewed on step without reviewable flags → 400
-8. Mark-reviewed on step not in batch → 400
+8. Mark-reviewed on step not in batch → 404 (fail-closed nested lookup)
 9. ReviewEvent created for both actions
 10. AuditEvent created for both actions
 11. Unauthenticated → 401
@@ -530,7 +530,7 @@ Claude Opus 4.6 (claude-opus-4-6)
 
 - Task 1: Created `ReviewEvent` model with `ReviewEventType` enum (`PRE_QA_CONFIRMED`, `CHANGE_MARKED_REVIEWED`). Append-only admin with all readonly_fields. Migration applied.
 - Task 2: Added `PRE_QA_REVIEW_CONFIRMED` and `REVIEW_ITEM_MARKED_REVIEWED` to `AuditEventType`. Migration applied.
-- Task 3: Implemented `confirm_pre_qa_review` and `mark_step_reviewed` domain services with full validation, audit trail in `finally` blocks, and correct batch status transitions.
+- Task 3: Implemented `confirm_pre_qa_review` and `mark_step_reviewed` domain services with full validation, audit trail in `finally` blocks, correct batch status transitions, and strict preservation of `changed_since_signature` until re-signature.
 - Task 4: Created `ConfirmPreQaReviewView` and `MarkStepReviewedView` with typed serializers, `@extend_schema` decorators, fail-closed authorization (PRODUCTION_REVIEWER only), and problem-details error format.
 - Task 5: Built complete frontend feature: shared `apiFetch` client, TanStack Query hooks, `ReviewExceptionList` with severity badges and collapsible details, `PreQaReviewPage` with AlertDialog confirmation, route registered at `/review/:batchId`.
 - Task 6: 18 domain unit tests + 14 API integration tests covering all specified scenarios (valid states, invalid states, red/amber/green severity, auth, permissions, response shapes, review events, audit events).

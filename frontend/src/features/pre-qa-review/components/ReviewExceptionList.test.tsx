@@ -128,7 +128,7 @@ describe("ReviewExceptionList", () => {
       />,
     );
 
-    expect(screen.getByText(/No flagged steps/)).toBeInTheDocument();
+    expect(screen.getByText("No flagged review items.")).toBeInTheDocument();
   });
 
   it("disables only the step being marked as reviewed", async () => {
@@ -171,5 +171,30 @@ describe("ReviewExceptionList", () => {
     // Arrow up → back to first
     await user.keyboard("{ArrowUp}");
     expect(firstButton).toHaveFocus();
+  });
+
+  it("renders an incomplete badge for incomplete steps", async () => {
+    const user = userEvent.setup();
+    const incompleteSteps: FlaggedStep[] = [
+      {
+        step_id: 3,
+        step_reference: "Step 3 - Preparation",
+        step_status: "not_started",
+        flags: ["step_incomplete"],
+        severity: "amber",
+      },
+    ];
+
+    render(
+      <ReviewExceptionList
+        flaggedSteps={incompleteSteps}
+        totalSteps={3}
+        onMarkReviewed={vi.fn()}
+        markingStepId={null}
+      />,
+    );
+
+    await user.click(screen.getByText("Step 3 - Preparation"));
+    expect(screen.getByText("Incomplete")).toBeInTheDocument();
   });
 });

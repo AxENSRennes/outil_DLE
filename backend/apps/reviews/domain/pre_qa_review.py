@@ -34,6 +34,30 @@ class MarkStepReviewedResult:
     review_event: ReviewEvent
 
 
+def _validate_pre_qa_batch_status(batch: Batch) -> None:
+    if batch.status not in _VALID_PRE_QA_STATUSES:
+        raise ValidationError(
+            "Batch must be in awaiting_pre_qa or in_pre_qa_review status.",
+            code="invalid_batch_state",
+        )
+
+
+def _validate_reviewable_step(*, batch: Batch, step: BatchStep) -> None:
+    if step.batch_id != batch.pk:
+        raise ValidationError(
+            "Step does not belong to the specified batch.",
+            code="step_not_in_batch",
+        )
+
+    # changed_since_signature is a persistent integrity marker cleared only by
+    # re-signing, not by review. Only clearable flags make a step actionable.
+    if not (step.changed_since_review or step.review_required):
+        raise ValidationError(
+            "Step has no reviewable flags to clear.",
+            code="no_reviewable_flags",
+        )
+
+
 def confirm_pre_qa_review(
     *,
     batch: Batch,
@@ -48,11 +72,7 @@ def confirm_pre_qa_review(
     Raises ``ValidationError`` when the batch is not in a valid state or
     when red-severity blocking conditions remain.
     """
-    if batch.status not in _VALID_PRE_QA_STATUSES:
-        raise ValidationError(
-            "Batch must be in awaiting_pre_qa or in_pre_qa_review status.",
-            code="invalid_batch_state",
-        )
+    _validate_pre_qa_batch_status(batch)
 
     review_event: ReviewEvent | None = None
     committed = False
@@ -60,6 +80,7 @@ def confirm_pre_qa_review(
         with transaction.atomic():
             # Lock the batch row to prevent concurrent confirms (TOCTOU).
             batch = Batch.objects.select_for_update().get(pk=batch.pk)
+            _validate_pre_qa_batch_status(batch)
 
             summary = get_batch_review_summary(batch)
             if summary.severity == "red":
@@ -119,25 +140,8 @@ def mark_step_reviewed(
     Raises ``ValidationError`` when the batch status or step state is
     not appropriate.
     """
-    if batch.status not in _VALID_PRE_QA_STATUSES:
-        raise ValidationError(
-            "Batch must be in awaiting_pre_qa or in_pre_qa_review status.",
-            code="invalid_batch_state",
-        )
-
-    if step.batch_id != batch.pk:
-        raise ValidationError(
-            "Step does not belong to the specified batch.",
-            code="step_not_in_batch",
-        )
-
-    # Only clearable flags make a step actionable for mark-reviewed.
-    has_reviewable_flag = step.changed_since_review or step.review_required
-    if not has_reviewable_flag:
-        raise ValidationError(
-            "Step has no reviewable flags to clear.",
-            code="no_reviewable_flags",
-        )
+    _validate_pre_qa_batch_status(batch)
+    _validate_reviewable_step(batch=batch, step=step)
 
     flags_cleared: list[str] = []
     review_event: ReviewEvent | None = None
@@ -147,6 +151,8 @@ def mark_step_reviewed(
             # Lock rows to prevent concurrent reviews of the same step.
             batch = Batch.objects.select_for_update().get(pk=batch.pk)
             step = BatchStep.objects.select_for_update().get(pk=step.pk)
+            _validate_pre_qa_batch_status(batch)
+            _validate_reviewable_step(batch=batch, step=step)
 
             # Clear flags after lock acquisition (step was re-fetched).
             if step.changed_since_review:
