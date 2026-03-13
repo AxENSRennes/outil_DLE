@@ -126,7 +126,7 @@ class SignatureReauthThrottle(AuditEventThrottle):
 
 class WorkstationLockThrottle(AuditEventThrottle):
     scope = "workstation_lock"
-    failure_event_type = AuditEventType.LOCK_WORKSTATION
+    failure_event_type = AuditEventType.LOCK_FAILED
 
     def _record_failure(self) -> None:
         record_audit_event(

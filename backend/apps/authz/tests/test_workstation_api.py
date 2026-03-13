@@ -357,7 +357,7 @@ def test_workstation_lock_is_rate_limited_and_audited() -> None:
         metadata__outcome="locked",
     )
     throttled_event = AuditEvent.objects.get(
-        event_type=AuditEventType.LOCK_WORKSTATION,
+        event_type=AuditEventType.LOCK_FAILED,
         metadata__reason="rate_limited",
     )
     assert locked_event.actor == user

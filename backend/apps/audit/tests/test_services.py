@@ -88,3 +88,14 @@ def test_deleting_site_with_audit_events_raises_protected_error() -> None:
 
     with pytest.raises(ProtectedError):
         site.delete()
+
+
+@pytest.mark.django_db
+def test_record_audit_event_accepts_lock_failed_event_type() -> None:
+    event = record_audit_event(
+        AuditEventType.LOCK_FAILED,
+        metadata={"reason": "rate_limited"},
+    )
+
+    assert event.event_type == AuditEventType.LOCK_FAILED
+    assert event.metadata == {"reason": "rate_limited"}

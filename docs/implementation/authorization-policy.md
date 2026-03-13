@@ -72,6 +72,7 @@ Canonical auth-event types are:
 - `identify`
 - `switch_user`
 - `lock_workstation`
+- `lock_failed`
 - `identify_failed`
 - `signature_reauth_succeeded`
 - `signature_reauth_failed`
