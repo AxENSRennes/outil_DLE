@@ -21,7 +21,6 @@ class AuditEventType(models.TextChoices):
     MMR_VERSION_STEP_UPDATED = "mmr_version_step_updated", "MMR Version Step Updated"
     MMR_VERSION_STEP_REMOVED = "mmr_version_step_removed", "MMR Version Step Removed"
     MMR_VERSION_STEPS_REORDERED = "mmr_version_steps_reordered", "MMR Version Steps Reordered"
-    DOSSIER_RESOLVED = "dossier_resolved", "Dossier Resolved"
 
     # Batch-domain event types
     BATCH_CREATED = "batch_created", "Batch Created"
