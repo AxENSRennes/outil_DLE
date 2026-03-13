@@ -14,6 +14,8 @@ class AuditEventType(models.TextChoices):
     IDENTIFY_FAILED = "identify_failed", "Identify Failed"
     SIGNATURE_REAUTH_SUCCEEDED = "signature_reauth_succeeded", "Signature Reauth Succeeded"
     SIGNATURE_REAUTH_FAILED = "signature_reauth_failed", "Signature Reauth Failed"
+    MMR_CREATED = "mmr_created", "MMR Created"
+    MMR_VERSION_CREATED = "mmr_version_created", "MMR Version Created"
 
 
 class AuditEvent(models.Model):
