@@ -65,6 +65,7 @@ class Batch(models.Model):
 
     class Meta:
         verbose_name_plural = "batches"
+        ordering: ClassVar[list[str]] = ["-created_at"]
 
     def __str__(self) -> str:
         return self.batch_number
