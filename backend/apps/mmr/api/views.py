@@ -35,14 +35,14 @@ class MMRListCreateView(APIView):
 
     @extend_schema(responses=MMRListSerializer(many=True))
     def get(self, request: Request) -> Response:
-        authorized_site_ids = get_active_site_role_assignments(
-            request.user
-        ).filter(
-            role__in=[str(r) for r in self.required_site_roles],
-        ).values_list("site_id", flat=True)
-        mmrs = MMR.objects.filter(site_id__in=authorized_site_ids).select_related(
-            "site", "product"
+        authorized_site_ids = (
+            get_active_site_role_assignments(request.user)
+            .filter(
+                role__in=[str(r) for r in self.required_site_roles],
+            )
+            .values_list("site_id", flat=True)
         )
+        mmrs = MMR.objects.filter(site_id__in=authorized_site_ids).select_related("site", "product")
         serializer = MMRListSerializer(mmrs, many=True)
         return Response(serializer.data)
 
@@ -142,9 +142,7 @@ class MMRVersionListCreateView(APIView):
         return Response(serializer.data)
 
     @method_decorator(csrf_protect)
-    @extend_schema(
-        request=MMRVersionCreateSerializer, responses=MMRVersionDetailSerializer
-    )
+    @extend_schema(request=MMRVersionCreateSerializer, responses=MMRVersionDetailSerializer)
     def post(self, request: Request, mmr_id: int) -> Response:
         mmr = self._get_mmr(mmr_id)
         if mmr is None:

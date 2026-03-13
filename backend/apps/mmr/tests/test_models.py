@@ -70,9 +70,7 @@ def test_mmr_unique_code_per_site(site: Site, product: Product) -> None:
 def test_mmr_same_code_different_sites(product: Product) -> None:
     site_b = Site.objects.create(code="paris", name="Paris")
     product_b = Product.objects.create(site=site_b, name="Prod B", code="PB")
-    m1 = MMR.objects.create(
-        site=product.site, product=product, name="A", code="SAME-CODE"
-    )
+    m1 = MMR.objects.create(site=product.site, product=product, name="A", code="SAME-CODE")
     m2 = MMR.objects.create(site=site_b, product=product_b, name="B", code="SAME-CODE")
     assert m1.pk != m2.pk
 

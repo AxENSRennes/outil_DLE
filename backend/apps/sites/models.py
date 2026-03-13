@@ -31,9 +31,7 @@ class Product(models.Model):
 
     class Meta:
         constraints: ClassVar[list[models.BaseConstraint]] = [
-            models.UniqueConstraint(
-                fields=["site", "code"], name="uniq_product_code_per_site"
-            ),
+            models.UniqueConstraint(fields=["site", "code"], name="uniq_product_code_per_site"),
         ]
         ordering = ("code",)
 

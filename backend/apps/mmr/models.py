@@ -7,12 +7,8 @@ from django.db import models
 
 
 class MMR(models.Model):
-    site = models.ForeignKey(
-        "sites.Site", on_delete=models.PROTECT, related_name="mmrs"
-    )
-    product = models.ForeignKey(
-        "sites.Product", on_delete=models.PROTECT, related_name="mmrs"
-    )
+    site = models.ForeignKey("sites.Site", on_delete=models.PROTECT, related_name="mmrs")
+    product = models.ForeignKey("sites.Product", on_delete=models.PROTECT, related_name="mmrs")
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -24,9 +20,7 @@ class MMR(models.Model):
         verbose_name = "MMR"
         verbose_name_plural = "MMRs"
         constraints: ClassVar[list[models.BaseConstraint]] = [
-            models.UniqueConstraint(
-                fields=["site", "code"], name="uniq_mmr_code_per_site"
-            ),
+            models.UniqueConstraint(fields=["site", "code"], name="uniq_mmr_code_per_site"),
         ]
         ordering = ("code",)
 

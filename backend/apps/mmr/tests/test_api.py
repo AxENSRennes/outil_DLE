@@ -25,9 +25,7 @@ def product(site: Site) -> Product:
 @pytest.fixture()
 def configurator(site: Site) -> Any:
     user = get_user_model().objects.create_user(username="configurator", password="testpass")
-    SiteRoleAssignment.objects.create(
-        user=user, site=site, role=SiteRole.INTERNAL_CONFIGURATOR
-    )
+    SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.INTERNAL_CONFIGURATOR)
     return user
 
 
@@ -52,9 +50,7 @@ def mmr(site: Site, product: Product) -> MMR:
 
 
 @pytest.mark.django_db
-def test_create_mmr_as_configurator(
-    configurator: Any, site: Site, product: Product
-) -> None:
+def test_create_mmr_as_configurator(configurator: Any, site: Site, product: Product) -> None:
     client, token = csrf_client(user=configurator)
     resp = post_json(
         client,
@@ -78,9 +74,7 @@ def test_create_mmr_as_configurator(
 
 
 @pytest.mark.django_db
-def test_create_mmr_as_operator_denied(
-    operator: Any, site: Site, product: Product
-) -> None:
+def test_create_mmr_as_operator_denied(operator: Any, site: Site, product: Product) -> None:
     client, token = csrf_client(user=operator)
     resp = post_json(
         client,
@@ -145,9 +139,7 @@ def test_create_mmr_csrf_required(configurator: Any, site: Site, product: Produc
 
 
 @pytest.mark.django_db
-def test_create_mmr_invalid_site_returns_400(
-    configurator: Any, product: Product
-) -> None:
+def test_create_mmr_invalid_site_returns_400(configurator: Any, product: Product) -> None:
     client, token = csrf_client(user=configurator)
     resp = post_json(
         client,
@@ -159,9 +151,7 @@ def test_create_mmr_invalid_site_returns_400(
 
 
 @pytest.mark.django_db
-def test_create_mmr_invalid_product_returns_400(
-    configurator: Any, site: Site
-) -> None:
+def test_create_mmr_invalid_product_returns_400(configurator: Any, site: Site) -> None:
     client, token = csrf_client(user=configurator)
     resp = post_json(
         client,
@@ -176,9 +166,7 @@ def test_create_mmr_invalid_product_returns_400(
 
 
 @pytest.mark.django_db
-def test_list_mmrs_returns_site_scoped(
-    configurator: Any, site: Site, product: Product
-) -> None:
+def test_list_mmrs_returns_site_scoped(configurator: Any, site: Site, product: Product) -> None:
     MMR.objects.create(site=site, product=product, name="A", code="A-CODE")
     other_site = Site.objects.create(code="paris", name="Paris")
     other_product = Product.objects.create(site=other_site, name="P", code="P1")
@@ -197,9 +185,7 @@ def test_list_mmrs_returns_site_scoped(
 
 
 @pytest.mark.django_db
-def test_retrieve_mmr_as_configurator(
-    configurator: Any, mmr: MMR
-) -> None:
+def test_retrieve_mmr_as_configurator(configurator: Any, mmr: MMR) -> None:
     client, _ = csrf_client(user=configurator)
     resp = client.get(f"/api/v1/mmrs/{mmr.pk}/")
     assert resp.status_code == 200
@@ -220,9 +206,7 @@ def test_retrieve_mmr_not_found() -> None:
 
 
 @pytest.mark.django_db
-def test_create_version_as_configurator(
-    configurator: Any, mmr: MMR
-) -> None:
+def test_create_version_as_configurator(configurator: Any, mmr: MMR) -> None:
     client, token = csrf_client(user=configurator)
     resp = post_json(
         client,
@@ -239,9 +223,7 @@ def test_create_version_as_configurator(
 
 
 @pytest.mark.django_db
-def test_create_version_auto_increments(
-    configurator: Any, mmr: MMR
-) -> None:
+def test_create_version_auto_increments(configurator: Any, mmr: MMR) -> None:
     client, token = csrf_client(user=configurator)
     r1 = post_json(client, f"/api/v1/mmrs/{mmr.pk}/versions/", {}, csrf_token=token)
     r2 = post_json(client, f"/api/v1/mmrs/{mmr.pk}/versions/", {}, csrf_token=token)
@@ -250,9 +232,7 @@ def test_create_version_auto_increments(
 
 
 @pytest.mark.django_db
-def test_create_version_as_operator_denied(
-    operator: Any, mmr: MMR
-) -> None:
+def test_create_version_as_operator_denied(operator: Any, mmr: MMR) -> None:
     client, token = csrf_client(user=operator)
     resp = post_json(
         client,
@@ -264,9 +244,7 @@ def test_create_version_as_operator_denied(
 
 
 @pytest.mark.django_db
-def test_create_version_csrf_required(
-    configurator: Any, mmr: MMR
-) -> None:
+def test_create_version_csrf_required(configurator: Any, mmr: MMR) -> None:
     client, _ = csrf_client(user=configurator)
     resp = client.post(
         f"/api/v1/mmrs/{mmr.pk}/versions/",
@@ -280,9 +258,7 @@ def test_create_version_csrf_required(
 
 
 @pytest.mark.django_db
-def test_list_versions_ordered_by_desc_version_number(
-    configurator: Any, mmr: MMR
-) -> None:
+def test_list_versions_ordered_by_desc_version_number(configurator: Any, mmr: MMR) -> None:
     MMRVersion.objects.create(mmr=mmr, version_number=1, created_by=configurator)
     MMRVersion.objects.create(mmr=mmr, version_number=2, created_by=configurator)
     MMRVersion.objects.create(mmr=mmr, version_number=3, created_by=configurator)
@@ -300,9 +276,7 @@ def test_list_versions_ordered_by_desc_version_number(
 
 @pytest.mark.django_db
 def test_retrieve_version(configurator: Any, mmr: MMR) -> None:
-    version = MMRVersion.objects.create(
-        mmr=mmr, version_number=1, created_by=configurator
-    )
+    version = MMRVersion.objects.create(mmr=mmr, version_number=1, created_by=configurator)
     client, _ = csrf_client(user=configurator)
     resp = client.get(f"/api/v1/mmrs/{mmr.pk}/versions/{version.pk}/")
     assert resp.status_code == 200
@@ -316,9 +290,7 @@ def test_retrieve_version_wrong_mmr_returns_404(
     configurator: Any, site: Site, product: Product, mmr: MMR
 ) -> None:
     other_mmr = MMR.objects.create(site=site, product=product, name="Other", code="OTHER")
-    version = MMRVersion.objects.create(
-        mmr=other_mmr, version_number=1, created_by=configurator
-    )
+    version = MMRVersion.objects.create(mmr=other_mmr, version_number=1, created_by=configurator)
     client, _ = csrf_client(user=configurator)
     resp = client.get(f"/api/v1/mmrs/{mmr.pk}/versions/{version.pk}/")
     assert resp.status_code == 404
@@ -328,9 +300,7 @@ def test_retrieve_version_wrong_mmr_returns_404(
 
 
 @pytest.mark.django_db
-def test_create_mmr_records_audit_event(
-    configurator: Any, site: Site, product: Product
-) -> None:
+def test_create_mmr_records_audit_event(configurator: Any, site: Site, product: Product) -> None:
     client, token = csrf_client(user=configurator)
     post_json(
         client,
@@ -342,14 +312,10 @@ def test_create_mmr_records_audit_event(
 
 
 @pytest.mark.django_db
-def test_create_version_records_audit_event(
-    configurator: Any, mmr: MMR
-) -> None:
+def test_create_version_records_audit_event(configurator: Any, mmr: MMR) -> None:
     client, token = csrf_client(user=configurator)
     post_json(client, f"/api/v1/mmrs/{mmr.pk}/versions/", {}, csrf_token=token)
-    assert AuditEvent.objects.filter(
-        event_type=AuditEventType.MMR_VERSION_CREATED
-    ).exists()
+    assert AuditEvent.objects.filter(event_type=AuditEventType.MMR_VERSION_CREATED).exists()
 
 
 # --- Cross-site isolation ---
@@ -378,9 +344,7 @@ def test_configurator_cannot_create_mmr_on_other_site(configurator: Any) -> None
 
 
 @pytest.mark.django_db
-def test_list_mmrs_as_operator_returns_empty(
-    operator: Any, site: Site, product: Product
-) -> None:
+def test_list_mmrs_as_operator_returns_empty(operator: Any, site: Site, product: Product) -> None:
     MMR.objects.create(site=site, product=product, name="A", code="A-CODE")
     client, _ = csrf_client(user=operator)
     resp = client.get("/api/v1/mmrs/")

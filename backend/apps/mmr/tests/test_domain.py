@@ -111,9 +111,7 @@ def test_create_draft_version_immutability(site: Site, product: Product, user: A
 
 
 @pytest.mark.django_db
-def test_create_draft_version_records_audit_event(
-    site: Site, product: Product, user: Any
-) -> None:
+def test_create_draft_version_records_audit_event(site: Site, product: Product, user: Any) -> None:
     mmr = create_mmr(site=site, product=product, name="T", code="T1", actor=user)
     version = create_draft_version(mmr=mmr, actor=user)
     event = AuditEvent.objects.get(event_type=AuditEventType.MMR_VERSION_CREATED)
@@ -135,9 +133,7 @@ def test_create_draft_version_status_is_always_draft(
 
 
 @pytest.mark.django_db
-def test_create_draft_version_sets_created_by(
-    site: Site, product: Product, user: Any
-) -> None:
+def test_create_draft_version_sets_created_by(site: Site, product: Product, user: Any) -> None:
     other_user = get_user_model().objects.create_user(username="other", password="testpass")
     mmr = create_mmr(site=site, product=product, name="T", code="T1", actor=user)
     version = create_draft_version(mmr=mmr, actor=other_user)

@@ -5,28 +5,43 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('sites', '0001_initial'),
+        ("sites", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Product',
+            name="Product",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255)),
-                ('code', models.CharField(max_length=100)),
-                ('family', models.CharField(blank=True, max_length=255)),
-                ('format_label', models.CharField(blank=True, max_length=255)),
-                ('is_active', models.BooleanField(default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('site', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='products', to='sites.site')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("code", models.CharField(max_length=100)),
+                ("family", models.CharField(blank=True, max_length=255)),
+                ("format_label", models.CharField(blank=True, max_length=255)),
+                ("is_active", models.BooleanField(default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "site",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="products",
+                        to="sites.site",
+                    ),
+                ),
             ],
             options={
-                'ordering': ('code',),
-                'constraints': [models.UniqueConstraint(fields=('site', 'code'), name='uniq_product_code_per_site')],
+                "ordering": ("code",),
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=("site", "code"), name="uniq_product_code_per_site"
+                    )
+                ],
             },
         ),
     ]

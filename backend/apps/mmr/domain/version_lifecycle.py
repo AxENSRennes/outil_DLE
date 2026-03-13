@@ -20,9 +20,9 @@ def create_draft_version(
         # Lock the MMR row to prevent race conditions on version_number
         MMR.objects.select_for_update().get(pk=mmr.pk)
 
-        max_version = MMRVersion.objects.filter(mmr=mmr).aggregate(
-            max_v=Max("version_number")
-        )["max_v"]
+        max_version = MMRVersion.objects.filter(mmr=mmr).aggregate(max_v=Max("version_number"))[
+            "max_v"
+        ]
         next_version = (max_version or 0) + 1
 
         version = MMRVersion.objects.create(
