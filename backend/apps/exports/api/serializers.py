@@ -19,5 +19,5 @@ class DossierStructureSerializer(serializers.Serializer):
     dossier_profile_id = serializers.IntegerField()
     context_snapshot = serializers.DictField()
     is_active = serializers.BooleanField()
-    resolved_at = serializers.CharField()
+    resolved_at = serializers.DateTimeField()
     elements = DossierElementSerializer(many=True)

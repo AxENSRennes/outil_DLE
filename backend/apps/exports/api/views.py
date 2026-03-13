@@ -9,7 +9,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from shared.api.exceptions import UnprocessableEntity
+from shared.api.exceptions import Conflict, UnprocessableEntity
 from shared.permissions.site_roles import SiteScopedRolePermission
 
 from apps.authz.models import SiteRole
@@ -96,5 +96,10 @@ class ResolveBatchDossierView(APIView):
             raise UnprocessableEntity(detail=str(exc), code="composition_error") from exc
 
         read_model = get_batch_dossier_structure(batch_id)
+        if read_model is None:
+            raise Conflict(
+                detail="Dossier structure was modified by a concurrent request. Please retry.",
+                code="dossier_structure_race",
+            )
         serializer = DossierStructureSerializer(read_model)
         return Response(serializer.data)

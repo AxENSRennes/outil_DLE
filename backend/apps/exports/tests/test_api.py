@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -258,6 +259,25 @@ class TestResolveDossier:
         data = response.json()
         assert data["code"] == "composition_error"
         assert "unknown elements" in data["detail"]
+
+    def test_returns_409_on_concurrent_race(self) -> None:
+        fx = _make_api_fixtures(with_profile=True, with_structure=False)
+        client, token = csrf_client(user=fx["user"])
+
+        with patch(
+            "apps.exports.api.views.get_batch_dossier_structure",
+            return_value=None,
+        ):
+            response = post_json(
+                client,
+                f"/api/v1/batches/{fx['batch'].pk}/resolve-dossier/",
+                {},
+                csrf_token=token,
+            )
+
+        assert response.status_code == 409
+        data = response.json()
+        assert data["code"] == "dossier_structure_race"
 
     def test_wrong_role_rejected(self) -> None:
         fx = _make_api_fixtures(with_profile=True)

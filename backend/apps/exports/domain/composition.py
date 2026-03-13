@@ -383,4 +383,6 @@ def _is_active_structure_race(exc: IntegrityError) -> bool:
     if constraint_name == ACTIVE_STRUCTURE_CONSTRAINT:
         return True
 
-    return ACTIVE_STRUCTURE_CONSTRAINT in str(exc)
+    # Fallback: require unique-violation sqlstate AND constraint name in message.
+    sqlstate = getattr(cause, "sqlstate", None)
+    return sqlstate == "23505" and ACTIVE_STRUCTURE_CONSTRAINT in str(exc)

@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 
 from apps.audit.models import AuditEvent, AuditEventType
 from apps.batches.models import Batch
 from apps.exports.domain.composition import (
+    ACTIVE_STRUCTURE_CONSTRAINT,
     DossierCompositionError,
     _condition_matches,
+    _is_active_structure_race,
     resolve_dossier_structure,
 )
 from apps.exports.models import (
@@ -441,3 +445,51 @@ class TestAuditEvent:
             AuditEvent.objects.filter(event_type=AuditEventType.DOSSIER_RESOLVED).count()
             == count_after_first
         )
+
+
+class TestIsActiveStructureRace:
+    """Unit tests for _is_active_structure_race helper."""
+
+    def _make_integrity_error(
+        self,
+        *,
+        constraint_name: str | None = None,
+        sqlstate: str | None = None,
+        message: str = "",
+    ) -> IntegrityError:
+        cause = Exception("mock psycopg error")
+        diag = MagicMock()
+        diag.constraint_name = constraint_name
+        cause.diag = diag  # type: ignore[attr-defined]
+        cause.sqlstate = sqlstate  # type: ignore[attr-defined]
+        exc = IntegrityError(message)
+        exc.__cause__ = cause
+        return exc
+
+    def test_returns_true_when_diag_constraint_name_matches(self) -> None:
+        exc = self._make_integrity_error(
+            constraint_name=ACTIVE_STRUCTURE_CONSTRAINT,
+        )
+        assert _is_active_structure_race(exc) is True
+
+    def test_returns_true_on_fallback_with_matching_sqlstate_and_message(self) -> None:
+        msg = f'duplicate key value violates unique constraint "{ACTIVE_STRUCTURE_CONSTRAINT}"'
+        exc = self._make_integrity_error(
+            constraint_name=None,
+            sqlstate="23505",
+            message=msg,
+        )
+        assert _is_active_structure_race(exc) is True
+
+    def test_returns_false_when_sqlstate_is_not_unique_violation(self) -> None:
+        exc = self._make_integrity_error(
+            constraint_name=None,
+            sqlstate="23503",  # foreign key violation, not unique
+            message=f'violates constraint "{ACTIVE_STRUCTURE_CONSTRAINT}"',
+        )
+        assert _is_active_structure_race(exc) is False
+
+    def test_returns_false_when_no_cause(self) -> None:
+        exc = IntegrityError("some error")
+        exc.__cause__ = None
+        assert _is_active_structure_race(exc) is False
