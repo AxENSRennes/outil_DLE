@@ -20,7 +20,11 @@ from apps.authz.api.serializers import (
     WorkstationIdentifyResponseSerializer,
     WorkstationLockResponseSerializer,
 )
-from apps.authz.api.throttles import SignatureReauthThrottle, WorkstationIdentifyThrottle
+from apps.authz.api.throttles import (
+    SignatureReauthThrottle,
+    WorkstationIdentifyThrottle,
+    WorkstationLockThrottle,
+)
 from apps.authz.domain.workstation import (
     build_auth_context_payload,
     identify_workstation_user,
@@ -65,6 +69,7 @@ class WorkstationIdentifyView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class WorkstationLockView(APIView):
     permission_classes: ClassVar[list[type]] = [IsAuthenticated]
+    throttle_classes: ClassVar[list[type]] = [WorkstationLockThrottle]
 
     @extend_schema(
         request=None,

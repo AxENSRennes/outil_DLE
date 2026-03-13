@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class AuditEventThrottle(SimpleRateThrottle):
-    failure_event_type: str
+    failure_event_type: AuditEventType
 
     def allow_request(self, request: Any, view: Any) -> bool:
         self.request = request
@@ -119,6 +119,23 @@ class SignatureReauthThrottle(AuditEventThrottle):
             metadata={
                 "reason": "rate_limited",
                 "required_roles": required_roles,
+                "ip_address": get_client_ip(self.request),
+            },
+        )
+
+
+class WorkstationLockThrottle(AuditEventThrottle):
+    scope = "workstation_lock"
+    failure_event_type = AuditEventType.LOCK_WORKSTATION
+
+    def _record_failure(self) -> None:
+        record_audit_event(
+            self.failure_event_type,
+            actor=(
+                self.request.user if getattr(self.request.user, "is_authenticated", False) else None
+            ),
+            metadata={
+                "reason": "rate_limited",
                 "ip_address": get_client_ip(self.request),
             },
         )

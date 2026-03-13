@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.db.models import ProtectedError
 
-from apps.audit.models import AuditEventType
+from apps.audit.models import AuditEvent, AuditEventType
 from apps.audit.services import record_audit_event
 from apps.sites.models import Site
 
@@ -34,6 +34,42 @@ def test_record_audit_event_strips_sensitive_metadata_keys() -> None:
             "kept": "value",
         },
     }
+
+
+@pytest.mark.django_db
+def test_record_audit_event_strips_broader_secret_metadata_keys() -> None:
+    event = record_audit_event(
+        AuditEventType.SIGNATURE_REAUTH_FAILED,
+        metadata={
+            "token": "secret-token",
+            "authorization": "Bearer abc",
+            "nested": {
+                "api_key": "api-key",
+                "private_key": "private-key",
+                "kept": "value",
+            },
+            "list": [
+                {"refresh_token": "refresh-token", "kept": "list-value"},
+            ],
+        },
+    )
+
+    assert event.metadata == {
+        "nested": {
+            "kept": "value",
+        },
+        "list": [
+            {"kept": "list-value"},
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_record_audit_event_rejects_invalid_event_type() -> None:
+    with pytest.raises(ValueError, match="not_a_real_audit_event"):
+        record_audit_event("not_a_real_audit_event")  # type: ignore[arg-type]
+
+    assert AuditEvent.objects.count() == 0
 
 
 @pytest.mark.django_db

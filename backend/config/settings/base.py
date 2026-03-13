@@ -127,6 +127,7 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_RATES": {
         "workstation_identify": "10/minute",
+        "workstation_lock": "10/minute",
         "signature_reauth": "10/minute",
     },
     "EXCEPTION_HANDLER": "shared.api.exceptions.problem_details_exception_handler",

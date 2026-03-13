@@ -233,6 +233,7 @@ def test_workstation_identify_requires_csrf() -> None:
         **base_settings.REST_FRAMEWORK,
         "DEFAULT_THROTTLE_RATES": {
             "workstation_identify": "1/minute",
+            "workstation_lock": "5/minute",
             "signature_reauth": "5/minute",
         },
     }
@@ -310,6 +311,62 @@ def test_workstation_lock_requires_authenticated_session() -> None:
 
     assert response.status_code == 403
     assert response.json()["code"] == "not_authenticated"
+
+
+@pytest.mark.django_db
+@override_settings(
+    REST_FRAMEWORK={
+        **base_settings.REST_FRAMEWORK,
+        "DEFAULT_THROTTLE_RATES": {
+            "workstation_identify": "5/minute",
+            "workstation_lock": "1/minute",
+            "signature_reauth": "5/minute",
+        },
+    }
+)
+def test_workstation_lock_is_rate_limited_and_audited() -> None:
+    user = get_user_model().objects.create_user(
+        username="lock-throttle-user",
+        password="admin-pass-123",
+    )
+    forwarded_for = "10.0.0.1, 192.168.1.1"
+
+    client, token = csrf_client(user=user)
+    first_response = client.post(
+        "/api/v1/auth/workstation-lock/",
+        {},
+        format="json",
+        HTTP_X_CSRFTOKEN=token,
+        HTTP_X_FORWARDED_FOR=forwarded_for,
+    )
+
+    client.force_login(user)
+    second_response = client.post(
+        "/api/v1/auth/workstation-lock/",
+        {},
+        format="json",
+        HTTP_X_CSRFTOKEN=token,
+        HTTP_X_FORWARDED_FOR=forwarded_for,
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 429
+
+    locked_event = AuditEvent.objects.get(
+        event_type=AuditEventType.LOCK_WORKSTATION,
+        metadata__outcome="locked",
+    )
+    throttled_event = AuditEvent.objects.get(
+        event_type=AuditEventType.LOCK_WORKSTATION,
+        metadata__reason="rate_limited",
+    )
+    assert locked_event.actor == user
+    assert locked_event.metadata["ip_address"] == "10.0.0.1"
+    assert throttled_event.actor == user
+    assert throttled_event.metadata == {
+        "reason": "rate_limited",
+        "ip_address": "10.0.0.1",
+    }
 
 
 @pytest.mark.django_db
