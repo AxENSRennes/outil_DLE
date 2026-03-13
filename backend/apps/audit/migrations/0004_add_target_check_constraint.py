@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="auditevent",
             constraint=models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(target_type="", target_id__isnull=True)
                     | (~models.Q(target_type="") & models.Q(target_id__isnull=False))
                 ),
