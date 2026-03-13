@@ -81,7 +81,7 @@ class BatchStep(models.Model):
 
 
 class StepSignature(models.Model):
-    step = models.ForeignKey(BatchStep, on_delete=models.CASCADE, related_name="signatures")
+    step = models.ForeignKey(BatchStep, on_delete=models.PROTECT, related_name="signatures")
     signer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,

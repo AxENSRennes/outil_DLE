@@ -61,7 +61,10 @@ def _load_checklist(batch: Batch) -> list[dict[str, Any]]:
 def _resolve_batch(batch_or_id: Batch | int) -> Batch:
     if isinstance(batch_or_id, Batch):
         return batch_or_id
-    return Batch.objects.select_related("site").get(pk=batch_or_id)
+    try:
+        return Batch.objects.select_related("site").get(pk=batch_or_id)
+    except Batch.DoesNotExist:
+        raise Batch.DoesNotExist(f"Batch with pk={batch_or_id} does not exist.") from None
 
 
 def get_batch_review_summary(batch_or_id: Batch | int) -> ReviewSummary:

@@ -54,7 +54,7 @@ class ReviewSummaryView(APIView):
             raise NotFound(detail="Batch not found.", code="batch_not_found") from None
         try:
             self.check_object_permissions(self.request, batch)
-        except PermissionDenied as exc:
+        except (PermissionDenied, NotFound) as exc:
             raise NotFound(detail="Batch not found.", code="batch_not_found") from exc
         return batch
 
