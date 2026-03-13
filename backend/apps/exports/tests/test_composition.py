@@ -25,7 +25,7 @@ from apps.exports.models import (
     DossierProfile,
 )
 from apps.mmr.models import MMR, MMRVersion
-from apps.sites.models import Site
+from apps.sites.models import Product, Site
 
 User = get_user_model()
 
@@ -41,11 +41,16 @@ def _make_profile_and_batch(
         code=f"site-{Site.objects.count()}",
         name="Composition Test Site",
     )
+    product = Product.objects.create(
+        site=site, name="Test Product", code=f"PROD-{Product.objects.count()}"
+    )
     user = User.objects.create_user(
         username=f"comp-user-{User.objects.count()}",
         password="testpass",
     )
-    mmr = MMR.objects.create(site=site, name="Test MMR", code=f"MMR-{MMR.objects.count()}")
+    mmr = MMR.objects.create(
+        site=site, product=product, name="Test MMR", code=f"MMR-{MMR.objects.count()}"
+    )
     version = MMRVersion.objects.create(
         mmr=mmr,
         version_number=1,
@@ -127,7 +132,7 @@ class TestResolveFullContext:
         fx = _make_profile_and_batch(
             batch_context={"paillette_present": True, "format_family": "CREAM"},
         )
-        structure = resolve_dossier_structure(fx["batch"])
+        structure = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
 
         identifiers = [el.element_identifier for el in structure.elements.all()]
         # All 5 elements should be required
@@ -150,7 +155,7 @@ class TestExcludesNonApplicable:
         fx = _make_profile_and_batch(
             batch_context={"paillette_present": False, "format_family": "POWDER"},
         )
-        structure = resolve_dossier_structure(fx["batch"])
+        structure = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
 
         el_map = {el.element_identifier: el for el in structure.elements.all()}
 
@@ -171,7 +176,7 @@ class TestDefaultRequired:
 
     def test_default_required_always_included(self) -> None:
         fx = _make_profile_and_batch(batch_context={})
-        structure = resolve_dossier_structure(fx["batch"])
+        structure = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
 
         identifiers = [el.element_identifier for el in structure.elements.all()]
         assert "batch-header" in identifiers
@@ -193,7 +198,7 @@ class TestCategoricalMatching:
         fx = _make_profile_and_batch(
             batch_context={"format_family": "CREAM"},
         )
-        structure = resolve_dossier_structure(fx["batch"])
+        structure = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
         el_map = {el.element_identifier: el for el in structure.elements.all()}
         assert el_map["viscosity-control"].applicability == ApplicabilityStatus.REQUIRED
 
@@ -201,7 +206,7 @@ class TestCategoricalMatching:
         fx = _make_profile_and_batch(
             batch_context={"format_family": "POWDER"},
         )
-        structure = resolve_dossier_structure(fx["batch"])
+        structure = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
         el_map = {el.element_identifier: el for el in structure.elements.all()}
         assert el_map["viscosity-control"].applicability == ApplicabilityStatus.NOT_APPLICABLE
 
@@ -214,8 +219,8 @@ class TestIdempotency:
         fx = _make_profile_and_batch(
             batch_context={"paillette_present": True, "format_family": "CREAM"},
         )
-        s1 = resolve_dossier_structure(fx["batch"])
-        s2 = resolve_dossier_structure(fx["batch"])
+        s1 = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
+        s2 = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
 
         assert s1.pk == s2.pk
         assert BatchDossierStructure.objects.filter(batch=fx["batch"]).count() == 1
@@ -229,8 +234,8 @@ class TestForceRegenerate:
         fx = _make_profile_and_batch(
             batch_context={"paillette_present": True, "format_family": "CREAM"},
         )
-        s1 = resolve_dossier_structure(fx["batch"])
-        s2 = resolve_dossier_structure(fx["batch"], force=True)
+        s1 = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
+        s2 = resolve_dossier_structure(fx["batch"], force=True, actor=fx["user"], site=fx["site"])
 
         assert s1.pk != s2.pk
         assert BatchDossierStructure.objects.filter(batch=fx["batch"]).count() == 2
@@ -250,7 +255,7 @@ class TestEdgeCases:
     def test_missing_context_attributes(self) -> None:
         """Batch with no context attributes should still include default-required."""
         fx = _make_profile_and_batch(batch_context={})
-        structure = resolve_dossier_structure(fx["batch"])
+        structure = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
 
         required = [
             el.element_identifier
@@ -268,7 +273,7 @@ class TestEdgeCases:
             rules={},
             elements=[{"identifier": "doc-a"}],
         )
-        structure = resolve_dossier_structure(fx["batch"])
+        structure = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
         assert structure.elements.count() == 0
 
     def test_all_elements_excluded(self) -> None:
@@ -289,7 +294,7 @@ class TestEdgeCases:
             },
             elements=[{"identifier": "paillette-only"}],
         )
-        structure = resolve_dossier_structure(fx["batch"])
+        structure = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
         # paillette-only should be not_applicable since condition didn't match
         na_elements = [
             el
@@ -302,8 +307,9 @@ class TestEdgeCases:
     def test_no_dossier_profile_raises_error(self) -> None:
         """No DossierProfile for the MMR version should raise DossierCompositionError."""
         site = Site.objects.create(code="site-no-profile", name="No Profile Site")
+        product = Product.objects.create(site=site, name="No Profile Product", code="PROD-NP")
         user = User.objects.create_user(username="no-profile-user", password="testpass")
-        mmr = MMR.objects.create(site=site, name="MMR NP", code="MMR-NP")
+        mmr = MMR.objects.create(site=site, product=product, name="MMR NP", code="MMR-NP")
         version = MMRVersion.objects.create(
             mmr=mmr, version_number=1, schema_json={}, created_by=user
         )
@@ -316,7 +322,7 @@ class TestEdgeCases:
         )
 
         with pytest.raises(DossierCompositionError, match="No DossierProfile found"):
-            resolve_dossier_structure(batch)
+            resolve_dossier_structure(batch, actor=user, site=site)
 
     def test_unknown_operator_fails_closed(self) -> None:
         fx = _make_profile_and_batch(
@@ -336,7 +342,7 @@ class TestEdgeCases:
         )
 
         with pytest.raises(DossierCompositionError, match="unsupported operator"):
-            resolve_dossier_structure(fx["batch"])
+            resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
 
     def test_unknown_element_reference_fails_closed(self) -> None:
         fx = _make_profile_and_batch(
@@ -348,7 +354,7 @@ class TestEdgeCases:
         )
 
         with pytest.raises(DossierCompositionError, match="unknown elements: missing-element"):
-            resolve_dossier_structure(fx["batch"])
+            resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
 
     def test_duplicate_catalog_identifier_fails_closed(self) -> None:
         fx = _make_profile_and_batch(
@@ -361,7 +367,7 @@ class TestEdgeCases:
         )
 
         with pytest.raises(DossierCompositionError, match="duplicate element identifier"):
-            resolve_dossier_structure(fx["batch"])
+            resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
 
 
 @pytest.mark.django_db
@@ -371,7 +377,7 @@ class TestContextSnapshot:
     def test_context_snapshot_captured(self) -> None:
         context = {"paillette_present": True, "format_family": "CREAM", "line": "L1"}
         fx = _make_profile_and_batch(batch_context=context)
-        structure = resolve_dossier_structure(fx["batch"])
+        structure = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
         assert structure.context_snapshot == context
 
 
@@ -383,7 +389,7 @@ class TestElementTypes:
         fx = _make_profile_and_batch(
             batch_context={"paillette_present": True, "format_family": "CREAM"},
         )
-        structure = resolve_dossier_structure(fx["batch"])
+        structure = resolve_dossier_structure(fx["batch"], actor=fx["user"], site=fx["site"])
         el_map = {el.element_identifier: el for el in structure.elements.all()}
 
         assert el_map["batch-header"].element_type == DossierElementType.SUB_DOCUMENT

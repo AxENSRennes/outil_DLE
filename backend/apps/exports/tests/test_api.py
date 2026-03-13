@@ -15,7 +15,7 @@ from apps.batches.models import Batch
 from apps.exports.domain.composition import resolve_dossier_structure
 from apps.exports.models import DossierProfile
 from apps.mmr.models import MMR, MMRVersion
-from apps.sites.models import Site
+from apps.sites.models import Product, Site
 
 User = get_user_model()
 
@@ -27,11 +27,16 @@ def _make_api_fixtures(
 ) -> dict[str, Any]:
     """Create minimal fixtures for API tests."""
     site = Site.objects.create(code=f"site-api-{Site.objects.count()}", name="API Test Site")
+    product = Product.objects.create(
+        site=site, name="Test Product", code=f"PROD-A{Product.objects.count()}"
+    )
     user = User.objects.create_user(
         username=f"api-user-{User.objects.count()}", password="testpass"
     )
     SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR)
-    mmr = MMR.objects.create(site=site, name="API MMR", code=f"MMR-A{MMR.objects.count()}")
+    mmr = MMR.objects.create(
+        site=site, product=product, name="API MMR", code=f"MMR-A{MMR.objects.count()}"
+    )
     version = MMRVersion.objects.create(
         mmr=mmr, version_number=1, schema_json={"schemaVersion": "v1"}, created_by=user
     )
@@ -73,7 +78,7 @@ def _make_api_fixtures(
         )
 
     if with_structure:
-        resolve_dossier_structure(batch)
+        resolve_dossier_structure(batch, actor=user, site=site)
 
     return {
         "site": site,

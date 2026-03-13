@@ -16,7 +16,7 @@ from apps.batches.models import (
 )
 from apps.mmr.models import MMR, MMRVersion
 from apps.reviews.selectors.review_summary import get_batch_review_summary
-from apps.sites.models import Site
+from apps.sites.models import Product, Site
 
 _UserModel = get_user_model()
 
@@ -29,7 +29,8 @@ def site(db: None) -> Site:
 @pytest.fixture()
 def mmr_version(site: Site) -> MMRVersion:
     user = _UserModel.objects.create_user(username="template_author", password="testpass1234")
-    mmr = MMR.objects.create(site=site, name="Test MMR", code="MMR-001")
+    product = Product.objects.create(site=site, name="Test Product", code="PROD-001")
+    mmr = MMR.objects.create(site=site, product=product, name="Test MMR", code="MMR-001")
     return MMRVersion.objects.create(mmr=mmr, version_number=1, created_by=user)
 
 

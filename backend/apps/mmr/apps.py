@@ -6,4 +6,4 @@ from django.apps import AppConfig
 class MmrConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.mmr"
-    verbose_name = "MMR"
+    verbose_name = "Master Manufacturing Records"

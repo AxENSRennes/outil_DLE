@@ -17,7 +17,7 @@ from apps.exports.models import (
     DossierProfile,
 )
 from apps.mmr.models import MMR, MMRVersion
-from apps.sites.models import Site
+from apps.sites.models import Product, Site
 
 User = get_user_model()
 
@@ -25,8 +25,9 @@ User = get_user_model()
 def _make_fixtures() -> dict[str, Any]:
     """Create minimal fixtures for model tests."""
     site = Site.objects.create(code="site-m", name="Model Test Site")
+    product = Product.objects.create(site=site, name="Test Product", code="PROD-M1")
     user = User.objects.create_user(username="model-tester", password="testpass")
-    mmr = MMR.objects.create(site=site, name="Test MMR", code="MMR-M1")
+    mmr = MMR.objects.create(site=site, product=product, name="Test MMR", code="MMR-M1")
     version = MMRVersion.objects.create(
         mmr=mmr,
         version_number=1,

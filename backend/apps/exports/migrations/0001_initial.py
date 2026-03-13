@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("batches", "0001_initial"),
-        ("mmr", "0001_initial"),
+        ("mmr", "0001_initial_mmr_models"),
     ]
 
     operations = [
