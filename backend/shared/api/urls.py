@@ -21,4 +21,5 @@ urlpatterns = [
         name="schema-docs",
     ),
     path("mmrs/", include("apps.mmr.api.urls")),
+    path("", include("apps.reviews.api.urls")),
 ]
