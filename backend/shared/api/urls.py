@@ -20,4 +20,5 @@ urlpatterns = [
         AuthenticatedSchemaDocsView.as_view(url_name="shared-api:schema"),
         name="schema-docs",
     ),
+    path("mmrs/", include("apps.mmr.api.urls")),
 ]

@@ -45,8 +45,8 @@ development_status:
   1-2-establish-site-aware-roles-and-access-policy: done
   1-3-implement-shared-workstation-identification-and-signature-authority-guardrails: done
   epic-1-retrospective: optional
-  epic-2: backlog
-  2-1-create-the-mmr-and-draft-version-lifecycle-baseline: backlog
+  epic-2: in-progress
+  2-1-create-the-mmr-and-draft-version-lifecycle-baseline: review
   2-2-define-ordered-template-steps-and-step-level-guidance: backlog
   2-3-configure-step-fields-and-signature-checkpoints: backlog
   2-4-activate-a-governed-template-version-for-operational-use: backlog
