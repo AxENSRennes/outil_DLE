@@ -6,6 +6,7 @@ from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.db import transaction
 
 from apps.authz.models import SiteRole, SiteRoleAssignment
 from apps.batches.models import Batch, BatchStep, BatchStepStatus, StepSignatureState
@@ -72,27 +73,6 @@ class Command(BaseCommand):
             )
             snapshot_json = _fallback_snapshot()
 
-        batch, batch_created = Batch.objects.get_or_create(
-            batch_number="LOT-2026-001",
-            defaults={
-                "site": site,
-                "status": "in_progress",
-                "snapshot_json": snapshot_json,
-                "created_by": operator,
-                "lot_size_target": 500,
-                "batch_context_json": {
-                    "line": "PMS",
-                    "machine": "PMS",
-                    "format": "100mL",
-                    "glitter": "without_glitter",
-                },
-            },
-        )
-
-        if not batch_created:
-            self.stdout.write(self.style.WARNING("  Batch LOT-2026-001 already exists, skipping."))
-            return
-
         steps_config = snapshot_json.get("steps", {})
         step_order = snapshot_json.get("stepOrder", [])
 
@@ -112,30 +92,54 @@ class Command(BaseCommand):
 
         not_applicable_keys = {"gencod_control_uni2_uni3"}
 
-        for seq, step_key in enumerate(step_order, start=1):
-            step_def = steps_config.get(step_key, {})
-            step_status, sig_state = statuses.get(
-                step_key, (BatchStepStatus.NOT_STARTED, StepSignatureState.NOT_REQUIRED)
+        with transaction.atomic():
+            batch, batch_created = Batch.objects.get_or_create(
+                batch_number="LOT-2026-001",
+                defaults={
+                    "site": site,
+                    "status": "in_progress",
+                    "snapshot_json": snapshot_json,
+                    "created_by": operator,
+                    "lot_size_target": 500,
+                    "batch_context_json": {
+                        "line": "PMS",
+                        "machine": "PMS",
+                        "format": "100mL",
+                        "glitter": "without_glitter",
+                    },
+                },
             )
-            sig_policy = step_def.get("signaturePolicy", {})
-            blocking = step_def.get("blockingPolicy", {})
 
-            if sig_state == StepSignatureState.NOT_REQUIRED and sig_policy.get("required"):
-                sig_state = StepSignatureState.REQUIRED
+            if not batch_created:
+                self.stdout.write(
+                    self.style.WARNING("  Batch LOT-2026-001 already exists, skipping.")
+                )
+                return
 
-            BatchStep.objects.create(
-                batch=batch,
-                step_key=step_key,
-                title=step_def.get("title", step_key),
-                sequence_order=seq,
-                status=step_status,
-                signature_state=sig_state,
-                is_applicable=step_key not in not_applicable_keys,
-                blocks_execution_progress=blocking.get("blocksExecutionProgress", False),
-                blocks_step_completion=blocking.get("blocksStepCompletion", True),
-                blocks_signature=blocking.get("blocksSignature", False),
-                blocks_pre_qa_handoff=blocking.get("blocksPreQaHandoff", True),
-            )
+            for seq, step_key in enumerate(step_order, start=1):
+                step_def = steps_config.get(step_key, {})
+                step_status, sig_state = statuses.get(
+                    step_key, (BatchStepStatus.NOT_STARTED, StepSignatureState.NOT_REQUIRED)
+                )
+                sig_policy = step_def.get("signaturePolicy", {})
+                blocking = step_def.get("blockingPolicy", {})
+
+                if sig_state == StepSignatureState.NOT_REQUIRED and sig_policy.get("required"):
+                    sig_state = StepSignatureState.REQUIRED
+
+                BatchStep.objects.create(
+                    batch=batch,
+                    step_key=step_key,
+                    title=step_def.get("title", step_key),
+                    sequence_order=seq,
+                    status=step_status,
+                    signature_state=sig_state,
+                    is_applicable=step_key not in not_applicable_keys,
+                    blocks_execution_progress=blocking.get("blocksExecutionProgress", False),
+                    blocks_step_completion=blocking.get("blocksStepCompletion", True),
+                    blocks_signature=blocking.get("blocksSignature", False),
+                    blocks_pre_qa_handoff=blocking.get("blocksPreQaHandoff", True),
+                )
 
         step_count = batch.steps.count()
         self.stdout.write(
