@@ -336,7 +336,7 @@ Keep the public API REST-first under `/api/v1`, with problem-details errors and 
   Returns: signature manifest with signer, role, meaning, timestamp, and resulting step state
 - `POST /api/v1/batch-steps/{id}/corrections`
   Payload: corrected values plus `reason_for_change`
-  Returns: updated change-history block and review-required flags
+  Returns: correction receipt with `correction_id`, `step_id`, `corrected_at`, `corrected_by`, and the applied old/new values
 - `GET /api/v1/batches/{id}/execution`
   Returns: batch execution read model including sidebar steps, active-step detail, current identity context, and save status metadata
 - `GET /api/v1/batches/{id}/review-summary`

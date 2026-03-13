@@ -1,6 +1,6 @@
 # Story 4.2: Correct Previously Entered Batch Data with Required Reason for Change
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -56,11 +56,11 @@ so that dossier errors can be fixed without losing traceability or creating sile
     - `corrections_applied`: typed nested list with `field_name`, `old_value`, `new_value`.
     - `reason_for_change`: `CharField`.
   - [x] Implement `SubmitCorrectionView(APIView)`:
-    - URL: `POST /api/v1/batches/<batch_id>/steps/<step_id>/corrections`.
+    - URL: `POST /api/v1/batch-steps/<step_id>/corrections`.
     - Permission: `IsAuthenticated` + `SiteScopedRolePermission` with `required_site_roles = (SiteRole.OPERATOR, SiteRole.PRODUCTION_REVIEWER)`.
-    - Resolve batch → step, verify step belongs to batch.
-    - Use `get_site_for_object(obj)` returning `batch.site` for site-scoped role check.
-    - On 403 or 404 for batch/step: return 404 (fail-closed, no enumeration — same pattern as `ReviewSummaryView`).
+    - Resolve the step directly and load `batch.site` for the site-scoped role check.
+    - Use `get_site_for_object(obj)` returning `step.batch.site` for site-scoped role check.
+    - On 403 or 404 for step: return 404 (fail-closed, no enumeration — same pattern as `ReviewSummaryView`).
     - Deserialize request with `CorrectionRequestSerializer`.
     - Call `submit_correction(...)` domain service.
     - Return `CorrectionResponseSerializer` with HTTP 201.
@@ -93,9 +93,9 @@ so that dossier errors can be fixed without losing traceability or creating sile
     - User without OPERATOR or PRODUCTION_REVIEWER role on the batch's site → 404 (fail-closed).
     - Missing `reason_for_change` → 400.
     - Empty `corrections` list → 400.
-    - Non-existent batch_id → 404.
+    - Missing `new_value` → 400.
+    - Object/array `new_value` payloads → 400.
     - Non-existent step_id → 404.
-    - Step does not belong to the specified batch → 404.
     - Not-started step correction → 400.
     - Response includes `correction_id`, `step_id`, `corrected_at`, `corrected_by`, `corrections_applied`, `reason_for_change`.
 
@@ -156,7 +156,7 @@ The correction flow is a first-class domain action (architecture: `request_corre
   - `tests/` — test coverage
 - The batches domain service depends on `apps.audit.services.record_audit_event` for audit recording. This is a valid cross-app dependency: domain service → audit service.
 - `apps.batches.domain` must not import from `apps.batches.api` or any other feature's `api/` package.
-- The endpoint follows the architecture's canonical action pattern: `POST /api/v1/batches/{batch_id}/steps/{step_id}/corrections`. This is a dedicated action endpoint, NOT a generic PATCH.
+- The endpoint follows the architecture's canonical action pattern: `POST /api/v1/batch-steps/{step_id}/corrections`. This is a dedicated action endpoint, NOT a generic PATCH.
 - Return 404 for both missing resources AND authorization failures (fail-closed, no enumeration — same pattern as `ReviewSummaryView`).
 - Errors use problem-details JSON format via the existing `problem_details_exception_handler` in `backend/shared/api/exceptions.py`.
   [Source: backend/shared/api/exceptions.py]
@@ -277,7 +277,7 @@ The `correction_submitted` event is documented in `docs/implementation/audit-eve
 
 ### API Contract Reference
 
-**Endpoint:** `POST /api/v1/batches/{batch_id}/steps/{step_id}/corrections`
+**Endpoint:** `POST /api/v1/batch-steps/{step_id}/corrections`
 
 **Request body:**
 ```json
@@ -307,7 +307,7 @@ The `correction_submitted` event is documented in `docs/implementation/audit-eve
 
 **Error responses:**
 - 400: Invalid payload (missing reason, empty corrections, invalid field_name) — problem-details JSON.
-- 404: Batch/step not found or user not authorized (fail-closed).
+- 404: Step not found or user not authorized (fail-closed).
 - 403: Not authenticated.
 
 ### Project Structure Notes
@@ -321,7 +321,7 @@ The `correction_submitted` event is documented in `docs/implementation/audit-eve
 ### References
 
 - [epics.md](/home/axel/DLE-SaaS-epic-4/_bmad-output/planning-artifacts/epics.md) — Epic 4 scope, Story 4.2 acceptance criteria, cross-story dependencies, Story 4.3/4.4 scope boundaries
-- [architecture.md](/home/axel/DLE-SaaS-epic-4/_bmad-output/planning-artifacts/architecture.md) — `POST /api/v1/batch-steps/{id}/corrections` endpoint contract, `request_correction` canonical action, review-relevant flags, hybrid relational+JSONB model, fail-closed transaction pattern, canonical batch lifecycle states
+- [architecture.md](/home/axel/DLE-SaaS-epic-4/_bmad-output/planning-artifacts/architecture.md) — `POST /api/v1/batch-steps/{id}/corrections` endpoint contract, `request_correction` canonical action, hybrid relational+JSONB model, fail-closed transaction pattern, canonical batch lifecycle states
 - [prd.md](/home/axel/DLE-SaaS-epic-4/_bmad-output/planning-artifacts/prd.md) — FR18 (controlled change flow), FR19 (reason for change), FR20 (re-review after changes), FR21 (explicit integrity states), NFR security (100% audit trail coverage)
 - [ux-design-specification.md](/home/axel/DLE-SaaS-epic-4/_bmad-output/planning-artifacts/ux-design-specification.md) — Correction modal UX, Journey 2 (Karim correction flow), ChangeHistoryBlock component anatomy, "correction is a workflow not a failure" principle, reason-for-change textarea, PIN re-auth before correction
 - [architecture-decisions.md](/home/axel/DLE-SaaS-epic-4/docs/decisions/architecture-decisions.md) — Decision 7 (review states survive corrections), Decision 16 (frozen workflow states), Decision 17 (action-based workflow contracts)
@@ -343,6 +343,7 @@ The `correction_submitted` event is documented in `docs/implementation/audit-eve
 ## Change Log
 
 - 2026-03-13: Implemented controlled correction transaction for batch step data — domain service, API endpoint, and comprehensive tests (29 tests total: 15 domain + 14 API).
+- 2026-03-13: Fixed code review findings by switching to the canonical step-scoped correction route, restricting correction values to JSON scalars/null, deriving audit site from the batch step, and locking the step row before applying corrections.
 
 ## Dev Agent Record
 
@@ -354,15 +355,15 @@ Claude Opus 4.6 (claude-opus-4-6)
 
 - Migration 0003_batchstep_data_json required `--fake` apply because column already existed in database from prior development.
 - Unauthenticated endpoint returns 401 (not 403) due to `get_authenticate_header` returning "Session" — test adjusted to match actual DRF behavior.
+- Targeted correction pytest runs required `--reuse-db --nomigrations` because the shared local `test_dle_saas` database was already in use by another session.
 
 ### Completion Notes List
 
 - Added `data_json = JSONField(default=dict, blank=True)` to BatchStep model with additive migration 0003.
-- Implemented `submit_correction()` domain service in `batches/domain/corrections.py` with full validation (status, reason, corrections list), atomic transaction wrapping, and fail-closed audit recording via `record_audit_event()`.
-- Created `SubmitCorrectionView` API endpoint at `POST /api/v1/batches/{batch_id}/steps/{step_id}/corrections` with site-scoped role authorization (OPERATOR, PRODUCTION_REVIEWER), fail-closed 404 pattern, typed nested serializers, and drf-spectacular OpenAPI decorators.
-- 15 domain tests covering happy path (3 statuses), validation errors (4 cases), audit metadata verification, and transaction atomicity.
-- 14 API tests covering auth (401 unauthenticated, 404 unauthorized/different-site), success (201 operator/reviewer, audit event, data update), validation (400 missing reason/empty corrections/not-started step), resource resolution (404 for non-existent batch/step/cross-batch), and response shape verification.
-- All 245 tests pass (0 regressions). All quality gates pass: lint, format, mypy, bandit, pip-audit, architecture-check, react-doctor.
+- Hardened `submit_correction()` in `batches/domain/corrections.py` with explicit `new_value` presence checks, scalar-only correction values, row-level locking via `select_for_update()`, and audit-site derivation from `step.batch.site`.
+- Switched `SubmitCorrectionView` to the canonical step-scoped endpoint `POST /api/v1/batch-steps/{step_id}/corrections` while keeping fail-closed 404 authorization behavior through `step.batch.site`.
+- Expanded correction coverage to 39 targeted tests, including missing `new_value`, object/array rejection, batch-site audit attribution, and stale-instance overwrite protection.
+- Verified with `/home/axel/wsl_venv/bin/pytest backend/apps/batches/tests/test_corrections_domain.py backend/apps/batches/tests/test_corrections_api.py -q --reuse-db --nomigrations`, `/home/axel/wsl_venv/bin/python manage.py check`, and full `make check`.
 
 ### File List
 
@@ -381,3 +382,43 @@ Claude Opus 4.6 (claude-opus-4-6)
 **Modified files:**
 - backend/apps/batches/models.py (added data_json field to BatchStep)
 - backend/shared/api/urls.py (included batches API URLs)
+- _bmad-output/planning-artifacts/architecture.md (aligned correction endpoint contract and response summary)
+- _bmad-output/implementation-artifacts/4-2-correct-previously-entered-batch-data-with-required-reason-for-change.md (updated route, verification notes, and review outcome)
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Axel
+**Date:** 2026-03-13
+**Outcome:** Approved after fixes
+
+#### Summary
+
+- Re-reviewed the Story 4.2 implementation after fixing the previously reported issues.
+- The git worktree had tracked code and story/doc updates only for the correction flow scope.
+- Re-verified with:
+  - `/home/axel/wsl_venv/bin/pytest backend/apps/batches/tests/test_corrections_domain.py backend/apps/batches/tests/test_corrections_api.py -q --reuse-db --nomigrations`
+  - `/home/axel/wsl_venv/bin/python manage.py check`
+
+#### Findings
+
+1. **[Resolved] Missing `new_value` entries were accepted and silently wrote `null`.**
+   The correction service and API now reject entries that omit `new_value`, closing the silent data-loss path for non-API callers and invalid payloads.
+
+2. **[Resolved] The API accepted nested JSON objects and arrays for regulated correction values.**
+   The request contract is now limited to string, number, boolean, or `null`, matching the story scope and preventing nested JSON blobs from entering `data_json`.
+
+3. **[Resolved] Concurrent or stale correction writes could overwrite newer batch-step data.**
+   The domain service now reloads the current row under `select_for_update()` before computing old/new values and saving, so corrections are based on the locked database state rather than a stale in-memory instance.
+
+4. **[Resolved] Audit events could be recorded under a caller-supplied site unrelated to the corrected step.**
+   The correction service now derives the audit site from `step.batch.site`, so correction events cannot drift away from the batch context.
+
+5. **[Resolved] The public contract and implementation used different correction URLs.**
+   The endpoint, tests, and architecture artifact are now aligned on `POST /api/v1/batch-steps/{step_id}/corrections`.
+
+#### Developer Follow-up
+
+- 2026-03-13: Refactored the correction endpoint to the canonical step-scoped route and updated tests/docs to match.
+- 2026-03-13: Added scalar-only correction value validation in both serializer and domain layers.
+- 2026-03-13: Added row locking and stale-instance protection in `submit_correction()`.
+- 2026-03-13: Re-ran targeted correction suites successfully, completed a Django system check, and passed `make check`.

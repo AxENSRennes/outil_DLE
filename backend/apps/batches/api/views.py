@@ -18,7 +18,7 @@ from apps.batches.api.serializers import (
     CorrectionResponseSerializer,
 )
 from apps.batches.domain.corrections import submit_correction
-from apps.batches.models import Batch, BatchStep
+from apps.batches.models import BatchStep
 from apps.sites.models import Site
 
 
@@ -51,26 +51,19 @@ class SubmitCorrectionView(APIView):
             )
         super().permission_denied(request, message=message, code=code)
 
-    def _get_batch_and_step(self, batch_id: int, step_id: int) -> tuple[Batch, BatchStep]:
+    def get_object(self) -> BatchStep:
         try:
-            batch = Batch.objects.select_related("site").get(pk=batch_id)
-        except Batch.DoesNotExist:
-            raise NotFound(detail="Batch not found.", code="batch_not_found") from None
-
-        try:
-            self.check_object_permissions(self.request, batch)
-        except (PermissionDenied, NotFound) as exc:
-            raise NotFound(detail="Batch not found.", code="batch_not_found") from exc
-
-        try:
-            step = batch.steps.get(pk=step_id)
+            step = BatchStep.objects.select_related("batch__site").get(pk=self.kwargs["step_id"])
         except BatchStep.DoesNotExist:
             raise NotFound(detail="Step not found.", code="step_not_found") from None
+        try:
+            self.check_object_permissions(self.request, step)
+        except (PermissionDenied, NotFound) as exc:
+            raise NotFound(detail="Step not found.", code="step_not_found") from exc
+        return step
 
-        return batch, step
-
-    def get_site_for_object(self, obj: Batch) -> Site:
-        return obj.site
+    def get_site_for_object(self, obj: BatchStep) -> Site:
+        return obj.batch.site
 
     @extend_schema(
         request=CorrectionRequestSerializer,
@@ -82,8 +75,8 @@ class SubmitCorrectionView(APIView):
             "that captures old and new values for traceability."
         ),
     )
-    def post(self, request: Request, batch_id: int, step_id: int) -> Response:
-        batch, step = self._get_batch_and_step(batch_id, step_id)
+    def post(self, request: Request, step_id: int) -> Response:
+        step = self.get_object()
 
         serializer = CorrectionRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -92,7 +85,6 @@ class SubmitCorrectionView(APIView):
             audit_event = submit_correction(
                 step=step,
                 actor=request.user,
-                site=batch.site,
                 corrections=serializer.validated_data["corrections"],
                 reason_for_change=serializer.validated_data["reason_for_change"],
                 ip_address=get_client_ip(request),

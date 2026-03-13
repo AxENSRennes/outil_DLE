@@ -16,7 +16,8 @@ _UserModel = get_user_model()
 
 
 def _url(batch_id: int, step_id: int) -> str:
-    return f"/api/v1/batches/{batch_id}/steps/{step_id}/corrections"
+    del batch_id
+    return f"/api/v1/batch-steps/{step_id}/corrections"
 
 
 @pytest.fixture()
@@ -182,26 +183,9 @@ class TestSubmitCorrectionValidation:
         resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
         assert resp.status_code == 400
 
-    def test_non_existent_batch_returns_404(self, step: BatchStep, operator: Any) -> None:
-        client, token = csrf_client(user=operator)
-        resp = post_json(client, _url(99999, step.pk), _valid_payload(), csrf_token=token)
-        assert resp.status_code == 404
-
     def test_non_existent_step_returns_404(self, batch: Batch, operator: Any) -> None:
         client, token = csrf_client(user=operator)
         resp = post_json(client, _url(batch.pk, 99999), _valid_payload(), csrf_token=token)
-        assert resp.status_code == 404
-
-    def test_step_not_belonging_to_batch_returns_404(
-        self, batch: Batch, step: BatchStep, operator: Any, site: Site
-    ) -> None:
-        other_batch = Batch.objects.create(
-            reference="LOT-OTHER",
-            status=BatchStatus.IN_PROGRESS,
-            site=site,
-        )
-        client, token = csrf_client(user=operator)
-        resp = post_json(client, _url(other_batch.pk, step.pk), _valid_payload(), csrf_token=token)
         assert resp.status_code == 404
 
     def test_not_started_step_returns_400(self, batch: Batch, operator: Any) -> None:
@@ -226,6 +210,39 @@ class TestSubmitCorrectionValidation:
                 {"field_name": "temperature", "new_value": "23.1"},
                 {"field_name": "temperature", "new_value": "24.0"},
             ],
+            "reason_for_change": "Fix",
+        }
+        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
+        assert resp.status_code == 400
+
+    def test_missing_new_value_returns_400(
+        self, batch: Batch, step: BatchStep, operator: Any
+    ) -> None:
+        client, token = csrf_client(user=operator)
+        payload = {
+            "corrections": [{"field_name": "temperature"}],
+            "reason_for_change": "Fix",
+        }
+        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
+        assert resp.status_code == 400
+
+    def test_object_new_value_returns_400(
+        self, batch: Batch, step: BatchStep, operator: Any
+    ) -> None:
+        client, token = csrf_client(user=operator)
+        payload = {
+            "corrections": [{"field_name": "temperature", "new_value": {"value": "23.1"}}],
+            "reason_for_change": "Fix",
+        }
+        resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
+        assert resp.status_code == 400
+
+    def test_array_new_value_returns_400(
+        self, batch: Batch, step: BatchStep, operator: Any
+    ) -> None:
+        client, token = csrf_client(user=operator)
+        payload = {
+            "corrections": [{"field_name": "temperature", "new_value": ["23.1"]}],
             "reason_for_change": "Fix",
         }
         resp = post_json(client, _url(batch.pk, step.pk), payload, csrf_token=token)
