@@ -54,18 +54,22 @@ def confirm_pre_qa_review(
             code="invalid_batch_state",
         )
 
-    summary = get_batch_review_summary(batch)
-    if summary.severity == "red":
-        raise ValidationError(
-            "Cannot confirm pre-QA review: blocking issues remain "
-            "(missing required data, missing required signatures, "
-            "or blocking open exceptions).",
-            code="pre_qa_review_blocked",
-        )
-
     review_event: ReviewEvent | None = None
+    committed = False
     try:
         with transaction.atomic():
+            # Lock the batch row to prevent concurrent confirms (TOCTOU).
+            batch = Batch.objects.select_for_update().get(pk=batch.pk)
+
+            summary = get_batch_review_summary(batch)
+            if summary.severity == "red":
+                raise ValidationError(
+                    "Cannot confirm pre-QA review: blocking issues remain "
+                    "(missing required data, missing required signatures, "
+                    "or blocking open exceptions).",
+                    code="pre_qa_review_blocked",
+                )
+
             review_event = ReviewEvent.objects.create(
                 batch=batch,
                 reviewer=reviewer,
@@ -75,6 +79,7 @@ def confirm_pre_qa_review(
 
             batch.status = BatchStatus.AWAITING_QUALITY_REVIEW
             batch.save(update_fields=["status", "updated_at"])
+            committed = True
     finally:
         AuditEvent.objects.create(
             actor=reviewer,
@@ -85,7 +90,9 @@ def confirm_pre_qa_review(
                 "batch_reference": batch.reference,
                 "reviewer_id": reviewer.pk,
                 "note": note,
-                "review_event_id": review_event.pk if review_event else None,
+                "review_event_id": (
+                    review_event.pk if review_event and committed else None
+                ),
             },
         )
 
@@ -105,6 +112,10 @@ def mark_step_reviewed(
     transitions the batch to ``in_pre_qa_review`` if needed, creates
     a ReviewEvent, and records an audit event.
 
+    Note: ``changed_since_signature`` is a persistent integrity marker
+    that is only cleared by re-signing, not by review.  It does not
+    make a step actionable for mark-reviewed on its own.
+
     Raises ``ValidationError`` when the batch status or step state is
     not appropriate.
     """
@@ -120,11 +131,8 @@ def mark_step_reviewed(
             code="step_not_in_batch",
         )
 
-    has_reviewable_flag = (
-        step.changed_since_review
-        or step.changed_since_signature
-        or step.review_required
-    )
+    # Only clearable flags make a step actionable for mark-reviewed.
+    has_reviewable_flag = step.changed_since_review or step.review_required
     if not has_reviewable_flag:
         raise ValidationError(
             "Step has no reviewable flags to clear.",
@@ -132,17 +140,22 @@ def mark_step_reviewed(
         )
 
     flags_cleared: list[str] = []
-
-    if step.changed_since_review:
-        step.changed_since_review = False
-        flags_cleared.append("changed_since_review")
-    if step.review_required:
-        step.review_required = False
-        flags_cleared.append("review_required")
-
     review_event: ReviewEvent | None = None
+    committed = False
     try:
         with transaction.atomic():
+            # Lock rows to prevent concurrent reviews of the same step.
+            batch = Batch.objects.select_for_update().get(pk=batch.pk)
+            step = BatchStep.objects.select_for_update().get(pk=step.pk)
+
+            # Clear flags after lock acquisition (step was re-fetched).
+            if step.changed_since_review:
+                step.changed_since_review = False
+                flags_cleared.append("changed_since_review")
+            if step.review_required:
+                step.review_required = False
+                flags_cleared.append("review_required")
+
             step.save(update_fields=["changed_since_review", "review_required"])
 
             if batch.status == BatchStatus.AWAITING_PRE_QA:
@@ -156,6 +169,7 @@ def mark_step_reviewed(
                 step=step,
                 note=note,
             )
+            committed = True
     finally:
         AuditEvent.objects.create(
             actor=reviewer,
@@ -167,7 +181,9 @@ def mark_step_reviewed(
                 "step_reference": step.reference,
                 "reviewer_id": reviewer.pk,
                 "flags_cleared": flags_cleared,
-                "review_event_id": review_event.pk if review_event else None,
+                "review_event_id": (
+                    review_event.pk if review_event and committed else None
+                ),
             },
         )
 

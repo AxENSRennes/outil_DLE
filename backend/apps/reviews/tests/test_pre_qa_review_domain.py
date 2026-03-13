@@ -343,11 +343,14 @@ class TestMarkStepReviewed:
         assert audit.metadata["step_id"] == step.pk
         assert audit.metadata["step_reference"] == "Step 1"
 
-    def test_changed_since_signature_counts_as_reviewable(
+    def test_changed_since_signature_alone_is_not_reviewable(
         self,
         batch_awaiting_pre_qa: Batch,
         reviewer: User,
     ) -> None:
+        # changed_since_signature is a persistent integrity marker cleared
+        # only by re-signing — it does not make a step actionable for
+        # mark-reviewed on its own.
         step = BatchStep.objects.create(
             batch=batch_awaiting_pre_qa,
             order=1,
@@ -355,10 +358,7 @@ class TestMarkStepReviewed:
             status=StepStatus.COMPLETE,
             changed_since_signature=True,
         )
-        # Should not raise — changed_since_signature is a reviewable flag
-        result = mark_step_reviewed(
-            batch=batch_awaiting_pre_qa, step=step, reviewer=reviewer
-        )
-        # changed_since_signature is NOT cleared by mark_step_reviewed
-        # (only changed_since_review and review_required are cleared)
-        assert result.step.changed_since_signature is True
+        with pytest.raises(ValidationError, match="no reviewable flags"):
+            mark_step_reviewed(
+                batch=batch_awaiting_pre_qa, step=step, reviewer=reviewer
+            )

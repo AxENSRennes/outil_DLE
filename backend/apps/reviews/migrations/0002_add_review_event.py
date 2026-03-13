@@ -7,8 +7,6 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    initial = True
-
     dependencies = [
         ('batches', '0002_step_signature_protect_on_delete'),
         ('reviews', '0001_initial'),

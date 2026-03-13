@@ -17,10 +17,11 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
     method !== "GET" && method !== "HEAD"
       ? { "X-CSRFToken": getCsrfToken() ?? "" }
       : {};
+  const { headers: callerHeaders, ...restOptions } = options ?? {};
   const response = await fetch(url, {
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...csrfHeaders, ...options?.headers },
-    ...options,
+    headers: { "Content-Type": "application/json", ...csrfHeaders, ...callerHeaders },
+    ...restOptions,
   });
   if (!response.ok) {
     const error: ApiError = await response
