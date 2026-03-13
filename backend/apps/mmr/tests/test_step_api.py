@@ -205,6 +205,21 @@ def test_add_step_invalid_key_pattern_returns_400(
 
 
 @pytest.mark.django_db
+def test_add_step_reserved_key_returns_409(
+    configurator: Any, mmr: MMR, draft_version: MMRVersion
+) -> None:
+    client, token = csrf_client(user=configurator)
+    resp = post_json(
+        client,
+        _steps_url(mmr, draft_version),
+        {"key": "reorder", "title": "Reorder Step", "kind": "weighing"},
+        csrf_token=token,
+    )
+    assert resp.status_code == 409
+    assert "reserved" in resp.json()["detail"]
+
+
+@pytest.mark.django_db
 def test_add_step_rejects_contradictory_attachments_policy(
     configurator: Any, mmr: MMR, draft_version: MMRVersion
 ) -> None:

@@ -194,10 +194,10 @@ class RepeatPolicySerializer(serializers.Serializer):
 
 
 class BlockingPolicySerializer(serializers.Serializer):
-    blocks_execution_progress = serializers.BooleanField(required=False, default=False)
-    blocks_step_completion = serializers.BooleanField(required=False, default=False)
-    blocks_signature = serializers.BooleanField(required=False, default=False)
-    blocks_pre_qa_handoff = serializers.BooleanField(required=False, default=False)
+    blocks_execution_progress = serializers.BooleanField(required=False)
+    blocks_step_completion = serializers.BooleanField(required=False)
+    blocks_signature = serializers.BooleanField(required=False)
+    blocks_pre_qa_handoff = serializers.BooleanField(required=False)
 
 
 @extend_schema_field(SIGNATURE_POLICY_SCHEMA)

@@ -177,6 +177,16 @@ def test_add_step_invalid_key_pattern_raises(draft_version: MMRVersion, user: An
 
 
 @pytest.mark.django_db
+def test_add_step_reserved_key_raises(draft_version: MMRVersion, user: Any) -> None:
+    with pytest.raises(ValueError, match="reserved and cannot be used"):
+        add_step(
+            version=draft_version,
+            step_data={"key": "reorder", "title": "Reorder Step", "kind": "weighing"},
+            actor=user,
+        )
+
+
+@pytest.mark.django_db
 def test_add_step_records_audit_event(
     draft_version: MMRVersion, sample_step_data: dict, user: Any
 ) -> None:

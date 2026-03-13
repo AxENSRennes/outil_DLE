@@ -30,6 +30,8 @@ VALID_STEP_KINDS = frozenset(
 
 STEP_KEY_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
+_RESERVED_STEP_KEYS = frozenset({"reorder"})
+
 _OPTIONAL_STEP_PROPERTIES = (
     "instructions",
     "attachments_policy",
@@ -128,6 +130,8 @@ def _validate_step_key(key: str) -> None:
             f"Invalid step key '{key}'. Must start with a lowercase letter "
             f"and contain only lowercase letters, digits, or underscores."
         )
+    if key in _RESERVED_STEP_KEYS:
+        raise ValueError(f"Step key '{key}' is reserved and cannot be used.")
 
 
 def _validate_step_kind(kind: str) -> None:
