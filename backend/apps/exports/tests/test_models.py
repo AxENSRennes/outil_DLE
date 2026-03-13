@@ -36,7 +36,7 @@ def _make_fixtures() -> dict[str, Any]:
     )
     batch = Batch.objects.create(
         site=site,
-        mmr_version=version,
+        mmr_version_id=version.pk,
         batch_number="BATCH-M001",
         batch_context_json={"line": "L1"},
         snapshot_json={},
