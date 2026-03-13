@@ -33,15 +33,15 @@ def create_draft_version(
             change_summary=change_summary,
         )
 
-    record_audit_event(
-        AuditEventType.MMR_VERSION_CREATED,
-        actor=actor,
-        site=mmr.site,
-        metadata={
-            "mmr_id": mmr.pk,
-            "mmr_code": mmr.code,
-            "version_id": version.pk,
-            "version_number": version.version_number,
-        },
-    )
+        record_audit_event(
+            AuditEventType.MMR_VERSION_CREATED,
+            actor=actor,
+            site=mmr.site,
+            metadata={
+                "mmr_id": mmr.pk,
+                "mmr_code": mmr.code,
+                "version_id": version.pk,
+                "version_number": version.version_number,
+            },
+        )
     return version

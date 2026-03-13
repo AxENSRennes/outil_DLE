@@ -1,6 +1,6 @@
 # Story 2.1: Create the MMR and Draft Version Lifecycle Baseline
 
-Status: review
+Status: done
 
 ## Story
 
@@ -414,6 +414,7 @@ claude-opus-4-6
 ### Change Log
 
 - 2026-03-13: Implemented Story 2.1 - MMR and draft version lifecycle baseline. All 9 tasks completed. 119 tests passing (52 new).
+- 2026-03-13: Code review completed. 7 issues found (1 HIGH, 4 MEDIUM, 2 LOW) — all fixed. RBAC leak on MMR list endpoint patched, audit events wrapped in transactions, missing tests added, import cleaned up, Product.is_active filter added. 122 tests passing (3 new from review).
 
 ### File List
 

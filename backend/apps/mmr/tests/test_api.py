@@ -372,3 +372,59 @@ def test_configurator_cannot_create_mmr_on_other_site(configurator: Any) -> None
         csrf_token=token,
     )
     assert resp.status_code == 403
+
+
+# --- RBAC: operator denied on list ---
+
+
+@pytest.mark.django_db
+def test_list_mmrs_as_operator_returns_empty(
+    operator: Any, site: Site, product: Product
+) -> None:
+    MMR.objects.create(site=site, product=product, name="A", code="A-CODE")
+    client, _ = csrf_client(user=operator)
+    resp = client.get("/api/v1/mmrs/")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+# --- Version: nonexistent MMR ---
+
+
+@pytest.mark.django_db
+def test_create_version_nonexistent_mmr_returns_404(configurator: Any) -> None:
+    client, token = csrf_client(user=configurator)
+    resp = post_json(
+        client,
+        "/api/v1/mmrs/99999/versions/",
+        {"change_summary": "Should fail"},
+        csrf_token=token,
+    )
+    assert resp.status_code == 404
+
+
+# --- Problem-details error format ---
+
+
+@pytest.mark.django_db
+def test_create_mmr_error_uses_problem_details_format(
+    configurator: Any, site: Site, product: Product
+) -> None:
+    MMR.objects.create(site=site, product=product, name="Existing", code="DUP-CODE")
+    client, token = csrf_client(user=configurator)
+    resp = post_json(
+        client,
+        "/api/v1/mmrs/",
+        {
+            "site_id": site.pk,
+            "product_id": product.pk,
+            "name": "Another",
+            "code": "DUP-CODE",
+        },
+        csrf_token=token,
+    )
+    assert resp.status_code == 409
+    data = resp.json()
+    assert "type" in data
+    assert "title" in data
+    assert "detail" in data

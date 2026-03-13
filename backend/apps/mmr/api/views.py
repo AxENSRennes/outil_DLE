@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from shared.permissions.site_roles import SiteScopedRolePermission
 
+from apps.authz.domain.policies import get_active_site_role_assignments
 from apps.authz.models import SiteRole
 from apps.mmr.api.serializers import (
     MMRCreateSerializer,
@@ -34,12 +35,12 @@ class MMRListCreateView(APIView):
 
     @extend_schema(responses=MMRListSerializer(many=True))
     def get(self, request: Request) -> Response:
-        user = request.user
-        # Filter MMRs to sites where user has configurator role
-        from apps.authz.domain.policies import get_authorized_sites
-
-        authorized_sites = get_authorized_sites(user)
-        mmrs = MMR.objects.filter(site__in=authorized_sites).select_related(
+        authorized_site_ids = get_active_site_role_assignments(
+            request.user
+        ).filter(
+            role__in=[str(r) for r in self.required_site_roles],
+        ).values_list("site_id", flat=True)
+        mmrs = MMR.objects.filter(site_id__in=authorized_site_ids).select_related(
             "site", "product"
         )
         serializer = MMRListSerializer(mmrs, many=True)
@@ -63,7 +64,7 @@ class MMRListCreateView(APIView):
         self.site = site
         self.check_permissions(request)
 
-        product = Product.objects.filter(pk=data["product_id"], site=site).first()
+        product = Product.objects.filter(pk=data["product_id"], site=site, is_active=True).first()
         if product is None:
             return Response(
                 {
