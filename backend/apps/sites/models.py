@@ -30,6 +30,8 @@ class Product(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        verbose_name = "Product"
+        verbose_name_plural = "Products"
         constraints: ClassVar[list[models.BaseConstraint]] = [
             models.UniqueConstraint(fields=["site", "code"], name="uniq_product_code_per_site"),
         ]

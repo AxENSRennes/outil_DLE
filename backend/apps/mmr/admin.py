@@ -29,7 +29,14 @@ class MMRVersionAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "mmr__site")
     search_fields = ("mmr__code", "mmr__name")
-    readonly_fields = ("schema_json", "activated_by", "activated_at")
+    readonly_fields = (
+        "schema_json",
+        "activated_by",
+        "activated_at",
+        "created_by",
+        "status",
+        "version_number",
+    )
     ordering = ("-created_at",)
 
     def has_delete_permission(self, request: Any, obj: Any = None) -> bool:

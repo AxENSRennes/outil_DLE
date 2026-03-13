@@ -29,7 +29,9 @@ def create_mmr(
                 description=description,
             )
         except IntegrityError as exc:
-            raise ValueError(f"An MMR with code '{code}' already exists on this site.") from exc
+            if "uniq_mmr_code_per_site" in str(exc):
+                raise ValueError(f"An MMR with code '{code}' already exists on this site.") from exc
+            raise
 
         record_audit_event(
             AuditEventType.MMR_CREATED,
