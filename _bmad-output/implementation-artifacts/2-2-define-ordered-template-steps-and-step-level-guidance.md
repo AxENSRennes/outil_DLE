@@ -623,21 +623,25 @@ Claude Opus 4.6 (claude-opus-4-6)
 - 4 new audit event types for step lifecycle tracking
 - 6 REST endpoints with RBAC (INTERNAL_CONFIGURATOR only), CSRF enforcement, site-scoped permissions
 - Typed nested serializers for all policy objects (no raw DictField per CLAUDE.md)
+- Added serializer/domain validation to reject contradictory `attachments_policy` and incomplete `repeat_policy` configurations
+- OpenAPI contract now exposes typed `fields` items and enum-constrained `signature_policy.meaning`
 - `step_count` and `has_steps` computed fields on version serializers
-- 55 new tests (30 domain + 25 API), 233 total passing, zero regressions
-- `make check` green: ruff, mypy, bandit, pip-audit, architecture checks all pass
+- 84 story-focused tests pass (`36` domain + `48` API/serializer/OpenAPI)
+- `make check` green on 2026-03-13: ruff, mypy, backend/frontend tests, bandit, pip-audit, architecture checks, and react-doctor
 
 ### Change Log
 
 - 2026-03-13: Story 2.2 implementation complete — all 7 tasks done, all ACs satisfied
+- 2026-03-13: Fixed code review findings for nested policy validation, OpenAPI schema precision, and story record accuracy
 
 ### File List
 
 - backend/apps/mmr/domain/step_management.py (new)
+- backend/apps/mmr/domain/exceptions.py (new)
 - backend/apps/mmr/api/serializers.py (modified)
 - backend/apps/mmr/api/views.py (modified)
 - backend/apps/mmr/api/urls.py (modified)
 - backend/apps/audit/models.py (modified)
-- backend/apps/audit/migrations/0004_add_step_audit_event_types.py (new)
+- backend/apps/audit/migrations/0009_merge_step_event_types.py (new)
 - backend/apps/mmr/tests/test_step_management.py (new)
 - backend/apps/mmr/tests/test_step_api.py (new)

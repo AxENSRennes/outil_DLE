@@ -225,6 +225,41 @@ def test_add_step_defaults_required_to_true(draft_version: MMRVersion, user: Any
     assert result["required"] is True
 
 
+@pytest.mark.django_db
+def test_add_step_rejects_attachment_kinds_without_support_flag(
+    draft_version: MMRVersion, user: Any
+) -> None:
+    with pytest.raises(ValueError, match="supports_attachments"):
+        add_step(
+            version=draft_version,
+            step_data={
+                "key": "s1",
+                "title": "Step 1",
+                "kind": "preparation",
+                "attachments_policy": {
+                    "supports_attachments": False,
+                    "attachment_kinds": ["photo"],
+                },
+            },
+            actor=user,
+        )
+
+
+@pytest.mark.django_db
+def test_add_step_rejects_repeat_policy_without_mode(draft_version: MMRVersion, user: Any) -> None:
+    with pytest.raises(ValueError, match=r"repeat_policy\.mode"):
+        add_step(
+            version=draft_version,
+            step_data={
+                "key": "s1",
+                "title": "Step 1",
+                "kind": "preparation",
+                "repeat_policy": {"max_records": 3},
+            },
+            actor=user,
+        )
+
+
 # ---------------------------------------------------------------------------
 # update_step tests
 # ---------------------------------------------------------------------------
@@ -378,6 +413,46 @@ def test_update_step_invalid_kind_raises(
             version=draft_version,
             step_key="fabrication_bulk",
             step_data={"kind": "invalid_kind"},
+            actor=user,
+        )
+
+
+@pytest.mark.django_db
+def test_update_step_rejects_contradictory_attachments_policy(
+    draft_version: MMRVersion, user: Any
+) -> None:
+    add_step(
+        version=draft_version,
+        step_data={
+            "key": "s1",
+            "title": "Step 1",
+            "kind": "preparation",
+            "attachments_policy": {
+                "supports_attachments": False,
+                "attachment_kinds": [],
+            },
+        },
+        actor=user,
+    )
+    with pytest.raises(ValueError, match="supports_attachments"):
+        update_step(
+            version=draft_version,
+            step_key="s1",
+            step_data={"attachments_policy": {"attachment_kinds": ["photo"]}},
+            actor=user,
+        )
+
+
+@pytest.mark.django_db
+def test_update_step_rejects_repeat_policy_without_mode_after_merge(
+    draft_version: MMRVersion, sample_step_data: dict, user: Any
+) -> None:
+    add_step(version=draft_version, step_data=sample_step_data, actor=user)
+    with pytest.raises(ValueError, match=r"repeat_policy\.mode"):
+        update_step(
+            version=draft_version,
+            step_key="fabrication_bulk",
+            step_data={"repeat_policy": {"max_records": 3}},
             actor=user,
         )
 

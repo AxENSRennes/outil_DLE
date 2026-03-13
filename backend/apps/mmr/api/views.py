@@ -306,7 +306,15 @@ class StepDetailView(_StepViewMixin, APIView):
         version = self._get_version(mmr_id, version_id)
         if version is None:
             return self._not_found()
-        serializer = StepUpdateSerializer(data=request.data, partial=True)
+        try:
+            current_step = get_step(version=version, step_key=step_key)
+        except StepNotFoundError:
+            return self._not_found("Step not found.")
+        serializer = StepUpdateSerializer(
+            data=request.data,
+            partial=True,
+            context={"current_step": current_step},
+        )
         serializer.is_valid(raise_exception=True)
         try:
             step = update_step(

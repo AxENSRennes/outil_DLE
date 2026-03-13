@@ -147,6 +147,26 @@ def _audit_metadata(version: MMRVersion, **extra: Any) -> dict:
     }
 
 
+def _validate_step_configuration(step_def: dict[str, Any]) -> None:
+    attachments_policy = step_def.get("attachmentsPolicy")
+    if attachments_policy is not None:
+        attachment_kinds = attachments_policy.get("attachmentKinds") or []
+        supports_attachments = attachments_policy.get("supportsAttachments", False)
+        if attachment_kinds and not supports_attachments:
+            raise ValueError(
+                "attachments_policy.attachment_kinds requires supports_attachments to be true."
+            )
+
+    repeat_policy = step_def.get("repeatPolicy")
+    if repeat_policy is not None:
+        if repeat_policy and "mode" not in repeat_policy:
+            raise ValueError("repeat_policy.mode is required when repeat_policy is provided.")
+        min_records = repeat_policy.get("minRecords")
+        max_records = repeat_policy.get("maxRecords")
+        if min_records is not None and max_records is not None and min_records > max_records:
+            raise ValueError("repeat_policy.min_records must be less than or equal to max_records.")
+
+
 def _normalize_step_output(step_dict: dict[str, Any]) -> dict[str, Any]:
     """Ensure all expected properties are present in the snake_case output."""
     defaults: dict[str, Any] = {
@@ -223,6 +243,7 @@ def add_step(*, version: MMRVersion, step_data: dict, actor: Any) -> dict:
         # Auto-inject out-of-scope defaults
         step_def["fields"] = []
         step_def["signaturePolicy"] = {"required": False, "meaning": "performed_by"}
+        _validate_step_configuration(step_def)
 
         schema.setdefault("stepOrder", [])
         schema.setdefault("steps", {})
@@ -282,6 +303,7 @@ def update_step(*, version: MMRVersion, step_key: str, step_data: dict, actor: A
                 # Setting to null removes the optional property
                 step_def.pop(camel_prop, None)
 
+        _validate_step_configuration(step_def)
         schema["steps"][step_key] = step_def
         version.schema_json = schema
         version.save(update_fields=["schema_json", "updated_at"])

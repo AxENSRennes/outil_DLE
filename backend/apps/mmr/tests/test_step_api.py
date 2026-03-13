@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 from django.contrib.auth import get_user_model
+from drf_spectacular.generators import SchemaGenerator
 
 from apps.authz.models import SiteRole, SiteRoleAssignment
 from apps.authz.tests.helpers import csrf_client, post_json
@@ -201,6 +202,49 @@ def test_add_step_invalid_key_pattern_returns_400(
         csrf_token=token,
     )
     assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+def test_add_step_rejects_contradictory_attachments_policy(
+    configurator: Any, mmr: MMR, draft_version: MMRVersion
+) -> None:
+    client, token = csrf_client(user=configurator)
+    resp = post_json(
+        client,
+        _steps_url(mmr, draft_version),
+        {
+            "key": "s1",
+            "title": "Step 1",
+            "kind": "weighing",
+            "attachments_policy": {
+                "supports_attachments": False,
+                "attachment_kinds": ["photo"],
+            },
+        },
+        csrf_token=token,
+    )
+    assert resp.status_code == 400
+    assert "attachments_policy" in resp.json()["detail"]
+
+
+@pytest.mark.django_db
+def test_add_step_rejects_repeat_policy_without_mode(
+    configurator: Any, mmr: MMR, draft_version: MMRVersion
+) -> None:
+    client, token = csrf_client(user=configurator)
+    resp = post_json(
+        client,
+        _steps_url(mmr, draft_version),
+        {
+            "key": "s1",
+            "title": "Step 1",
+            "kind": "weighing",
+            "repeat_policy": {"max_records": 3},
+        },
+        csrf_token=token,
+    )
+    assert resp.status_code == 400
+    assert "repeat_policy" in resp.json()["detail"]
 
 
 @pytest.mark.django_db
@@ -423,6 +467,83 @@ def test_update_step_ignores_key_in_payload(
     data = resp.json()
     assert data["key"] == "fabrication_bulk"
     assert data["title"] == "Updated"
+
+
+@pytest.mark.django_db
+def test_update_step_rejects_contradictory_attachments_policy_after_merge(
+    configurator: Any, mmr: MMR, draft_version: MMRVersion
+) -> None:
+    add_step(
+        version=draft_version,
+        step_data={
+            "key": "fab",
+            "title": "Fab",
+            "kind": "manufacturing",
+            "attachments_policy": {
+                "supports_attachments": False,
+                "attachment_kinds": [],
+            },
+        },
+        actor=configurator,
+    )
+    client, token = csrf_client(user=configurator)
+    resp = _put_json(
+        client,
+        _step_detail_url(mmr, draft_version, "fab"),
+        {"attachments_policy": {"attachment_kinds": ["photo"]}},
+        csrf_token=token,
+    )
+    assert resp.status_code == 400
+    assert "attachments_policy" in resp.json()["detail"]
+
+
+@pytest.mark.django_db
+def test_update_step_rejects_repeat_policy_without_mode_when_creating_new_policy(
+    configurator: Any, mmr: MMR, draft_version: MMRVersion, sample_step_data: dict
+) -> None:
+    add_step(
+        version=draft_version,
+        step_data=sample_step_data,
+        actor=configurator,
+    )
+    client, token = csrf_client(user=configurator)
+    resp = _put_json(
+        client,
+        _step_detail_url(mmr, draft_version, "fabrication_bulk"),
+        {"repeat_policy": {"max_records": 3}},
+        csrf_token=token,
+    )
+    assert resp.status_code == 400
+    assert "repeat_policy" in resp.json()["detail"]
+
+
+@pytest.mark.django_db
+def test_update_step_allows_repeat_policy_partial_update_when_mode_already_exists(
+    configurator: Any, mmr: MMR, draft_version: MMRVersion
+) -> None:
+    add_step(
+        version=draft_version,
+        step_data={
+            "key": "fab",
+            "title": "Fab",
+            "kind": "manufacturing",
+            "repeat_policy": {"mode": "single", "min_records": 1},
+        },
+        actor=configurator,
+    )
+    client, token = csrf_client(user=configurator)
+    resp = _put_json(
+        client,
+        _step_detail_url(mmr, draft_version, "fab"),
+        {"repeat_policy": {"max_records": 3}},
+        csrf_token=token,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["repeat_policy"] == {
+        "mode": "single",
+        "min_records": 1,
+        "max_records": 3,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -735,6 +856,95 @@ class TestAttachmentsPolicySerializerShape:
         assert "attachment_kinds" in s.errors
 
 
+class TestStepPolicyValidation:
+    def test_create_serializer_rejects_attachment_kinds_without_supports(self) -> None:
+        from apps.mmr.api.serializers import StepCreateSerializer
+
+        s = StepCreateSerializer(
+            data={
+                "key": "s1",
+                "title": "T",
+                "kind": "weighing",
+                "attachments_policy": {
+                    "supports_attachments": False,
+                    "attachment_kinds": ["photo"],
+                },
+            }
+        )
+        assert not s.is_valid()
+        assert "attachments_policy" in s.errors
+
+    def test_update_serializer_rejects_contradictory_attachments_after_merge(self) -> None:
+        from apps.mmr.api.serializers import StepUpdateSerializer
+
+        s = StepUpdateSerializer(
+            data={"attachments_policy": {"attachment_kinds": ["photo"]}},
+            partial=True,
+            context={
+                "current_step": {
+                    "attachments_policy": {
+                        "supports_attachments": False,
+                        "attachment_kinds": [],
+                    }
+                }
+            },
+        )
+        assert not s.is_valid()
+        assert "attachments_policy" in s.errors
+
+    def test_update_serializer_allows_attachment_kind_update_when_supports_enabled(self) -> None:
+        from apps.mmr.api.serializers import StepUpdateSerializer
+
+        s = StepUpdateSerializer(
+            data={"attachments_policy": {"attachment_kinds": ["worksheet"]}},
+            partial=True,
+            context={
+                "current_step": {
+                    "attachments_policy": {
+                        "supports_attachments": True,
+                        "attachment_kinds": ["photo"],
+                    }
+                }
+            },
+        )
+        assert s.is_valid(), s.errors
+
+    def test_create_serializer_rejects_repeat_policy_without_mode(self) -> None:
+        from apps.mmr.api.serializers import StepCreateSerializer
+
+        s = StepCreateSerializer(
+            data={
+                "key": "s1",
+                "title": "T",
+                "kind": "weighing",
+                "repeat_policy": {"max_records": 3},
+            }
+        )
+        assert not s.is_valid()
+        assert "repeat_policy" in s.errors
+
+    def test_update_serializer_allows_repeat_policy_partial_update_when_mode_exists(self) -> None:
+        from apps.mmr.api.serializers import StepUpdateSerializer
+
+        s = StepUpdateSerializer(
+            data={"repeat_policy": {"max_records": 3}},
+            partial=True,
+            context={"current_step": {"repeat_policy": {"mode": "single", "min_records": 1}}},
+        )
+        assert s.is_valid(), s.errors
+
+    def test_update_serializer_rejects_repeat_policy_without_mode_after_merge(self) -> None:
+        from apps.mmr.api.serializers import StepUpdateSerializer
+
+        s = StepUpdateSerializer(
+            data={"repeat_policy": {"max_records": 3}},
+            partial=True,
+            context={"current_step": {}},
+        )
+        assert not s.is_valid()
+        assert "repeat_policy" in s.errors
+
+
 class TestBlockingPolicySerializerShape:
     def test_valid_booleans(self) -> None:
         from apps.mmr.api.serializers import BlockingPolicySerializer
@@ -763,3 +973,17 @@ class TestRepeatPolicySerializerShape:
         s = RepeatPolicySerializer(data={"mode": "invalid_mode"})
         assert not s.is_valid()
         assert "mode" in s.errors
+
+
+def test_step_openapi_schema_is_precise() -> None:
+    schema = SchemaGenerator().get_schema(request=None, public=True)
+    components = schema["components"]["schemas"]
+
+    step_detail = components["StepDetail"]
+    assert step_detail["properties"]["fields"]["items"]["$ref"] == "#/components/schemas/StepField"
+    assert step_detail["properties"]["signature_policy"]["properties"]["meaning"]["enum"] == [
+        "performed_by",
+        "reviewed_by",
+        "approved_by",
+        "released_by",
+    ]
