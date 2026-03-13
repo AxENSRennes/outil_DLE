@@ -59,8 +59,8 @@ development_status:
   3-4-access-step-instructions-and-supporting-references-in-context: backlog
   3-5-sign-required-execution-checkpoints-with-attributed-identity: backlog
   epic-3-retrospective: optional
-  epic-4: backlog
-  4-1-record-attributed-audit-events-for-regulated-batch-actions: backlog
+  epic-4: in-progress
+  4-1-record-attributed-audit-events-for-regulated-batch-actions: done
   4-2-correct-previously-entered-batch-data-with-required-reason-for-change: backlog
   4-3-surface-integrity-states-and-re-review-flags-after-relevant-changes: backlog
   4-4-provide-reviewers-with-change-history-for-the-dossier-context: backlog
