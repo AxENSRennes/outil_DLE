@@ -94,12 +94,8 @@ class Batch(models.Model):
         choices=SignatureState.choices,
         default=SignatureState.NONE,
     )
-    lot_size_target = models.DecimalField(
-        max_digits=12, decimal_places=3, null=True, blank=True
-    )
-    lot_size_actual = models.DecimalField(
-        max_digits=12, decimal_places=3, null=True, blank=True
-    )
+    lot_size_target = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    lot_size_actual = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
     snapshot_json = models.JSONField()
     batch_context_json = models.JSONField(default=dict, blank=True)
     started_at = models.DateTimeField(null=True, blank=True)

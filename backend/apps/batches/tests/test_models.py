@@ -128,9 +128,7 @@ class TestBatchStepModel:
                 sequence_order=2,
             )
 
-    def test_same_step_key_different_occurrence_key_allowed(
-        self, batch: Batch
-    ) -> None:
+    def test_same_step_key_different_occurrence_key_allowed(self, batch: Batch) -> None:
         BatchStep.objects.create(
             batch=batch,
             step_key="ctrl",
@@ -148,12 +146,8 @@ class TestBatchStepModel:
         assert step2.pk is not None
 
     def test_ordering_by_sequence_order(self, batch: Batch) -> None:
-        BatchStep.objects.create(
-            batch=batch, step_key="b", title="B", sequence_order=20
-        )
-        BatchStep.objects.create(
-            batch=batch, step_key="a", title="A", sequence_order=10
-        )
+        BatchStep.objects.create(batch=batch, step_key="b", title="B", sequence_order=20)
+        BatchStep.objects.create(batch=batch, step_key="a", title="A", sequence_order=10)
         steps = list(BatchStep.objects.filter(batch=batch))
         assert steps[0].step_key == "a"
         assert steps[1].step_key == "b"

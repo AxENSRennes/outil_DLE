@@ -39,9 +39,7 @@ def pilot_snapshot() -> dict[str, Any]:
 
 
 @pytest.fixture()
-def batch_pms_glitter(
-    site: Site, user: Any, pilot_snapshot: dict[str, Any]
-) -> Batch:
+def batch_pms_glitter(site: Site, user: Any, pilot_snapshot: dict[str, Any]) -> Batch:
     """Batch with PMS machine + with_glitter context."""
     return Batch.objects.create(
         site=site,
@@ -59,15 +57,11 @@ def batch_pms_glitter(
 
 @pytest.fixture()
 def operator_role(user: Any, site: Site) -> SiteRoleAssignment:
-    return SiteRoleAssignment.objects.create(
-        user=user, site=site, role=SiteRole.OPERATOR
-    )
+    return SiteRoleAssignment.objects.create(user=user, site=site, role=SiteRole.OPERATOR)
 
 
 @pytest.fixture()
-def batch_uni2(
-    site: Site, user: Any, pilot_snapshot: dict[str, Any]
-) -> Batch:
+def batch_uni2(site: Site, user: Any, pilot_snapshot: dict[str, Any]) -> Batch:
     """Batch with UNI2 machine context."""
     return Batch.objects.create(
         site=site,
