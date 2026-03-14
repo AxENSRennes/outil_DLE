@@ -23,4 +23,5 @@ urlpatterns = [
     path("mmrs/", include("apps.mmr.api.urls")),
     path("", include("apps.exports.api.urls")),
     path("", include("apps.reviews.api.urls")),
+    path("", include("apps.batches.api.urls")),
 ]

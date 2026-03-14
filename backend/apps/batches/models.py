@@ -99,6 +99,7 @@ class BatchStep(models.Model):
     changed_since_review = models.BooleanField(default=False)
     changed_since_signature = models.BooleanField(default=False)
     review_required = models.BooleanField(default=False)
+    data_json = models.JSONField(default=dict, blank=True)
     has_open_exception = models.BooleanField(default=False)
     open_exception_is_blocking = models.BooleanField(default=False)
 

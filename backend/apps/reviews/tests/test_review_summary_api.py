@@ -97,7 +97,7 @@ def wrong_site_reviewer(other_site: Site) -> User:
 
 
 def _url(batch_id: int) -> str:
-    return f"/api/v1/batches/{batch_id}/review-summary"
+    return f"/api/v1/batches/{batch_id}/review-summary/"
 
 
 @pytest.mark.django_db()
