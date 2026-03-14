@@ -10,7 +10,13 @@ from typing import Any
 
 from django.db.models import BooleanField, Case, Exists, OuterRef, Value, When
 
-from apps.batches.models import Batch, BatchStep, DossierChecklistItem, StepSignature
+from apps.batches.models import (
+    Batch,
+    BatchStep,
+    DossierChecklistItem,
+    StepSignature,
+    StepSignatureState,
+)
 from apps.reviews.domain.review_summary import (
     ReviewSummary,
     build_flagged_steps,
@@ -30,7 +36,7 @@ def _load_steps(batch: Batch) -> list[dict[str, Any]]:
                 StepSignature.objects.filter(step=OuterRef("pk")),
             ),
             requires_signature=Case(
-                When(signature_state="not_required", then=Value(False)),
+                When(signature_state=StepSignatureState.NOT_REQUIRED, then=Value(False)),
                 default=Value(True),
                 output_field=BooleanField(),
             ),

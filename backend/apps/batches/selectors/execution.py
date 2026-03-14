@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 def get_batch_execution_payload(batch: Batch) -> dict[str, Any]:
     snapshot = batch.snapshot_json
     product = snapshot.get("product", {})
-    steps = batch.steps.all()
+    steps = batch.steps.order_by("sequence_order")
 
     step_definitions = snapshot.get("steps", {})
     step_list: list[dict[str, Any]] = []
