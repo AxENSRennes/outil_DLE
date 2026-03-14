@@ -73,7 +73,9 @@ def submit_correction(
 
     with transaction.atomic():
         locked_step = (
-            BatchStep.objects.select_related("batch__site").select_for_update().get(pk=step.pk)
+            BatchStep.objects.select_related("batch__site")
+            .select_for_update(of=("self",))
+            .get(pk=step.pk)
         )
 
         if locked_step.status not in CORRECTABLE_STATUSES:
