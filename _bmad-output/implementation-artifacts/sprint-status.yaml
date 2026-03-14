@@ -67,7 +67,7 @@ development_status:
   epic-4-retrospective: optional
   epic-5: in-progress
   5-1-provide-a-dedicated-review-summary-for-batch-completeness: done
-  5-2-perform-pre-qa-review-and-confirm-readiness-for-quality-handoff: backlog
+  5-2-perform-pre-qa-review-and-confirm-readiness-for-quality-handoff: review
   5-3-inspect-dossier-integrity-from-a-dedicated-quality-review-surface: backlog
   5-4-make-quality-disposition-decisions-for-release-rejection-or-return-for-correction: backlog
   epic-5-retrospective: optional

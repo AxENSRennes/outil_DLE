@@ -266,6 +266,39 @@ class TestReviewSummaryEndpointSuccess:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["severity"] == "amber"
 
+    def test_incomplete_steps_are_visible_in_flagged_steps(
+        self,
+        batch: Batch,
+        production_reviewer: User,
+    ) -> None:
+        BatchStep.objects.create(
+            batch=batch,
+            order=1,
+            reference="Step 1 - Preparation",
+            status=StepStatus.NOT_STARTED,
+        )
+        BatchStep.objects.create(
+            batch=batch,
+            order=2,
+            reference="Step 2 - Mixing",
+            status=StepStatus.IN_PROGRESS,
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=production_reviewer)
+        response = client.get(_url(batch.pk))
+        assert response.status_code == status.HTTP_200_OK
+
+        data = response.json()
+        assert data["severity"] == "amber"
+        assert len(data["flagged_steps"]) == 2
+        assert {flagged_step["step_reference"] for flagged_step in data["flagged_steps"]} == {
+            "Step 1 - Preparation",
+            "Step 2 - Mixing",
+        }
+        for flagged_step in data["flagged_steps"]:
+            assert "step_incomplete" in flagged_step["flags"]
+
     def test_non_blocking_exception_returns_amber(
         self,
         batch: Batch,
