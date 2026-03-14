@@ -4,7 +4,11 @@ from typing import Any
 
 import pytest
 
-from apps.batches.domain.composition import CompositionError, generate_repeated_controls
+from apps.batches.domain.composition import (
+    CompositionError,
+    CompositionResult,
+    generate_repeated_controls,
+)
 from apps.batches.domain.occurrences import add_occurrence
 from apps.batches.models import (
     Batch,
@@ -25,7 +29,8 @@ class TestGenerateRepeatedControlsPMS:
     """
 
     def test_creates_correct_step_count(self, batch_pms_glitter: Batch) -> None:
-        steps = generate_repeated_controls(batch_pms_glitter)
+        result = generate_repeated_controls(batch_pms_glitter)
+        assert isinstance(result, CompositionResult)
         # 9 step definitions in template:
         # single steps (5): fabrication_bulk, weighing, line_cleaning,
         #                    dossier_checklist, pre_qa_review = 5 steps
@@ -34,7 +39,7 @@ class TestGenerateRepeatedControlsPMS:
         #              intermediate_leakage_pms_glitter minRecords=1 = 1
         # per_event (1): gencod_control_uni2_uni3 minRecords=3 = 3 (not applicable but mark_na)
         # Total = 5 + 1 + 1 + 1 + 3 = 11
-        assert len(steps) == 11
+        assert len(result.created_steps) == 11
 
     def test_single_steps_have_default_occurrence(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
@@ -112,9 +117,10 @@ class TestGenerateRepeatedControlsPMS:
         assert len(tuples) == len(set(tuples))
 
     def test_document_requirements_created(self, batch_pms_glitter: Batch) -> None:
-        generate_repeated_controls(batch_pms_glitter)
+        result = generate_repeated_controls(batch_pms_glitter)
         doc_reqs = BatchDocumentRequirement.objects.filter(batch=batch_pms_glitter)
         assert doc_reqs.count() == 9  # all 9 steps (including not-applicable mark_na)
+        assert result.document_requirements_created == 9
 
     def test_doc_req_repeat_mode_matches(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
@@ -200,10 +206,12 @@ class TestCompositionIdempotency:
         first_count = BatchStep.objects.filter(batch=batch_pms_glitter).count()
 
         # Re-compose
-        generate_repeated_controls(batch_pms_glitter)
+        result = generate_repeated_controls(batch_pms_glitter)
         second_count = BatchStep.objects.filter(batch=batch_pms_glitter).count()
 
         assert first_count == second_count
+        # Doc requirements already exist from first composition, so none are "created"
+        assert result.document_requirements_created == 0
 
     def test_recompose_preserves_in_progress_steps(self, batch_pms_glitter: Batch) -> None:
         generate_repeated_controls(batch_pms_glitter)
@@ -339,8 +347,9 @@ class TestCompositionErrors:
         batch_pms_glitter.snapshot_json = {}
         batch_pms_glitter.save()
         # Empty snapshot (no stepOrder/steps) produces no steps but doesn't error
-        steps = generate_repeated_controls(batch_pms_glitter)
-        assert len(steps) == 0
+        result = generate_repeated_controls(batch_pms_glitter)
+        assert len(result.created_steps) == 0
+        assert result.document_requirements_created == 0
 
     def test_none_snapshot_raises(self, site: Site, user: Any) -> None:
         """Verify composition errors when snapshot_json is programmatically None."""

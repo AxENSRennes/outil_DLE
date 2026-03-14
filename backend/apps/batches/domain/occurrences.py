@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from django.db import IntegrityError, transaction
-from django.db.models import Max
 
 from apps.batches.domain.template_rules import resolve_step_definition
 from apps.batches.models import (
@@ -66,24 +65,39 @@ def add_occurrence(batch: Batch, step_key: str) -> BatchStep:
             code="occurrence_not_applicable",
         )
 
-    existing_steps = BatchStep.objects.select_for_update().filter(
-        batch=batch,
-        step_key=step_key,
+    # Materialize in one query instead of triple evaluation
+    existing_steps = list(
+        BatchStep.objects.select_for_update()
+        .filter(batch=batch, step_key=step_key)
+        .order_by("sequence_order")
     )
-    current_count = existing_steps.count()
+    current_count = len(existing_steps)
 
     if resolved_step.max_records is not None and current_count >= resolved_step.max_records:
         raise OccurrenceError(
             f"Step '{step_key}' has reached the maximum of {resolved_step.max_records} occurrences."
         )
 
-    max_index = existing_steps.aggregate(max_idx=Max("occurrence_index"))["max_idx"] or 0
+    # Validate doc requirement exists before creating step (fail fast)
+    doc_req = (
+        BatchDocumentRequirement.objects.select_for_update()
+        .filter(batch=batch, document_code=step_key)
+        .first()
+    )
+    if doc_req is None:
+        raise OccurrenceError(
+            f"No document requirement found for step '{step_key}'. "
+            "Run batch composition before adding occurrences.",
+            code="composition_required",
+        )
+
+    max_index = max((s.occurrence_index for s in existing_steps), default=0)
     next_index = max_index + 1
 
     occurrence_key = f"{step_key}_{resolved_step.repeat_mode}_{next_index}"
 
     # Derive sequence_order from the last existing step for this key
-    last_step = existing_steps.order_by("-sequence_order").first()
+    last_step = existing_steps[-1] if existing_steps else None
     sequence_order = (last_step.sequence_order + 1) if last_step else next_index
 
     try:
@@ -116,14 +130,8 @@ def add_occurrence(batch: Batch, step_key: str) -> BatchStep:
         ) from exc
 
     # Update document requirement counts
-    doc_req = (
-        BatchDocumentRequirement.objects.select_for_update()
-        .filter(batch=batch, document_code=step_key)
-        .first()
-    )
-    if doc_req:
-        doc_req.expected_count = current_count + 1
-        doc_req.actual_count = current_count + 1
-        doc_req.save(update_fields=["expected_count", "actual_count", "updated_at"])
+    doc_req.expected_count = current_count + 1
+    doc_req.actual_count = current_count + 1
+    doc_req.save(update_fields=["expected_count", "actual_count", "updated_at"])
 
     return new_step

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections import defaultdict
+from dataclasses import dataclass
+
 from django.db import transaction
 
 from apps.batches.domain.template_rules import (
@@ -29,6 +32,12 @@ class CompositionError(Exception):
         self.status_code = status_code
 
 
+@dataclass(frozen=True)
+class CompositionResult:
+    created_steps: list[BatchStep]
+    document_requirements_created: int
+
+
 def _sync_document_requirement(
     batch: Batch,
     *,
@@ -36,8 +45,9 @@ def _sync_document_requirement(
     actual_count: int,
     is_applicable: bool | None = None,
     applicability_basis: dict[str, object] | None = None,
-) -> None:
-    BatchDocumentRequirement.objects.update_or_create(
+) -> bool:
+    """Sync a BatchDocumentRequirement record. Returns True if created, False if updated."""
+    _, created = BatchDocumentRequirement.objects.update_or_create(
         batch=batch,
         document_code=resolved_step.step_key,
         defaults={
@@ -57,10 +67,11 @@ def _sync_document_requirement(
             ),
         },
     )
+    return created
 
 
 @transaction.atomic
-def generate_repeated_controls(batch: Batch) -> list[BatchStep]:
+def generate_repeated_controls(batch: Batch) -> CompositionResult:
     """Generate BatchStep and BatchDocumentRequirement records from the frozen
     template snapshot stored in batch.snapshot_json.
 
@@ -74,7 +85,15 @@ def generate_repeated_controls(batch: Batch) -> list[BatchStep]:
     step_order: list[str] = snapshot.get("stepOrder", [])
     batch_context = batch.batch_context_json or {}
 
+    # Prefetch all existing steps in one query (avoids N+1 per step_key)
+    all_existing = list(BatchStep.objects.filter(batch=batch).order_by("occurrence_index"))
+    steps_by_key: dict[str, list[BatchStep]] = defaultdict(list)
+    for step in all_existing:
+        steps_by_key[step.step_key].append(step)
+
     created_steps: list[BatchStep] = []
+    doc_reqs_created = 0
+
     for position, step_key in enumerate(step_order):
         try:
             resolved_step = resolve_step_definition(snapshot, batch_context, step_key)
@@ -83,31 +102,29 @@ def generate_repeated_controls(batch: Batch) -> list[BatchStep]:
         except KeyError:
             continue
 
-        existing_steps = BatchStep.objects.filter(batch=batch, step_key=step_key)
+        existing_for_key = steps_by_key.get(step_key, [])
 
         # Idempotency check: if non-NOT_STARTED steps exist for this step_key, skip
-        existing_non_initial = existing_steps.exclude(status=BatchStepStatus.NOT_STARTED)
-        if existing_non_initial.exists():
-            reference_step = existing_steps.order_by("occurrence_index").first()
-            _sync_document_requirement(
+        non_initial = [s for s in existing_for_key if s.status != BatchStepStatus.NOT_STARTED]
+        if non_initial:
+            reference_step = existing_for_key[0]  # sorted by occurrence_index
+            created = _sync_document_requirement(
                 batch,
                 resolved_step=resolved_step,
-                actual_count=existing_steps.count(),
-                is_applicable=(
-                    reference_step.is_applicable
-                    if reference_step is not None
-                    else resolved_step.is_applicable
-                ),
-                applicability_basis=(
-                    reference_step.applicability_basis_json
-                    if reference_step is not None
-                    else resolved_step.applicability_basis
-                ),
+                actual_count=len(existing_for_key),
+                is_applicable=reference_step.is_applicable,
+                applicability_basis=reference_step.applicability_basis_json,
             )
+            if created:
+                doc_reqs_created += 1
             continue
 
         if resolved_step.is_hidden:
-            existing_steps.filter(status=BatchStepStatus.NOT_STARTED).delete()
+            not_started_pks = [
+                s.pk for s in existing_for_key if s.status == BatchStepStatus.NOT_STARTED
+            ]
+            if not_started_pks:
+                BatchStep.objects.filter(pk__in=not_started_pks).delete()
             BatchDocumentRequirement.objects.filter(
                 batch=batch,
                 document_code=step_key,
@@ -115,7 +132,11 @@ def generate_repeated_controls(batch: Batch) -> list[BatchStep]:
             continue
 
         # Delete existing NOT_STARTED steps for this step_key (re-composition)
-        existing_steps.filter(status=BatchStepStatus.NOT_STARTED).delete()
+        not_started_pks = [
+            s.pk for s in existing_for_key if s.status == BatchStepStatus.NOT_STARTED
+        ]
+        if not_started_pks:
+            BatchStep.objects.filter(pk__in=not_started_pks).delete()
 
         record_count = resolved_step.initial_record_count
         step_records: list[BatchStep] = []
@@ -154,10 +175,15 @@ def generate_repeated_controls(batch: Batch) -> list[BatchStep]:
         BatchStep.objects.bulk_create(step_records)
         created_steps.extend(step_records)
 
-        _sync_document_requirement(
+        created = _sync_document_requirement(
             batch,
             resolved_step=resolved_step,
             actual_count=len(step_records),
         )
+        if created:
+            doc_reqs_created += 1
 
-    return created_steps
+    return CompositionResult(
+        created_steps=created_steps,
+        document_requirements_created=doc_reqs_created,
+    )

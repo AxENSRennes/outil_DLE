@@ -64,7 +64,10 @@ class TestComposeEndpoint:
             csrf_token=token,
         )
         assert response.status_code == 200
+        data = response.json()
         assert BatchStep.objects.filter(batch=batch_pms_glitter).count() == 11
+        # Re-composition: doc requirements already exist, so created count is 0
+        assert data["document_requirements_created"] == 0
 
     def test_compose_preserves_in_progress(
         self,

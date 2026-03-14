@@ -150,3 +150,19 @@ class TestAddOccurrence:
 
         assert exc_info.value.status_code == 409
         assert exc_info.value.code == "occurrence_conflict"
+
+    def test_add_occurrence_without_composition_raises(self, batch_pms_glitter: Batch) -> None:
+        """Calling add_occurrence before generate_repeated_controls must fail."""
+        with pytest.raises(OccurrenceError, match="composition") as exc_info:
+            add_occurrence(batch_pms_glitter, "finished_product_control")
+        assert exc_info.value.code == "composition_required"
+
+    def test_add_occurrence_deleted_doc_requirement_raises(self, batch_pms_glitter: Batch) -> None:
+        """If doc requirement is deleted after composition, add_occurrence must fail."""
+        generate_repeated_controls(batch_pms_glitter)
+        BatchDocumentRequirement.objects.filter(
+            batch=batch_pms_glitter, document_code="finished_product_control"
+        ).delete()
+        with pytest.raises(OccurrenceError, match="composition") as exc_info:
+            add_occurrence(batch_pms_glitter, "finished_product_control")
+        assert exc_info.value.code == "composition_required"

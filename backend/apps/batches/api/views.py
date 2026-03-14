@@ -20,7 +20,10 @@ from apps.batches.api.serializers import (
     DocumentRequirementReadModelSerializer,
     StepGroupSerializer,
 )
-from apps.batches.domain.composition import CompositionError, generate_repeated_controls
+from apps.batches.domain.composition import (
+    CompositionError,
+    generate_repeated_controls,
+)
 from apps.batches.domain.occurrences import OccurrenceError, add_occurrence
 from apps.batches.models import Batch
 from apps.batches.selectors.completeness import (
@@ -90,7 +93,7 @@ class BatchComposeView(BatchSiteMixin, APIView):
     def post(self, request: Request, batch_id: int) -> Response:
         batch = self.get_batch()
         try:
-            created_steps = generate_repeated_controls(batch)
+            result = generate_repeated_controls(batch)
         except CompositionError as e:
             return _problem_response(
                 code=e.code,
@@ -103,8 +106,8 @@ class BatchComposeView(BatchSiteMixin, APIView):
         document_requirements = get_document_requirement_completeness(batch)
         payload = {
             "batch": BatchSummarySerializer(batch).data,
-            "steps_created": len(created_steps),
-            "document_requirements_created": len(document_requirements),
+            "steps_created": len(result.created_steps),
+            "document_requirements_created": result.document_requirements_created,
             "step_groups": step_groups,
             "document_requirements": document_requirements,
         }
