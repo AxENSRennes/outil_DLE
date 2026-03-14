@@ -69,7 +69,7 @@ class ResolveBatchDossierView(APIView):
 
     def get_site(self) -> Site:
         try:
-            batch = Batch.objects.select_related("site", "mmr_version").get(
+            batch = Batch.objects.select_related("site").get(
                 pk=self.kwargs["batch_id"],
             )
         except Batch.DoesNotExist:
@@ -95,7 +95,7 @@ class ResolveBatchDossierView(APIView):
         batch = getattr(self, "_batch", None)
         if batch is None or batch.pk != batch_id:
             try:
-                batch = Batch.objects.select_related("mmr_version").get(pk=batch_id)
+                batch = Batch.objects.get(pk=batch_id)
             except Batch.DoesNotExist:
                 raise NotFound(detail="Batch not found.", code="batch_not_found") from None
 

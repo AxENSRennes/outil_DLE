@@ -42,7 +42,7 @@ def _make_api_fixtures(
     )
     batch = Batch.objects.create(
         site=site,
-        mmr_version=version,
+        mmr_version_id=version.pk,
         batch_number=f"BATCH-A{Batch.objects.count():04d}",
         batch_context_json={"paillette_present": True, "format_family": "CREAM"},
         snapshot_json={},

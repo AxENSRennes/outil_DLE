@@ -156,7 +156,7 @@ def _get_dossier_profile(batch: Batch) -> DossierProfile:
     """Load the DossierProfile linked to the batch's MMR version."""
     try:
         return DossierProfile.objects.select_related("mmr_version").get(
-            mmr_version=batch.mmr_version,
+            mmr_version_id=batch.mmr_version_id,
         )
     except DossierProfile.DoesNotExist:
         raise DossierCompositionError(

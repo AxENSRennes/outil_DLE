@@ -107,7 +107,7 @@ def _make_profile_and_batch(
 
     batch = Batch.objects.create(
         site=site,
-        mmr_version=version,
+        mmr_version_id=version.pk,
         batch_number=f"BATCH-{Batch.objects.count():04d}",
         batch_context_json=batch_context or {},
         snapshot_json={},
@@ -315,7 +315,7 @@ class TestEdgeCases:
         )
         batch = Batch.objects.create(
             site=site,
-            mmr_version=version,
+            mmr_version_id=version.pk,
             batch_number="BATCH-NP",
             snapshot_json={},
             created_by=user,

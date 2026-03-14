@@ -198,7 +198,7 @@ def build_flagged_steps(steps: list[dict[str, Any]]) -> tuple[FlaggedStep, ...]:
             flagged.append(
                 FlaggedStep(
                     step_id=int(step["id"]),
-                    step_reference=str(step["reference"]),
+                    step_reference=str(step["title"]),
                     step_status=str(step["status"]),
                     flags=flags,
                     severity=_derive_step_severity(step, flags),

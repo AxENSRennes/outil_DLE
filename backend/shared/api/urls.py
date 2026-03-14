@@ -20,6 +20,7 @@ urlpatterns = [
         AuthenticatedSchemaDocsView.as_view(url_name="shared-api:schema"),
         name="schema-docs",
     ),
+    path("batches/", include("apps.batches.api.urls")),
     path("mmrs/", include("apps.mmr.api.urls")),
     path("", include("apps.exports.api.urls")),
     path("", include("apps.reviews.api.urls")),

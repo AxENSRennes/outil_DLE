@@ -14,9 +14,8 @@ from apps.batches.models import (
     StepSignature,
     StepStatus,
 )
-from apps.mmr.models import MMR, MMRVersion
 from apps.reviews.selectors.review_summary import get_batch_review_summary
-from apps.sites.models import Product, Site
+from apps.sites.models import Site
 
 _UserModel = get_user_model()
 
@@ -27,28 +26,35 @@ def site(db: None) -> Site:
 
 
 @pytest.fixture()
-def mmr_version(site: Site) -> MMRVersion:
-    user = _UserModel.objects.create_user(username="template_author", password="testpass1234")
-    product = Product.objects.create(site=site, name="Test Product", code="PROD-001")
-    mmr = MMR.objects.create(site=site, product=product, name="Test MMR", code="MMR-001")
-    return MMRVersion.objects.create(mmr=mmr, version_number=1, created_by=user)
+def batch_creator(db: None) -> User:
+    return _UserModel.objects.create_user(username="creator", password="testpass1234")
 
 
 @pytest.fixture()
-def batch(site: Site, mmr_version: MMRVersion) -> Batch:
-    user = _UserModel.objects.create_user(username="batch_creator", password="testpass1234")
+def batch(site: Site, batch_creator: User) -> Batch:
     return Batch.objects.create(
         batch_number="LOT-2026-0001",
         status=BatchStatus.AWAITING_PRE_QA,
         site=site,
-        mmr_version=mmr_version,
-        created_by=user,
+        snapshot_json={},
+        created_by=batch_creator,
     )
 
 
 @pytest.fixture()
 def signer(db: None) -> User:
     return _UserModel.objects.create_user(username="signer", password="testpass1234")
+
+
+def _step(batch: Batch, seq: int, **kwargs: object) -> BatchStep:
+    """Helper to create a BatchStep with required fields."""
+    defaults: dict[str, object] = {
+        "step_key": f"step-{seq}",
+        "title": kwargs.pop("title", f"Step {seq}"),
+        "sequence_order": seq,
+    }
+    defaults.update(kwargs)
+    return BatchStep.objects.create(batch=batch, **defaults)
 
 
 @pytest.mark.django_db()
@@ -68,19 +74,17 @@ class TestGetBatchReviewSummary:
         assert summary.batch_id == batch.pk
 
     def test_all_steps_signed_returns_green(self, batch: Batch, signer: User) -> None:
-        step1 = BatchStep.objects.create(
-            batch=batch,
-            order=1,
-            reference="Step 1",
+        step1 = _step(
+            batch,
+            1,
             status=StepStatus.SIGNED,
-            requires_signature=True,
+            signature_state="required",
         )
-        step2 = BatchStep.objects.create(
-            batch=batch,
-            order=2,
-            reference="Step 2",
+        step2 = _step(
+            batch,
+            2,
             status=StepStatus.SIGNED,
-            requires_signature=True,
+            signature_state="required",
         )
         StepSignature.objects.create(step=step1, signer=signer, meaning="executed_by")
         StepSignature.objects.create(step=step2, signer=signer, meaning="executed_by")
@@ -91,12 +95,11 @@ class TestGetBatchReviewSummary:
         assert summary.flags.missing_required_signatures == 0
 
     def test_missing_signature_returns_red(self, batch: Batch) -> None:
-        BatchStep.objects.create(
-            batch=batch,
-            order=1,
-            reference="Step 1",
+        _step(
+            batch,
+            1,
             status=StepStatus.COMPLETE,
-            requires_signature=True,
+            signature_state="required",
         )
         summary = get_batch_review_summary(batch)
         assert summary.severity == "red"
@@ -105,10 +108,9 @@ class TestGetBatchReviewSummary:
         assert summary.flagged_steps[0].severity == "red"
 
     def test_missing_data_returns_red(self, batch: Batch) -> None:
-        BatchStep.objects.create(
-            batch=batch,
-            order=1,
-            reference="Step 1",
+        _step(
+            batch,
+            1,
             status=StepStatus.IN_PROGRESS,
             required_data_complete=False,
         )
@@ -117,12 +119,11 @@ class TestGetBatchReviewSummary:
         assert summary.flags.missing_required_data == 1
 
     def test_changed_since_review_returns_amber(self, batch: Batch, signer: User) -> None:
-        step = BatchStep.objects.create(
-            batch=batch,
-            order=1,
-            reference="Step 1",
+        step = _step(
+            batch,
+            1,
             status=StepStatus.SIGNED,
-            requires_signature=True,
+            signature_state="required",
             changed_since_review=True,
         )
         StepSignature.objects.create(step=step, signer=signer, meaning="executed_by")
@@ -149,24 +150,9 @@ class TestGetBatchReviewSummary:
         assert summary.checklist.missing_documents == ("mixing-record",)
 
     def test_partial_completion(self, batch: Batch) -> None:
-        BatchStep.objects.create(
-            batch=batch,
-            order=1,
-            reference="Step 1",
-            status=StepStatus.COMPLETE,
-        )
-        BatchStep.objects.create(
-            batch=batch,
-            order=2,
-            reference="Step 2",
-            status=StepStatus.NOT_STARTED,
-        )
-        BatchStep.objects.create(
-            batch=batch,
-            order=3,
-            reference="Step 3",
-            status=StepStatus.IN_PROGRESS,
-        )
+        _step(batch, 1, status=StepStatus.COMPLETE)
+        _step(batch, 2, status=StepStatus.NOT_STARTED)
+        _step(batch, 3, status=StepStatus.IN_PROGRESS)
 
         summary = get_batch_review_summary(batch)
         assert summary.step_summary.total == 3
@@ -176,10 +162,9 @@ class TestGetBatchReviewSummary:
         assert summary.severity == "amber"
 
     def test_blocking_open_exception_returns_red(self, batch: Batch) -> None:
-        BatchStep.objects.create(
-            batch=batch,
-            order=1,
-            reference="Step 1",
+        _step(
+            batch,
+            1,
             status=StepStatus.COMPLETE,
             has_open_exception=True,
             open_exception_is_blocking=True,
@@ -190,10 +175,9 @@ class TestGetBatchReviewSummary:
         assert summary.flags.blocking_open_exceptions == 1
 
     def test_non_blocking_open_exception_returns_amber(self, batch: Batch) -> None:
-        BatchStep.objects.create(
-            batch=batch,
-            order=1,
-            reference="Step 1",
+        _step(
+            batch,
+            1,
             status=StepStatus.COMPLETE,
             has_open_exception=True,
             open_exception_is_blocking=False,
@@ -204,17 +188,17 @@ class TestGetBatchReviewSummary:
         assert summary.flags.blocking_open_exceptions == 0
 
     def test_flagged_steps_contain_correct_details(self, batch: Batch) -> None:
-        BatchStep.objects.create(
-            batch=batch,
-            order=1,
-            reference="Step 1 - Weighing",
+        _step(
+            batch,
+            1,
+            title="Step 1 - Weighing",
             status=StepStatus.IN_PROGRESS,
             required_data_complete=False,
         )
-        BatchStep.objects.create(
-            batch=batch,
-            order=2,
-            reference="Step 2 - Mixing",
+        _step(
+            batch,
+            2,
+            title="Step 2 - Mixing",
             status=StepStatus.COMPLETE,
             changed_since_review=True,
         )

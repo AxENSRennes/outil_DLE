@@ -215,7 +215,7 @@ def test_flagged_steps_no_flags() -> None:
     steps = [
         {
             "id": 1,
-            "reference": "Step 1",
+            "title": "Step 1",
             "status": "complete",
             "required_data_complete": True,
             "requires_signature": False,
@@ -233,7 +233,7 @@ def test_flagged_steps_red_severity() -> None:
     steps = [
         {
             "id": 7,
-            "reference": "Step 7 - Weighing",
+            "title": "Step 7 - Weighing",
             "status": "in_progress",
             "required_data_complete": False,
             "requires_signature": False,
@@ -254,7 +254,7 @@ def test_flagged_steps_amber_severity() -> None:
     steps = [
         {
             "id": 5,
-            "reference": "Step 5 - Filling",
+            "title": "Step 5 - Filling",
             "status": "signed",
             "required_data_complete": True,
             "requires_signature": True,
@@ -274,7 +274,7 @@ def test_flagged_steps_review_required_is_amber() -> None:
     steps = [
         {
             "id": 9,
-            "reference": "Step 9 - Review",
+            "title": "Step 9 - Review",
             "status": "complete",
             "required_data_complete": True,
             "requires_signature": False,
@@ -296,7 +296,7 @@ def test_flagged_steps_missing_signature_is_red() -> None:
     steps = [
         {
             "id": 3,
-            "reference": "Step 3 - Mixing",
+            "title": "Step 3 - Mixing",
             "status": "complete",
             "required_data_complete": True,
             "requires_signature": True,
@@ -316,7 +316,7 @@ def test_flagged_steps_blocking_exception_is_red() -> None:
     steps = [
         {
             "id": 4,
-            "reference": "Step 4 - Exception",
+            "title": "Step 4 - Exception",
             "status": "complete",
             "required_data_complete": True,
             "requires_signature": False,
