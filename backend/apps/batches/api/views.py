@@ -46,6 +46,8 @@ class BatchExecutionView(APIView):
     def get(self, request: Request, batch_id: int) -> Response:
         batch = self._get_batch(batch_id)
         self.check_object_permissions(request, batch)
+        payload = get_batch_execution_payload(batch)
+        serializer = BatchExecutionSerializer(payload)
         record_audit_event(
             AuditEventType.BATCH_EXECUTION_VIEWED,
             actor=request.user,
@@ -54,8 +56,6 @@ class BatchExecutionView(APIView):
             target_id=batch.id,
             metadata={"batch_number": batch.batch_number},
         )
-        payload = get_batch_execution_payload(batch)
-        serializer = BatchExecutionSerializer(payload)
         return Response(serializer.data)
 
 
@@ -84,6 +84,8 @@ class BatchStepDetailView(APIView):
     def get(self, request: Request, step_id: int) -> Response:
         step = self._get_step(step_id)
         self.check_object_permissions(request, step)
+        payload = get_step_detail_payload(step)
+        serializer = BatchStepDetailSerializer(payload)
         record_audit_event(
             AuditEventType.BATCH_STEP_VIEWED,
             actor=request.user,
@@ -92,6 +94,4 @@ class BatchStepDetailView(APIView):
             target_id=step.id,
             metadata={"step_key": step.step_key, "batch_id": step.batch_id},
         )
-        payload = get_step_detail_payload(step)
-        serializer = BatchStepDetailSerializer(payload)
         return Response(serializer.data)

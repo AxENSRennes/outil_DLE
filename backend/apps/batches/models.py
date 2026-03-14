@@ -134,7 +134,11 @@ class BatchStep(models.Model):
             models.UniqueConstraint(
                 fields=["batch", "step_key", "occurrence_key"],
                 name="uniq_batch_step_occurrence",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["batch", "sequence_order"],
+                name="uniq_batch_sequence_order",
+            ),
         ]
 
     def __str__(self) -> str:
