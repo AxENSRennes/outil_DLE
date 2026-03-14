@@ -26,7 +26,7 @@ import { useMarkStepReviewed } from "@/features/pre-qa-review/api/use-mark-step-
 
 const mockSummary: ReviewSummary = {
   batch_id: 42,
-  batch_reference: "LOT-2026-0042",
+  batch_number: "LOT-2026-0042",
   batch_status: "awaiting_pre_qa",
   severity: "amber",
   step_summary: { total: 3, not_started: 0, in_progress: 0, complete: 2, signed: 1 },

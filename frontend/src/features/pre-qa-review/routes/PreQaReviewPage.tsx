@@ -103,7 +103,7 @@ export function PreQaReviewPage() {
             <div>
               <CardTitle className="text-xl">Pre-QA Review</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">
-                {summary.batch_reference}
+                {summary.batch_number}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export function PreQaReviewPage() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Confirm Quality Handoff</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This will confirm the batch "{summary.batch_reference}" as ready for quality review.
+                                This will confirm the batch "{summary.batch_number}" as ready for quality review.
                                 This action transitions the batch to "awaiting quality review" status.
                               </AlertDialogDescription>
                             </AlertDialogHeader>

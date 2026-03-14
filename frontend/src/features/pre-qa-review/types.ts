@@ -32,7 +32,7 @@ export interface FlaggedStep {
 
 export interface ReviewSummary {
   batch_id: number;
-  batch_reference: string;
+  batch_number: string;
   batch_status: string;
   severity: "green" | "amber" | "red";
   step_summary: StepSummary;
@@ -43,7 +43,7 @@ export interface ReviewSummary {
 
 export interface PreQaReviewConfirmation {
   batch_id: number;
-  batch_reference: string;
+  batch_number: string;
   batch_status: string;
   confirmed_at: string;
   reviewer_note: string;
