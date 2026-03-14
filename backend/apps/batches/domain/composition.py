@@ -99,8 +99,12 @@ def generate_repeated_controls(batch: Batch) -> CompositionResult:
             resolved_step = resolve_step_definition(snapshot, batch_context, step_key)
         except ValueError as exc:
             raise CompositionError(str(exc)) from exc
-        except KeyError:
-            continue
+        except KeyError as exc:
+            detail = exc.args[0] if exc.args else str(exc)
+            raise CompositionError(
+                detail,
+                code="composition_invalid_snapshot",
+            ) from exc
 
         existing_for_key = steps_by_key.get(step_key, [])
 
@@ -138,7 +142,9 @@ def generate_repeated_controls(batch: Batch) -> CompositionResult:
         if not_started_pks:
             BatchStep.objects.filter(pk__in=not_started_pks).delete()
 
-        record_count = resolved_step.initial_record_count
+        # Preserve user-added occurrences on re-composition even when they are
+        # still not started; only refresh the generated records in place.
+        record_count = max(resolved_step.initial_record_count, len(existing_for_key))
         step_records: list[BatchStep] = []
 
         for idx in range(1, record_count + 1):

@@ -301,7 +301,6 @@ class TestDocumentRequirementsEndpoint:
         assert "repeat_mode" in first
         assert "expected_count" in first
         assert "actual_count" in first
-        assert "completed_count" in first
         assert "is_applicable" in first
         assert "is_complete" in first
         assert "is_blocking" in first
@@ -318,8 +317,7 @@ class TestDocumentRequirementsEndpoint:
         data = response.json()
 
         fab = next(item for item in data if item["document_code"] == "fabrication_bulk")
-        assert fab["actual_count"] == 1
-        assert fab["completed_count"] == 0
+        assert fab["actual_count"] == 0
         assert fab["is_complete"] is False
 
         gencod = next(item for item in data if item["document_code"] == "gencod_control_uni2_uni3")

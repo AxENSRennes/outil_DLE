@@ -236,6 +236,24 @@ class TestCompositionIdempotency:
 
         assert first_count == second_count
 
+    def test_recompose_preserves_added_not_started_occurrences(
+        self, batch_pms_glitter: Batch
+    ) -> None:
+        generate_repeated_controls(batch_pms_glitter)
+        add_occurrence(batch_pms_glitter, "finished_product_control")
+
+        generate_repeated_controls(batch_pms_glitter)
+
+        occurrences = list(
+            BatchStep.objects.filter(
+                batch=batch_pms_glitter,
+                step_key="finished_product_control",
+            )
+            .order_by("occurrence_index")
+            .values_list("occurrence_index", flat=True)
+        )
+        assert occurrences == [1, 2]
+
     def test_recompose_syncs_doc_requirement_counts_for_preserved_steps(
         self, batch_pms_glitter: Batch
     ) -> None:
@@ -350,6 +368,17 @@ class TestCompositionErrors:
         result = generate_repeated_controls(batch_pms_glitter)
         assert len(result.created_steps) == 0
         assert result.document_requirements_created == 0
+
+    def test_missing_step_definition_raises(self, site: Site, user: Any) -> None:
+        batch = Batch.objects.create(
+            site=site,
+            batch_number="LOT-BAD-SNAPSHOT",
+            snapshot_json={"stepOrder": ["missing_step"], "steps": {}},
+            created_by=user,
+        )
+
+        with pytest.raises(CompositionError, match="missing_step"):
+            generate_repeated_controls(batch)
 
     def test_none_snapshot_raises(self, site: Site, user: Any) -> None:
         """Verify composition errors when snapshot_json is programmatically None."""

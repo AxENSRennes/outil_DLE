@@ -56,8 +56,7 @@ class TestDocumentRequirementCompleteness:
         results = get_document_requirement_completeness(batch_pms_glitter)
         fab_doc = next(r for r in results if r["document_code"] == "fabrication_bulk")
         assert fab_doc["expected_count"] == 1
-        assert fab_doc["actual_count"] == 1
-        assert fab_doc["completed_count"] == 0
+        assert fab_doc["actual_count"] == 0
         assert fab_doc["is_complete"] is False
         assert fab_doc["is_blocking"] is True
 
@@ -69,7 +68,7 @@ class TestDocumentRequirementCompleteness:
 
         results = get_document_requirement_completeness(batch_pms_glitter)
         fab_doc = next(r for r in results if r["document_code"] == "fabrication_bulk")
-        assert fab_doc["completed_count"] == 1
+        assert fab_doc["actual_count"] == 1
         assert fab_doc["is_complete"] is True
         assert fab_doc["is_blocking"] is False
 
@@ -80,8 +79,7 @@ class TestDocumentRequirementCompleteness:
         results = get_document_requirement_completeness(batch_pms_glitter)
         gencod_doc = next(r for r in results if r["document_code"] == "gencod_control_uni2_uni3")
         assert gencod_doc["is_applicable"] is False
-        assert gencod_doc["actual_count"] == 3
-        assert gencod_doc["completed_count"] == 0
+        assert gencod_doc["actual_count"] == 0
         assert gencod_doc["is_complete"] is True
         assert gencod_doc["is_blocking"] is False
 
@@ -93,7 +91,7 @@ class TestDocumentRequirementCompleteness:
 
         results = get_document_requirement_completeness(batch_pms_glitter)
         fab_doc = next(r for r in results if r["document_code"] == "fabrication_bulk")
-        assert fab_doc["completed_count"] == 1
+        assert fab_doc["actual_count"] == 1
         assert fab_doc["is_complete"] is True
 
     def test_under_review_status_counts_as_completed(self, batch_pms_glitter: Batch) -> None:
@@ -104,7 +102,7 @@ class TestDocumentRequirementCompleteness:
 
         results = get_document_requirement_completeness(batch_pms_glitter)
         fab_doc = next(r for r in results if r["document_code"] == "fabrication_bulk")
-        assert fab_doc["completed_count"] == 1
+        assert fab_doc["actual_count"] == 1
         assert fab_doc["is_complete"] is True
 
 

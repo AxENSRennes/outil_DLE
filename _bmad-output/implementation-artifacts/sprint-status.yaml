@@ -73,7 +73,7 @@ development_status:
   epic-5-retrospective: optional
   epic-6: in-progress
   6-1-compose-the-required-dossier-structure-from-batch-context: done
-  6-2-generate-repeated-in-process-and-box-level-controls-for-the-batch: review
+  6-2-generate-repeated-in-process-and-box-level-controls-for-the-batch: done
   6-3-apply-governed-backend-calculations-and-cross-document-consistency-rules: backlog
   6-4-attach-structured-references-and-supporting-artifacts-to-the-batch-dossier: backlog
   6-5-export-the-governed-dossier-and-expose-integration-ready-contracts: backlog

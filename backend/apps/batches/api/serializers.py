@@ -49,7 +49,6 @@ class DocumentRequirementReadModelSerializer(serializers.Serializer):
     repeat_mode = serializers.CharField()
     expected_count = serializers.IntegerField()
     actual_count = serializers.IntegerField()
-    completed_count = serializers.IntegerField()
     is_complete = serializers.BooleanField()
     is_blocking = serializers.BooleanField()
     applicability_basis_json = serializers.JSONField()

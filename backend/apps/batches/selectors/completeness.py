@@ -46,8 +46,8 @@ def get_document_requirement_completeness(batch: Batch) -> list[dict[str, Any]]:
         BatchStep.objects.filter(batch=batch)
         .values("step_key")
         .annotate(
-            actual_count=Count("id"),
-            completed_count=Count(
+            occurrence_count=Count("id"),
+            actual_count=Count(
                 "id",
                 filter=Q(is_applicable=True, status__in=_COMPLETED_STATUSES),
             ),
@@ -55,17 +55,14 @@ def get_document_requirement_completeness(batch: Batch) -> list[dict[str, Any]]:
     )
     for row in step_counts:
         counts_by_step_key[row["step_key"]] = {
+            "occurrence_count": row["occurrence_count"],
             "actual_count": row["actual_count"],
-            "completed_count": row["completed_count"],
         }
 
     for doc_req in doc_reqs:
         counts = counts_by_step_key.get(doc_req.source_step_key, {})
         actual_count = counts.get("actual_count", 0)
-        completed_count = counts.get("completed_count", 0)
-        is_complete = (
-            True if not doc_req.is_applicable else completed_count >= doc_req.expected_count
-        )
+        is_complete = True if not doc_req.is_applicable else actual_count >= doc_req.expected_count
         results.append(
             {
                 "document_code": doc_req.document_code,
@@ -76,7 +73,6 @@ def get_document_requirement_completeness(batch: Batch) -> list[dict[str, Any]]:
                 "is_applicable": doc_req.is_applicable,
                 "expected_count": doc_req.expected_count,
                 "actual_count": actual_count,
-                "completed_count": completed_count,
                 "is_complete": is_complete,
                 "is_blocking": (doc_req.is_required and doc_req.is_applicable and not is_complete),
                 "applicability_basis_json": doc_req.applicability_basis_json,

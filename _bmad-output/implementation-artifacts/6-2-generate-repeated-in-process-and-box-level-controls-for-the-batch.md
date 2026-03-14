@@ -1,6 +1,6 @@
 # Story 6.2: Generate Repeated In-Process and Box-Level Controls for the Batch
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -279,11 +279,14 @@ Claude Opus 4.6 (claude-opus-4-6)
 - REST API endpoints: `POST /compose`, `POST /steps/{key}/occurrences`, `GET /steps`, `GET /document-requirements` with DRF serializers and drf-spectacular annotations.
 - Django admin with `readonly_fields` for all JSONB fields.
 - 68 tests covering: model constraints, composition service (PMS+glitter and UNI2 contexts), applicability evaluation, idempotency, add_occurrence (success/max/single-mode errors), completeness selectors, API endpoints (auth, CSRF, 404, response shapes).
-- `make check` passes: lint, typecheck, 136 tests, security scan, architecture check.
+- Review fixes applied: recomposition now preserves user-added repeated occurrences that remain `not_started`, invalid template snapshots now fail closed instead of silently skipping missing step definitions, and document-requirement completeness now reports `expected_count` vs completed applicable `actual_count`.
+- Story documentation reconciled with delivered code: added omitted `template_rules.py` and second batches migration to the File List.
+- `make check` passes: lint, typecheck, 454 backend tests, frontend checks, security scan, and architecture checks.
 
 ### Change Log
 
 - 2026-03-13: Initial implementation of story 6.2 — created batches app with repeated control generation capability.
+- 2026-03-14: Applied code review fixes for recomposition safety, strict snapshot validation, completeness contract alignment, and story/file-list reconciliation.
 
 ### File List
 
@@ -294,9 +297,11 @@ Claude Opus 4.6 (claude-opus-4-6)
 - backend/apps/batches/admin.py
 - backend/apps/batches/migrations/__init__.py
 - backend/apps/batches/migrations/0001_initial.py
+- backend/apps/batches/migrations/0002_batch_mmr_version_batchstep_has_open_exception_and_more.py
 - backend/apps/batches/domain/__init__.py
 - backend/apps/batches/domain/composition.py
 - backend/apps/batches/domain/occurrences.py
+- backend/apps/batches/domain/template_rules.py
 - backend/apps/batches/selectors/__init__.py
 - backend/apps/batches/selectors/completeness.py
 - backend/apps/batches/api/__init__.py
