@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from apps.batches.models import StepStatus
+from apps.batches.models import BatchStepStatus
 
 Severity = Literal["green", "amber", "red"]
 
@@ -72,13 +72,13 @@ def evaluate_step_completeness(steps: list[dict[str, Any]]) -> StepSummary:
 
     for step in steps:
         status = step["status"]
-        if status == StepStatus.NOT_STARTED:
+        if status == BatchStepStatus.NOT_STARTED:
             not_started += 1
-        elif status == StepStatus.IN_PROGRESS:
+        elif status == BatchStepStatus.IN_PROGRESS:
             in_progress += 1
-        elif status == StepStatus.COMPLETE:
+        elif status == BatchStepStatus.COMPLETED:
             complete += 1
-        elif status == StepStatus.SIGNED:
+        elif status == BatchStepStatus.SIGNED:
             signed += 1
 
     return StepSummary(

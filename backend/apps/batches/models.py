@@ -10,6 +10,7 @@ class BatchStatus(models.TextChoices):
     DRAFT = "draft", "Draft"
     READY = "ready", "Ready"
     IN_EXECUTION = "in_execution", "In execution"
+    AWAITING_PRE_QA = "awaiting_pre_qa", "Awaiting pre-QA"
     REVIEW_REQUIRED = "review_required", "Review required"
     UNDER_REVIEW = "under_review", "Under review"
     RELEASED = "released", "Released"
@@ -77,6 +78,13 @@ class Batch(models.Model):
         "sites.Site",
         on_delete=models.PROTECT,
         related_name="batches",
+    )
+    mmr_version = models.ForeignKey(
+        "mmr.MMRVersion",
+        on_delete=models.PROTECT,
+        related_name="batches",
+        null=True,
+        blank=True,
     )
     batch_number = models.CharField(max_length=100, unique=True)
     status = models.CharField(
@@ -158,6 +166,9 @@ class BatchStep(models.Model):
     blocks_step_completion = models.BooleanField(default=True)
     blocks_signature = models.BooleanField(default=False)
     blocks_pre_qa_handoff = models.BooleanField(default=True)
+    required_data_complete = models.BooleanField(default=True)
+    has_open_exception = models.BooleanField(default=False)
+    open_exception_is_blocking = models.BooleanField(default=False)
     data_json = models.JSONField(default=dict, blank=True)
     meta_json = models.JSONField(default=dict, blank=True)
     started_at = models.DateTimeField(null=True, blank=True)
@@ -185,6 +196,46 @@ class BatchStep(models.Model):
 
     def __str__(self) -> str:
         return f"{self.batch.batch_number} / {self.step_key} / {self.occurrence_key}"
+
+
+class StepSignature(models.Model):
+    step = models.ForeignKey(
+        BatchStep,
+        on_delete=models.CASCADE,
+        related_name="signatures",
+    )
+    signer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="step_signatures",
+    )
+    meaning = models.CharField(max_length=100)
+    signed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-signed_at",)
+
+    def __str__(self) -> str:
+        return f"{self.step} / {self.meaning}"
+
+
+class DossierChecklistItem(models.Model):
+    batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name="checklist_items")
+    document_name = models.CharField(max_length=255)
+    is_present = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints: ClassVar[tuple[models.BaseConstraint, ...]] = (
+            models.UniqueConstraint(
+                fields=("batch", "document_name"),
+                name="uniq_batch_checklist_item",
+            ),
+        )
+
+    def __str__(self) -> str:
+        return f"{self.batch.batch_number} / {self.document_name}"
 
 
 class BatchDocumentRequirement(models.Model):

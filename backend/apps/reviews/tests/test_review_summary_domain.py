@@ -33,7 +33,7 @@ def test_step_completeness_mixed() -> None:
     steps = [
         {"status": "not_started"},
         {"status": "in_progress"},
-        {"status": "complete"},
+        {"status": "completed"},
         {"status": "signed"},
     ]
     result = evaluate_step_completeness(steps)
@@ -46,7 +46,7 @@ def test_step_completeness_empty() -> None:
 
 
 def test_step_completeness_all_complete() -> None:
-    steps = [{"status": "complete"}, {"status": "complete"}]
+    steps = [{"status": "completed"}, {"status": "completed"}]
     result = evaluate_step_completeness(steps)
     assert result == StepSummary(total=2, not_started=0, in_progress=0, complete=2, signed=0)
 
@@ -216,7 +216,7 @@ def test_flagged_steps_no_flags() -> None:
         {
             "id": 1,
             "reference": "Step 1",
-            "status": "complete",
+            "status": "completed",
             "required_data_complete": True,
             "requires_signature": False,
             "has_signature": False,
@@ -275,7 +275,7 @@ def test_flagged_steps_review_required_is_amber() -> None:
         {
             "id": 9,
             "reference": "Step 9 - Review",
-            "status": "complete",
+            "status": "completed",
             "required_data_complete": True,
             "requires_signature": False,
             "has_signature": False,
@@ -297,7 +297,7 @@ def test_flagged_steps_missing_signature_is_red() -> None:
         {
             "id": 3,
             "reference": "Step 3 - Mixing",
-            "status": "complete",
+            "status": "completed",
             "required_data_complete": True,
             "requires_signature": True,
             "has_signature": False,
@@ -317,7 +317,7 @@ def test_flagged_steps_blocking_exception_is_red() -> None:
         {
             "id": 4,
             "reference": "Step 4 - Exception",
-            "status": "complete",
+            "status": "completed",
             "required_data_complete": True,
             "requires_signature": False,
             "has_signature": False,

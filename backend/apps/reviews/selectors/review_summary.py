@@ -10,7 +10,14 @@ from typing import Any
 
 from django.db.models import Exists, OuterRef
 
-from apps.batches.models import Batch, BatchStep, DossierChecklistItem, StepSignature
+from apps.batches.models import (
+    Batch,
+    BatchStep,
+    DossierChecklistItem,
+    StepReviewState,
+    StepSignature,
+    StepSignatureState,
+)
 from apps.reviews.domain.review_summary import (
     ReviewSummary,
     build_flagged_steps,
@@ -22,7 +29,7 @@ from apps.reviews.domain.review_summary import (
 
 
 def _load_steps(batch: Batch) -> list[dict[str, Any]]:
-    """Load step data with signature presence annotation."""
+    """Load step data with derived flags for domain evaluation."""
     steps_qs = (
         BatchStep.objects.filter(batch=batch)
         .annotate(
@@ -30,22 +37,35 @@ def _load_steps(batch: Batch) -> list[dict[str, Any]]:
                 StepSignature.objects.filter(step=OuterRef("pk")),
             ),
         )
-        .order_by("order")
+        .order_by("sequence_order")
         .values(
             "id",
-            "reference",
+            "title",
             "status",
-            "requires_signature",
+            "signature_state",
+            "review_state",
             "required_data_complete",
-            "changed_since_review",
-            "changed_since_signature",
-            "review_required",
             "has_open_exception",
             "open_exception_is_blocking",
             "has_signature",
         )
     )
-    return list(steps_qs)
+    return [
+        {
+            "id": step["id"],
+            "reference": step["title"],
+            "status": step["status"],
+            "requires_signature": step["signature_state"] != StepSignatureState.NOT_REQUIRED,
+            "required_data_complete": step["required_data_complete"],
+            "changed_since_review": step["review_state"] == StepReviewState.CHANGED,
+            "changed_since_signature": step["signature_state"] == StepSignatureState.CHANGED,
+            "review_required": step["review_state"] == StepReviewState.REQUIRED,
+            "has_open_exception": step["has_open_exception"],
+            "open_exception_is_blocking": step["open_exception_is_blocking"],
+            "has_signature": step["has_signature"],
+        }
+        for step in steps_qs
+    ]
 
 
 def _load_checklist(batch: Batch) -> list[dict[str, Any]]:

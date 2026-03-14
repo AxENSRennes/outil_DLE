@@ -10,9 +10,11 @@ from apps.batches.models import (
     Batch,
     BatchStatus,
     BatchStep,
+    BatchStepStatus,
     DossierChecklistItem,
+    StepReviewState,
     StepSignature,
-    StepStatus,
+    StepSignatureState,
 )
 from apps.mmr.models import MMR, MMRVersion
 from apps.reviews.selectors.review_summary import get_batch_review_summary
@@ -43,6 +45,7 @@ def batch(site: Site, mmr_version: MMRVersion) -> Batch:
         site=site,
         mmr_version=mmr_version,
         created_by=user,
+        snapshot_json={},
     )
 
 
@@ -70,17 +73,19 @@ class TestGetBatchReviewSummary:
     def test_all_steps_signed_returns_green(self, batch: Batch, signer: User) -> None:
         step1 = BatchStep.objects.create(
             batch=batch,
-            order=1,
-            reference="Step 1",
-            status=StepStatus.SIGNED,
-            requires_signature=True,
+            sequence_order=1,
+            step_key="step-1",
+            title="Step 1",
+            status=BatchStepStatus.SIGNED,
+            signature_state=StepSignatureState.SIGNED,
         )
         step2 = BatchStep.objects.create(
             batch=batch,
-            order=2,
-            reference="Step 2",
-            status=StepStatus.SIGNED,
-            requires_signature=True,
+            sequence_order=2,
+            step_key="step-2",
+            title="Step 2",
+            status=BatchStepStatus.SIGNED,
+            signature_state=StepSignatureState.SIGNED,
         )
         StepSignature.objects.create(step=step1, signer=signer, meaning="executed_by")
         StepSignature.objects.create(step=step2, signer=signer, meaning="executed_by")
@@ -93,10 +98,11 @@ class TestGetBatchReviewSummary:
     def test_missing_signature_returns_red(self, batch: Batch) -> None:
         BatchStep.objects.create(
             batch=batch,
-            order=1,
-            reference="Step 1",
-            status=StepStatus.COMPLETE,
-            requires_signature=True,
+            sequence_order=1,
+            step_key="step-1",
+            title="Step 1",
+            status=BatchStepStatus.COMPLETED,
+            signature_state=StepSignatureState.REQUIRED,
         )
         summary = get_batch_review_summary(batch)
         assert summary.severity == "red"
@@ -107,9 +113,10 @@ class TestGetBatchReviewSummary:
     def test_missing_data_returns_red(self, batch: Batch) -> None:
         BatchStep.objects.create(
             batch=batch,
-            order=1,
-            reference="Step 1",
-            status=StepStatus.IN_PROGRESS,
+            sequence_order=1,
+            step_key="step-1",
+            title="Step 1",
+            status=BatchStepStatus.IN_PROGRESS,
             required_data_complete=False,
         )
         summary = get_batch_review_summary(batch)
@@ -119,11 +126,12 @@ class TestGetBatchReviewSummary:
     def test_changed_since_review_returns_amber(self, batch: Batch, signer: User) -> None:
         step = BatchStep.objects.create(
             batch=batch,
-            order=1,
-            reference="Step 1",
-            status=StepStatus.SIGNED,
-            requires_signature=True,
-            changed_since_review=True,
+            sequence_order=1,
+            step_key="step-1",
+            title="Step 1",
+            status=BatchStepStatus.SIGNED,
+            signature_state=StepSignatureState.SIGNED,
+            review_state=StepReviewState.CHANGED,
         )
         StepSignature.objects.create(step=step, signer=signer, meaning="executed_by")
 
@@ -151,21 +159,24 @@ class TestGetBatchReviewSummary:
     def test_partial_completion(self, batch: Batch) -> None:
         BatchStep.objects.create(
             batch=batch,
-            order=1,
-            reference="Step 1",
-            status=StepStatus.COMPLETE,
+            sequence_order=1,
+            step_key="step-1",
+            title="Step 1",
+            status=BatchStepStatus.COMPLETED,
         )
         BatchStep.objects.create(
             batch=batch,
-            order=2,
-            reference="Step 2",
-            status=StepStatus.NOT_STARTED,
+            sequence_order=2,
+            step_key="step-2",
+            title="Step 2",
+            status=BatchStepStatus.NOT_STARTED,
         )
         BatchStep.objects.create(
             batch=batch,
-            order=3,
-            reference="Step 3",
-            status=StepStatus.IN_PROGRESS,
+            sequence_order=3,
+            step_key="step-3",
+            title="Step 3",
+            status=BatchStepStatus.IN_PROGRESS,
         )
 
         summary = get_batch_review_summary(batch)
@@ -178,9 +189,10 @@ class TestGetBatchReviewSummary:
     def test_blocking_open_exception_returns_red(self, batch: Batch) -> None:
         BatchStep.objects.create(
             batch=batch,
-            order=1,
-            reference="Step 1",
-            status=StepStatus.COMPLETE,
+            sequence_order=1,
+            step_key="step-1",
+            title="Step 1",
+            status=BatchStepStatus.COMPLETED,
             has_open_exception=True,
             open_exception_is_blocking=True,
         )
@@ -192,9 +204,10 @@ class TestGetBatchReviewSummary:
     def test_non_blocking_open_exception_returns_amber(self, batch: Batch) -> None:
         BatchStep.objects.create(
             batch=batch,
-            order=1,
-            reference="Step 1",
-            status=StepStatus.COMPLETE,
+            sequence_order=1,
+            step_key="step-1",
+            title="Step 1",
+            status=BatchStepStatus.COMPLETED,
             has_open_exception=True,
             open_exception_is_blocking=False,
         )
@@ -206,17 +219,19 @@ class TestGetBatchReviewSummary:
     def test_flagged_steps_contain_correct_details(self, batch: Batch) -> None:
         BatchStep.objects.create(
             batch=batch,
-            order=1,
-            reference="Step 1 - Weighing",
-            status=StepStatus.IN_PROGRESS,
+            sequence_order=1,
+            step_key="step-1",
+            title="Step 1 - Weighing",
+            status=BatchStepStatus.IN_PROGRESS,
             required_data_complete=False,
         )
         BatchStep.objects.create(
             batch=batch,
-            order=2,
-            reference="Step 2 - Mixing",
-            status=StepStatus.COMPLETE,
-            changed_since_review=True,
+            sequence_order=2,
+            step_key="step-2",
+            title="Step 2 - Mixing",
+            status=BatchStepStatus.COMPLETED,
+            review_state=StepReviewState.CHANGED,
         )
 
         summary = get_batch_review_summary(batch)
