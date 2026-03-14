@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import logging
+from unittest.mock import patch
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -454,3 +457,85 @@ class TestMarkStepReviewed:
             ).count()
             == 0
         )
+
+
+# --- Audit-event failure guard tests ---
+
+
+@pytest.mark.django_db()
+class TestAuditEventFailureGuard:
+    """Verify that record_audit_event failures in finally blocks do not mask
+    the original exception and that the failure is logged."""
+
+    def test_confirm_original_validation_error_propagates_when_audit_fails(
+        self,
+        batch_awaiting_pre_qa: Batch,
+        reviewer: User,
+    ) -> None:
+        """Red severity causes ValidationError; audit write also fails.
+        The original ValidationError must propagate, not the audit RuntimeError."""
+        BatchStep.objects.create(
+            batch=batch_awaiting_pre_qa,
+            order=1,
+            reference="Step 1",
+            status=StepStatus.IN_PROGRESS,
+            required_data_complete=False,
+        )
+        with (
+            patch(
+                "apps.reviews.domain.pre_qa_review.record_audit_event",
+                side_effect=RuntimeError("DB connection lost"),
+            ),
+            pytest.raises(ValidationError, match="blocking issues remain"),
+        ):
+            confirm_pre_qa_review(batch=batch_awaiting_pre_qa, reviewer=reviewer)
+
+    def test_mark_reviewed_original_validation_error_propagates_when_audit_fails(
+        self,
+        batch_awaiting_pre_qa: Batch,
+        reviewer: User,
+    ) -> None:
+        """TOCTOU: batch status changes after pre-try validation.
+        The original ValidationError must propagate, not the audit RuntimeError."""
+        step = BatchStep.objects.create(
+            batch=batch_awaiting_pre_qa,
+            order=1,
+            reference="Step 1",
+            status=StepStatus.COMPLETE,
+            changed_since_review=True,
+        )
+        # Simulate a concurrent status change after the pre-try validation
+        stale_batch = Batch.objects.get(pk=batch_awaiting_pre_qa.pk)
+        Batch.objects.filter(pk=batch_awaiting_pre_qa.pk).update(
+            status=BatchStatus.AWAITING_QUALITY_REVIEW,
+        )
+
+        with (
+            patch(
+                "apps.reviews.domain.pre_qa_review.record_audit_event",
+                side_effect=RuntimeError("DB connection lost"),
+            ),
+            pytest.raises(ValidationError, match="awaiting_pre_qa or in_pre_qa_review"),
+        ):
+            mark_step_reviewed(batch=stale_batch, step=step, reviewer=reviewer)
+
+    def test_confirm_logs_and_succeeds_when_audit_write_fails(
+        self,
+        batch_awaiting_pre_qa: Batch,
+        reviewer: User,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Happy path (no ValidationError) but audit write fails.
+        Function should return normally and log the failure."""
+        with (
+            patch(
+                "apps.reviews.domain.pre_qa_review.record_audit_event",
+                side_effect=RuntimeError("DB connection lost"),
+            ),
+            caplog.at_level(logging.ERROR, logger="apps.reviews.domain.pre_qa_review"),
+        ):
+            result = confirm_pre_qa_review(batch=batch_awaiting_pre_qa, reviewer=reviewer)
+
+        assert isinstance(result, ConfirmPreQaResult)
+        assert result.batch.status == BatchStatus.AWAITING_QUALITY_REVIEW
+        assert "Failed to record audit event for pre-QA review confirm" in caplog.text

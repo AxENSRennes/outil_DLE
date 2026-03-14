@@ -6,6 +6,7 @@ individual step review items as reviewed.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from django.core.exceptions import ValidationError
@@ -17,6 +18,8 @@ from apps.authz.models import User
 from apps.batches.models import Batch, BatchStatus, BatchStep
 from apps.reviews.models import ReviewEvent, ReviewEventType
 from apps.reviews.selectors.review_summary import get_batch_review_summary
+
+logger = logging.getLogger(__name__)
 
 _VALID_PRE_QA_STATUSES = (BatchStatus.AWAITING_PRE_QA, BatchStatus.IN_PRE_QA_REVIEW)
 
@@ -103,19 +106,22 @@ def confirm_pre_qa_review(
             batch.save(update_fields=["status", "updated_at"])
             committed = True
     finally:
-        record_audit_event(
-            AuditEventType.PRE_QA_REVIEW_CONFIRMED,
-            actor=reviewer,
-            site=batch.site,
-            target_type="batch",
-            target_id=batch.pk,
-            metadata={
-                "batch_number": batch.batch_number,
-                "reviewer_id": reviewer.pk,
-                "note": note,
-                "review_event_id": (review_event.pk if review_event and committed else None),
-            },
-        )
+        try:
+            record_audit_event(
+                AuditEventType.PRE_QA_REVIEW_CONFIRMED,
+                actor=reviewer,
+                site=batch.site,
+                target_type="batch",
+                target_id=batch.pk,
+                metadata={
+                    "batch_number": batch.batch_number,
+                    "reviewer_id": reviewer.pk,
+                    "note": note,
+                    "review_event_id": (review_event.pk if review_event and committed else None),
+                },
+            )
+        except Exception:
+            logger.exception("Failed to record audit event for pre-QA review confirm")
 
     if review_event is None:  # pragma: no cover - defensive; unreachable after commit
         raise RuntimeError("review_event was not created despite successful commit")
@@ -179,20 +185,23 @@ def mark_step_reviewed(
             )
             committed = True
     finally:
-        record_audit_event(
-            AuditEventType.CHANGE_REVIEWED,
-            actor=reviewer,
-            site=batch.site,
-            target_type="batch_step",
-            target_id=step.pk,
-            metadata={
-                "batch_id": batch.pk,
-                "step_reference": step.reference,
-                "reviewer_id": reviewer.pk,
-                "flags_cleared": flags_cleared,
-                "review_event_id": (review_event.pk if review_event and committed else None),
-            },
-        )
+        try:
+            record_audit_event(
+                AuditEventType.CHANGE_REVIEWED,
+                actor=reviewer,
+                site=batch.site,
+                target_type="batch_step",
+                target_id=step.pk,
+                metadata={
+                    "batch_id": batch.pk,
+                    "step_reference": step.reference,
+                    "reviewer_id": reviewer.pk,
+                    "flags_cleared": flags_cleared,
+                    "review_event_id": (review_event.pk if review_event and committed else None),
+                },
+            )
+        except Exception:
+            logger.exception("Failed to record audit event for mark-step-reviewed")
 
     if review_event is None:  # pragma: no cover - defensive; unreachable after commit
         raise RuntimeError("review_event was not created despite successful commit")
