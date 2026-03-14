@@ -12,9 +12,11 @@ from apps.batches.models import (
     Batch,
     BatchStatus,
     BatchStep,
+    BatchStepStatus,
     DossierChecklistItem,
+    StepReviewState,
     StepSignature,
-    StepStatus,
+    StepSignatureState,
 )
 from apps.mmr.models import MMR, MMRVersion
 from apps.sites.models import Product, Site
@@ -49,6 +51,7 @@ def batch(site: Site, mmr_version: MMRVersion) -> Batch:
         site=site,
         mmr_version=mmr_version,
         created_by=user,
+        snapshot_json={},
     )
 
 
@@ -165,17 +168,19 @@ class TestReviewSummaryEndpointSuccess:
         signer = _UserModel.objects.create_user(username="signer", password="testpass1234")
         step1 = BatchStep.objects.create(
             batch=batch,
-            order=1,
-            reference="Step 1 - Mixing",
-            status=StepStatus.SIGNED,
-            requires_signature=True,
+            sequence_order=1,
+            step_key="step-1",
+            title="Step 1 - Mixing",
+            status=BatchStepStatus.SIGNED,
+            signature_state=StepSignatureState.SIGNED,
         )
         StepSignature.objects.create(step=step1, signer=signer, meaning="executed_by")
         BatchStep.objects.create(
             batch=batch,
-            order=2,
-            reference="Step 2 - Weighing",
-            status=StepStatus.IN_PROGRESS,
+            sequence_order=2,
+            step_key="step-2",
+            title="Step 2 - Weighing",
+            status=BatchStepStatus.IN_PROGRESS,
             required_data_complete=False,
         )
         DossierChecklistItem.objects.create(
@@ -231,10 +236,11 @@ class TestReviewSummaryEndpointSuccess:
         for i in range(3):
             step = BatchStep.objects.create(
                 batch=batch,
-                order=i + 1,
-                reference=f"Step {i + 1}",
-                status=StepStatus.SIGNED,
-                requires_signature=True,
+                sequence_order=i + 1,
+                step_key=f"step-{i + 1}",
+                title=f"Step {i + 1}",
+                status=BatchStepStatus.SIGNED,
+                signature_state=StepSignatureState.SIGNED,
             )
             StepSignature.objects.create(step=step, signer=signer, meaning="executed_by")
 
@@ -252,11 +258,12 @@ class TestReviewSummaryEndpointSuccess:
         signer = _UserModel.objects.create_user(username="signer3", password="testpass1234")
         step = BatchStep.objects.create(
             batch=batch,
-            order=1,
-            reference="Step 1",
-            status=StepStatus.SIGNED,
-            requires_signature=True,
-            changed_since_review=True,
+            sequence_order=1,
+            step_key="step-1",
+            title="Step 1",
+            status=BatchStepStatus.SIGNED,
+            signature_state=StepSignatureState.SIGNED,
+            review_state=StepReviewState.CHANGED,
         )
         StepSignature.objects.create(step=step, signer=signer, meaning="executed_by")
 
@@ -273,9 +280,10 @@ class TestReviewSummaryEndpointSuccess:
     ) -> None:
         BatchStep.objects.create(
             batch=batch,
-            order=1,
-            reference="Step 1",
-            status=StepStatus.COMPLETE,
+            sequence_order=1,
+            step_key="step-1",
+            title="Step 1",
+            status=BatchStepStatus.COMPLETED,
             has_open_exception=True,
             open_exception_is_blocking=False,
         )
