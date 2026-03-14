@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("batches", "0002_step_signature_protect_on_delete"),
+        ("batches", "0001_initial"),
     ]
 
     operations = [
