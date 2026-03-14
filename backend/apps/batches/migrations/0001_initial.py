@@ -114,6 +114,7 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
+                "ordering": ("-created_at",),
                 "verbose_name_plural": "batches",
             },
         ),
@@ -280,5 +281,9 @@ class Migration(migrations.Migration):
                     )
                 ],
             },
+        ),
+        migrations.AddIndex(
+            model_name="batch",
+            index=models.Index(fields=["site", "status"], name="batch_site_status_idx"),
         ),
     ]

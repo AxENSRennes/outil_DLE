@@ -127,7 +127,14 @@ class Batch(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        ordering = ("-created_at",)
         verbose_name_plural = "batches"
+        indexes: ClassVar[list[models.Index]] = [
+            models.Index(
+                fields=["site", "status"],
+                name="batch_site_status_idx",
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.batch_number
@@ -256,6 +263,8 @@ class BatchDocumentRequirement(models.Model):
     )
     expected_count = models.PositiveIntegerField(default=1)
     actual_count = models.PositiveIntegerField(default=0)
+    # TODO(story-deferred): status is not yet driven by any business logic;
+    # completeness is currently derived from step statuses.
     status = models.CharField(
         max_length=32,
         choices=BatchDocumentStatus.choices,

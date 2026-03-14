@@ -38,10 +38,9 @@ class BatchDocumentRequirementAdmin(admin.ModelAdmin):
         "repeat_mode",
         "expected_count",
         "actual_count",
-        "status",
         "is_applicable",
     )
-    list_filter = ("status", "repeat_mode", "is_applicable")
+    list_filter = ("repeat_mode", "is_applicable")
     search_fields = ("batch__batch_number", "document_code")
     ordering = ("batch", "document_code")
     readonly_fields = ("applicability_basis_json", "meta_json")
