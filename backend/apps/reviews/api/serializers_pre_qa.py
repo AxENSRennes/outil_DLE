@@ -11,7 +11,7 @@ class ConfirmPreQaReviewRequestSerializer(serializers.Serializer):
 
 class PreQaReviewConfirmationSerializer(serializers.Serializer):
     batch_id = serializers.IntegerField()
-    batch_reference = serializers.CharField()
+    batch_number = serializers.CharField()
     batch_status = serializers.CharField()
     confirmed_at = serializers.DateTimeField()
     reviewer_note = serializers.CharField()

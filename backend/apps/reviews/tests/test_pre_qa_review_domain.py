@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from apps.audit.models import AuditEvent, AuditEventType
 from apps.authz.models import User
 from apps.batches.models import Batch, BatchStatus, BatchStep, StepStatus
+from apps.mmr.models import MMR, MMRVersion
 from apps.reviews.domain.pre_qa_review import (
     ConfirmPreQaResult,
     MarkStepReviewedResult,
@@ -16,7 +17,7 @@ from apps.reviews.domain.pre_qa_review import (
     mark_step_reviewed,
 )
 from apps.reviews.models import ReviewEvent, ReviewEventType
-from apps.sites.models import Site
+from apps.sites.models import Product, Site
 
 _UserModel = get_user_model()
 
@@ -32,29 +33,48 @@ def reviewer(db: None) -> User:
 
 
 @pytest.fixture()
-def batch_awaiting_pre_qa(site: Site) -> Batch:
+def mmr_version(site: Site) -> MMRVersion:
+    user = _UserModel.objects.create_user(username="template_author", password="testpass1234")
+    product = Product.objects.create(site=site, name="Test Product", code="PROD-001")
+    mmr = MMR.objects.create(site=site, product=product, name="Test MMR", code="MMR-001")
+    return MMRVersion.objects.create(mmr=mmr, version_number=1, created_by=user)
+
+
+@pytest.fixture()
+def batch_creator() -> User:
+    return _UserModel.objects.create_user(username="batch_creator", password="testpass1234")
+
+
+@pytest.fixture()
+def batch_awaiting_pre_qa(site: Site, mmr_version: MMRVersion, batch_creator: User) -> Batch:
     return Batch.objects.create(
-        reference="LOT-2026-0042",
+        batch_number="LOT-2026-0042",
         status=BatchStatus.AWAITING_PRE_QA,
         site=site,
+        mmr_version=mmr_version,
+        created_by=batch_creator,
     )
 
 
 @pytest.fixture()
-def batch_in_pre_qa_review(site: Site) -> Batch:
+def batch_in_pre_qa_review(site: Site, mmr_version: MMRVersion, batch_creator: User) -> Batch:
     return Batch.objects.create(
-        reference="LOT-2026-0043",
+        batch_number="LOT-2026-0043",
         status=BatchStatus.IN_PRE_QA_REVIEW,
         site=site,
+        mmr_version=mmr_version,
+        created_by=batch_creator,
     )
 
 
 @pytest.fixture()
-def batch_in_progress(site: Site) -> Batch:
+def batch_in_progress(site: Site, mmr_version: MMRVersion, batch_creator: User) -> Batch:
     return Batch.objects.create(
-        reference="LOT-2026-0044",
+        batch_number="LOT-2026-0044",
         status=BatchStatus.IN_PROGRESS,
         site=site,
+        mmr_version=mmr_version,
+        created_by=batch_creator,
     )
 
 
@@ -127,10 +147,16 @@ class TestConfirmPreQaReview:
     def test_confirm_fails_from_released_state(
         self,
         site: Site,
+        mmr_version: MMRVersion,
+        batch_creator: User,
         reviewer: User,
     ) -> None:
         released_batch = Batch.objects.create(
-            reference="LOT-RELEASED", status=BatchStatus.RELEASED, site=site
+            batch_number="LOT-RELEASED",
+            status=BatchStatus.RELEASED,
+            site=site,
+            mmr_version=mmr_version,
+            created_by=batch_creator,
         )
         with pytest.raises(ValidationError, match="awaiting_pre_qa or in_pre_qa_review"):
             confirm_pre_qa_review(batch=released_batch, reviewer=reviewer)
@@ -159,7 +185,7 @@ class TestConfirmPreQaReview:
         assert audit.site == batch_awaiting_pre_qa.site
         assert audit.target_type == "batch"
         assert audit.target_id == batch_awaiting_pre_qa.pk
-        assert audit.metadata["batch_reference"] == batch_awaiting_pre_qa.reference
+        assert audit.metadata["batch_number"] == batch_awaiting_pre_qa.batch_number
 
     def test_confirm_revalidates_locked_batch_status(
         self,
@@ -272,10 +298,16 @@ class TestMarkStepReviewed:
         self,
         batch_awaiting_pre_qa: Batch,
         site: Site,
+        mmr_version: MMRVersion,
+        batch_creator: User,
         reviewer: User,
     ) -> None:
         other_batch = Batch.objects.create(
-            reference="LOT-OTHER", status=BatchStatus.AWAITING_PRE_QA, site=site
+            batch_number="LOT-OTHER",
+            status=BatchStatus.AWAITING_PRE_QA,
+            site=site,
+            mmr_version=mmr_version,
+            created_by=batch_creator,
         )
         step = BatchStep.objects.create(
             batch=other_batch,

@@ -111,7 +111,7 @@ class ConfirmPreQaReviewView(_PreQaBaseView):
 
         response_data = {
             "batch_id": result.batch.pk,
-            "batch_reference": result.batch.reference,
+            "batch_number": result.batch.batch_number,
             "batch_status": result.batch.status,
             "confirmed_at": result.review_event.occurred_at,
             "reviewer_note": note,

@@ -110,7 +110,7 @@ def confirm_pre_qa_review(
             target_type="batch",
             target_id=batch.pk,
             metadata={
-                "batch_reference": batch.reference,
+                "batch_number": batch.batch_number,
                 "reviewer_id": reviewer.pk,
                 "note": note,
                 "review_event_id": (review_event.pk if review_event and committed else None),

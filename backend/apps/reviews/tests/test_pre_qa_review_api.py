@@ -14,7 +14,8 @@ from apps.batches.models import (
     BatchStep,
     StepStatus,
 )
-from apps.sites.models import Site
+from apps.mmr.models import MMR, MMRVersion
+from apps.sites.models import Product, Site
 
 _UserModel = get_user_model()
 
@@ -25,29 +26,48 @@ def site(db: None) -> Site:
 
 
 @pytest.fixture()
-def batch_awaiting_pre_qa(site: Site) -> Batch:
+def mmr_version(site: Site) -> MMRVersion:
+    user = _UserModel.objects.create_user(username="template_author", password="testpass1234")
+    product = Product.objects.create(site=site, name="Test Product", code="PROD-001")
+    mmr = MMR.objects.create(site=site, product=product, name="Test MMR", code="MMR-001")
+    return MMRVersion.objects.create(mmr=mmr, version_number=1, created_by=user)
+
+
+@pytest.fixture()
+def batch_creator() -> User:
+    return _UserModel.objects.create_user(username="batch_creator", password="testpass1234")
+
+
+@pytest.fixture()
+def batch_awaiting_pre_qa(site: Site, mmr_version: MMRVersion, batch_creator: User) -> Batch:
     return Batch.objects.create(
-        reference="LOT-2026-0042",
+        batch_number="LOT-2026-0042",
         status=BatchStatus.AWAITING_PRE_QA,
         site=site,
+        mmr_version=mmr_version,
+        created_by=batch_creator,
     )
 
 
 @pytest.fixture()
-def batch_in_pre_qa_review(site: Site) -> Batch:
+def batch_in_pre_qa_review(site: Site, mmr_version: MMRVersion, batch_creator: User) -> Batch:
     return Batch.objects.create(
-        reference="LOT-2026-0043",
+        batch_number="LOT-2026-0043",
         status=BatchStatus.IN_PRE_QA_REVIEW,
         site=site,
+        mmr_version=mmr_version,
+        created_by=batch_creator,
     )
 
 
 @pytest.fixture()
-def batch_in_progress(site: Site) -> Batch:
+def batch_in_progress(site: Site, mmr_version: MMRVersion, batch_creator: User) -> Batch:
     return Batch.objects.create(
-        reference="LOT-2026-0044",
+        batch_number="LOT-2026-0044",
         status=BatchStatus.IN_PROGRESS,
         site=site,
+        mmr_version=mmr_version,
+        created_by=batch_creator,
     )
 
 
@@ -140,7 +160,7 @@ class TestConfirmPreQaReviewSuccess:
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["batch_id"] == batch_awaiting_pre_qa.pk
-        assert data["batch_reference"] == "LOT-2026-0042"
+        assert data["batch_number"] == "LOT-2026-0042"
         assert data["batch_status"] == "awaiting_quality_review"
         assert data["confirmed_at"] is not None
         assert data["reviewer_note"] == "All good"
@@ -325,12 +345,16 @@ class TestMarkStepReviewedErrors:
         self,
         batch_awaiting_pre_qa: Batch,
         site: Site,
+        mmr_version: MMRVersion,
+        batch_creator: User,
         production_reviewer: User,
     ) -> None:
         other_batch = Batch.objects.create(
-            reference="LOT-OTHER",
+            batch_number="LOT-OTHER",
             status=BatchStatus.AWAITING_PRE_QA,
             site=site,
+            mmr_version=mmr_version,
+            created_by=batch_creator,
         )
         step = BatchStep.objects.create(
             batch=other_batch,
