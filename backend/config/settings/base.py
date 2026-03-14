@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import re
+from datetime import UTC, datetime
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -18,13 +20,63 @@ def env_required(key: str) -> str:
     raise RuntimeError(f"Environment variable '{key}' is required for this settings module.")
 
 
+def env_optional(key: str) -> str | None:
+    value = os.environ.get(key)
+    if value is None:
+        return None
+    normalized_value = value.strip()
+    return normalized_value or None
+
+
 def env_list(key: str, default: str) -> list[str]:
     value = os.environ.get(key, default)
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def _sanitize_identifier_component(value: str) -> str:
+    return re.sub(r"[^0-9A-Za-z_]+", "_", value).strip("_")
+
+
+def build_test_database_name(
+    database_name: str,
+    *,
+    explicit_name: str | None = None,
+    explicit_suffix: str | None = None,
+    generated_suffix: str | None = None,
+) -> str:
+    if explicit_name is not None:
+        return explicit_name
+
+    suffix = explicit_suffix or generated_suffix
+    if suffix is None:
+        raise ValueError(
+            "A test database suffix is required when no explicit test database name is set."
+        )
+
+    normalized_suffix = _sanitize_identifier_component(suffix)[:24] or "session"
+    candidate_prefix = f"test_{database_name}"
+    max_prefix_length = 63 - len(normalized_suffix) - 1
+    normalized_prefix = candidate_prefix[:max_prefix_length].rstrip("_") or "test"
+    return f"{normalized_prefix}_{normalized_suffix}"
+
+
+def default_test_database_suffix() -> str:
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S_%f")
+    return f"{timestamp}_{os.getpid()}"
+
+
 CURRENT_SETTINGS_MODULE = env("DJANGO_SETTINGS_MODULE", "config.settings.dev")
 IS_DEV_SETTINGS = CURRENT_SETTINGS_MODULE == "config.settings.dev"
+
+DEFAULT_DATABASE_NAME = (
+    env("POSTGRES_DB", "dle_saas") if IS_DEV_SETTINGS else env_required("POSTGRES_DB")
+)
+DEFAULT_DATABASE_USER = (
+    env("POSTGRES_USER", "dle_saas") if IS_DEV_SETTINGS else env_required("POSTGRES_USER")
+)
+DEFAULT_DATABASE_PASSWORD = (
+    env("POSTGRES_PASSWORD", "dle_saas") if IS_DEV_SETTINGS else env_required("POSTGRES_PASSWORD")
+)
 
 if IS_DEV_SETTINGS:
     SECRET_KEY = env("DJANGO_SECRET_KEY", "django-insecure-dle-saas-local-dev-key")
@@ -47,6 +99,7 @@ INSTALLED_APPS = [
     "apps.authz.apps.AuthzConfig",
     "apps.mmr.apps.MmrConfig",
     "apps.batches.apps.BatchesConfig",
+    "apps.exports.apps.ExportsConfig",
     "apps.reviews.apps.ReviewsConfig",
     "rest_framework",
     "drf_spectacular",
@@ -85,21 +138,21 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": (
-            env("POSTGRES_DB", "dle_saas") if IS_DEV_SETTINGS else env_required("POSTGRES_DB")
-        ),
-        "USER": (
-            env("POSTGRES_USER", "dle_saas") if IS_DEV_SETTINGS else env_required("POSTGRES_USER")
-        ),
-        "PASSWORD": (
-            env("POSTGRES_PASSWORD", "dle_saas")
-            if IS_DEV_SETTINGS
-            else env_required("POSTGRES_PASSWORD")
-        ),
+        "NAME": DEFAULT_DATABASE_NAME,
+        "USER": DEFAULT_DATABASE_USER,
+        "PASSWORD": DEFAULT_DATABASE_PASSWORD,
         "HOST": env("POSTGRES_HOST", "localhost"),
         "PORT": env("POSTGRES_PORT", "5432"),
         "CONN_MAX_AGE": int(env("POSTGRES_CONN_MAX_AGE", "60")),
     }
+}
+DATABASES["default"]["TEST"] = {
+    "NAME": build_test_database_name(
+        DEFAULT_DATABASE_NAME,
+        explicit_name=env_optional("POSTGRES_TEST_DB_NAME"),
+        explicit_suffix=env_optional("POSTGRES_TEST_DB_SUFFIX"),
+        generated_suffix=default_test_database_suffix(),
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [

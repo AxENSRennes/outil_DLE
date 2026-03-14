@@ -21,11 +21,29 @@ from apps.mmr.api.serializers import (
     MMRVersionCreateSerializer,
     MMRVersionDetailSerializer,
     MMRVersionListSerializer,
+    StepCreateSerializer,
+    StepDetailSerializer,
+    StepListSerializer,
+    StepReorderSerializer,
+    StepUpdateSerializer,
 )
+from apps.mmr.domain.exceptions import StepNotFoundError
 from apps.mmr.domain.mmr_service import create_mmr
+from apps.mmr.domain.step_management import (
+    add_step,
+    get_step,
+    get_steps,
+    remove_step,
+    reorder_steps,
+    update_step,
+)
 from apps.mmr.domain.version_lifecycle import create_draft_version
 from apps.mmr.models import MMR, MMRVersion
 from apps.sites.models import Product, Site
+
+# ---------------------------------------------------------------------------
+# MMR views (existing)
+# ---------------------------------------------------------------------------
 
 
 class MMRListCreateView(APIView):
@@ -196,3 +214,157 @@ class MMRVersionDetailView(APIView):
 
     def get_site_for_object(self, obj: MMRVersion) -> Site:
         return obj.mmr.site
+
+
+# ---------------------------------------------------------------------------
+# Step views
+# ---------------------------------------------------------------------------
+
+
+class _StepViewMixin:
+    """Shared logic for step views. Must be combined with APIView."""
+
+    permission_classes: ClassVar[list[type]] = [IsAuthenticated, SiteScopedRolePermission]
+    required_site_roles = (SiteRole.INTERNAL_CONFIGURATOR,)
+    allow_object_level_site_resolve = True
+
+    def _get_version(self, mmr_id: int, version_id: int) -> MMRVersion | None:
+        version = (
+            MMRVersion.objects.select_related("mmr", "mmr__site", "mmr__product")
+            .filter(pk=version_id, mmr_id=mmr_id)
+            .first()
+        )
+        if version is None:
+            return None
+        self.check_object_permissions(self.request, version)  # type: ignore[attr-defined]
+        return version
+
+    @staticmethod
+    def _not_found(detail: str = "Version not found.") -> Response:
+        return Response(
+            {"type": "not_found", "title": "Not found", "detail": detail},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    @staticmethod
+    def _domain_error(title: str, detail: str) -> Response:
+        return Response(
+            {"type": "domain_error", "title": title, "detail": detail},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    def get_site_for_object(self, obj: MMRVersion) -> Site:
+        return obj.mmr.site
+
+
+class StepListCreateView(_StepViewMixin, APIView):
+    @extend_schema(responses=StepListSerializer(many=True))
+    def get(self, request: Request, mmr_id: int, version_id: int) -> Response:
+        version = self._get_version(mmr_id, version_id)
+        if version is None:
+            return self._not_found()
+        steps = get_steps(version=version)
+        serializer = StepListSerializer(steps, many=True)
+        return Response(serializer.data)
+
+    @method_decorator(csrf_protect)
+    @extend_schema(request=StepCreateSerializer, responses=StepDetailSerializer)
+    def post(self, request: Request, mmr_id: int, version_id: int) -> Response:
+        version = self._get_version(mmr_id, version_id)
+        if version is None:
+            return self._not_found()
+        serializer = StepCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            step = add_step(
+                version=version,
+                step_data=serializer.validated_data,
+                actor=request.user,
+            )
+        except ValueError as exc:
+            return self._domain_error("Step creation failed", str(exc))
+        output = StepDetailSerializer(step)
+        return Response(output.data, status=status.HTTP_201_CREATED)
+
+
+class StepDetailView(_StepViewMixin, APIView):
+    @extend_schema(responses=StepDetailSerializer)
+    def get(self, request: Request, mmr_id: int, version_id: int, step_key: str) -> Response:
+        version = self._get_version(mmr_id, version_id)
+        if version is None:
+            return self._not_found()
+        try:
+            step = get_step(version=version, step_key=step_key)
+        except StepNotFoundError:
+            return self._not_found("Step not found.")
+        output = StepDetailSerializer(step)
+        return Response(output.data)
+
+    @method_decorator(csrf_protect)
+    @extend_schema(request=StepUpdateSerializer, responses=StepDetailSerializer)
+    def put(self, request: Request, mmr_id: int, version_id: int, step_key: str) -> Response:
+        version = self._get_version(mmr_id, version_id)
+        if version is None:
+            return self._not_found()
+        try:
+            current_step = get_step(version=version, step_key=step_key)
+        except StepNotFoundError:
+            return self._not_found("Step not found.")
+        serializer = StepUpdateSerializer(
+            data=request.data,
+            partial=True,
+            context={"current_step": current_step},
+        )
+        serializer.is_valid(raise_exception=True)
+        try:
+            step = update_step(
+                version=version,
+                step_key=step_key,
+                step_data=serializer.validated_data,
+                actor=request.user,
+            )
+        except StepNotFoundError:
+            return self._not_found("Step not found.")
+        except ValueError as exc:
+            return self._domain_error("Step update failed", str(exc))
+        output = StepDetailSerializer(step)
+        return Response(output.data)
+
+    @method_decorator(csrf_protect)
+    @extend_schema(responses={204: None})
+    def delete(self, request: Request, mmr_id: int, version_id: int, step_key: str) -> Response:
+        version = self._get_version(mmr_id, version_id)
+        if version is None:
+            return self._not_found()
+        try:
+            remove_step(
+                version=version,
+                step_key=step_key,
+                actor=request.user,
+            )
+        except StepNotFoundError:
+            return self._not_found("Step not found.")
+        except ValueError as exc:
+            return self._domain_error("Step removal failed", str(exc))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StepReorderView(_StepViewMixin, APIView):
+    @method_decorator(csrf_protect)
+    @extend_schema(request=StepReorderSerializer, responses=StepReorderSerializer)
+    def post(self, request: Request, mmr_id: int, version_id: int) -> Response:
+        version = self._get_version(mmr_id, version_id)
+        if version is None:
+            return self._not_found()
+        serializer = StepReorderSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            new_order = reorder_steps(
+                version=version,
+                step_order=serializer.validated_data["step_order"],
+                actor=request.user,
+            )
+        except ValueError as exc:
+            return self._domain_error("Step reorder failed", str(exc))
+        output = StepReorderSerializer({"step_order": new_order})
+        return Response(output.data)

@@ -85,7 +85,7 @@ def get_batch_review_summary(batch_or_id: Batch | int) -> ReviewSummary:
 
     return ReviewSummary(
         batch_id=batch.pk,
-        batch_reference=batch.reference,
+        batch_number=batch.batch_number,
         batch_status=batch.status,
         severity=severity,
         step_summary=step_summary,

@@ -46,3 +46,11 @@ Run backend commands with the required interpreter:
 /home/axel/wsl_venv/bin/python backend/manage.py migrate
 /home/axel/wsl_venv/bin/python backend/manage.py runserver
 ```
+
+Backend tests use a unique PostgreSQL test database name for each local pytest
+run, so multiple `make check` or backend pytest invocations can run in parallel
+without colliding on a shared `test_dle_saas` database.
+
+The generated name includes a timestamp with microseconds plus the current
+process ID. If you ever need a fixed override for debugging, set
+`POSTGRES_TEST_DB_NAME` or `POSTGRES_TEST_DB_SUFFIX`.
