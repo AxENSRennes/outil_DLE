@@ -44,8 +44,13 @@ class Batch(models.Model):
         on_delete=models.PROTECT,
         related_name="batches",
     )
-    # mmr_version_id stored as integer until Epic 2 provides the MMRVersion model.
-    mmr_version_id = models.PositiveIntegerField(null=True, blank=True)
+    mmr_version = models.ForeignKey(
+        "mmr.MMRVersion",
+        on_delete=models.PROTECT,
+        related_name="batches",
+        null=True,
+        blank=True,
+    )
     batch_number = models.CharField(max_length=100, unique=True)
     status = models.CharField(
         max_length=32,
