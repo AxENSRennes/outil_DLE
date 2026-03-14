@@ -117,7 +117,8 @@ def confirm_pre_qa_review(
             },
         )
 
-    assert review_event is not None
+    if review_event is None:  # pragma: no cover - defensive; unreachable after commit
+        raise RuntimeError("review_event was not created despite successful commit")
     return ConfirmPreQaResult(batch=batch, review_event=review_event)
 
 
@@ -193,7 +194,8 @@ def mark_step_reviewed(
             },
         )
 
-    assert review_event is not None
+    if review_event is None:  # pragma: no cover - defensive; unreachable after commit
+        raise RuntimeError("review_event was not created despite successful commit")
     return MarkStepReviewedResult(
         step=step,
         batch_status=batch.status,
